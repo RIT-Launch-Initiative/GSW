@@ -1,11 +1,11 @@
 package ipc
 
-type IpcWriter interface {
+type Writer interface {
 	Write(data []byte) error
 	Cleanup()
 }
 
-type IpcReader interface {
+type Reader interface {
 	Read() ([]byte, error)
 	Cleanup()
 }
