@@ -5,20 +5,20 @@ import (
 	"github.com/influxdata/influxdb-client-go/v2"
 )
 
-type InfluxDBHandler struct {
+type InfluxDBV2Handler struct {
 	client influxdb2.Client
 	org    string
 	bucket string
 }
 
 // Initialize sets up the InfluxDB client
-func (h *InfluxDBHandler) Initialize() {
+func (h *InfluxDBV2Handler) Initialize() {
 	// TODO: Get URL and token from config
 	//h.client = influxdb2.NewClient(url, token)
 }
 
 // CreateQuery generates the InfluxDB line protocol query for measurementGroup
-func (h *InfluxDBHandler) CreateQuery(measurementGroup MeasurementGroup) string {
+func (h *InfluxDBV2Handler) CreateQuery(measurementGroup MeasurementGroup) string {
 	var query string
 
 	for _, measurement := range measurementGroup.Measurements {
@@ -28,7 +28,7 @@ func (h *InfluxDBHandler) CreateQuery(measurementGroup MeasurementGroup) string 
 }
 
 // Insert sends the measurement data to InfluxDB
-func (h *InfluxDBHandler) Insert(measurementGroup MeasurementGroup) error {
+func (h *InfluxDBV2Handler) Insert(measurementGroup MeasurementGroup) error {
 	// TODO: Implement
 	//query := h.CreateQuery(measurementGroup)
 
@@ -36,6 +36,6 @@ func (h *InfluxDBHandler) Insert(measurementGroup MeasurementGroup) error {
 }
 
 // Close closes the InfluxDB client when done
-func (h *InfluxDBHandler) Close() {
+func (h *InfluxDBV2Handler) Close() {
 	h.client.Close()
 }
