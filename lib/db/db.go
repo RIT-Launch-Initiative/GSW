@@ -1,8 +1,11 @@
 package db
 
-import "github.com/AarC10/GSW-V2/proc"
-
 type Handler interface {
-	Insert(packet []proc.TelemetryPacket)
-	CreateQuery(packet proc.TelemetryPacket) string
+	Insert(measurements []Measurement) error
+	CreateQuery(measurements []Measurement) string
+}
+
+type Measurement struct {
+	Name  string
+	Value string
 }
