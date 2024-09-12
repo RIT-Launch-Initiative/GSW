@@ -1,8 +1,15 @@
 package db
 
 type Handler interface {
-	Insert(measurements []Measurement) error
-	CreateQuery(measurements []Measurement) string
+	Initialize()
+	Insert(measurements MeasurementGroup) error
+	CreateQuery(measurements MeasurementGroup) string
+	Close()
+}
+
+type MeasurementGroup struct {
+	timestamp    int64
+	Measurements []Measurement
 }
 
 type Measurement struct {
