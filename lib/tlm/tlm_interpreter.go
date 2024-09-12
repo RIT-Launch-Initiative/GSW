@@ -79,3 +79,18 @@ func InterpretMeasurementValue(measurement proc.Measurement, data []byte) interf
 		return nil
 	}
 }
+
+func InterpretMeasurementValueString(measurement proc.Measurement, data []byte) string {
+	switch measurement.Type {
+	case "int":
+		if measurement.Unsigned {
+			return fmt.Sprintf("%d", InterpretUnsignedInteger(data, measurement.Endianness))
+		}
+		return fmt.Sprintf("%d", InterpretSignedInteger(data, measurement.Endianness))
+	case "float":
+		return fmt.Sprintf("%f", InterpretFloat(data, measurement.Endianness))
+	default:
+		fmt.Printf("Unsupported type for measurement: %s\n", measurement.Type)
+		return ""
+	}
+}

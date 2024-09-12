@@ -13,7 +13,7 @@ type InfluxDBV1Handler struct {
 
 // Initialize sets up the InfluxDB UDP connection
 func (h *InfluxDBV1Handler) Initialize() {
-	h.addr = "localhost:8089" // Replace with your InfluxDB UDP address
+	h.addr = "localhost:8089" // TODO: Make this IP and port configurable
 
 	addr, err := net.ResolveUDPAddr("udp", h.addr)
 	if err != nil {
@@ -41,7 +41,7 @@ func (h *InfluxDBV1Handler) CreateQuery(measurements MeasurementGroup) string {
 	// Don't check if string is empty. We expect the Name and the measurements to be non-empty.
 	query = query[:len(query)-1]
 
-	// TODO: Add timestamp to query?
+	// TODO: Add Timestamp to query?
 
 	return query
 }
@@ -57,7 +57,7 @@ func (h *InfluxDBV1Handler) Insert(measurements MeasurementGroup) error {
 	// Send the query data over UDP
 	_, err := h.conn.Write(data)
 	if err != nil {
-		return fmt.Errorf("Error sending data to InfluxDB over UDP: %w", err)
+		return fmt.Errorf("error sending data to InfluxDB over UDP: %w", err)
 	}
 
 	return nil

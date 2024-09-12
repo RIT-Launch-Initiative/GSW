@@ -8,7 +8,7 @@ type Handler interface {
 }
 
 type MeasurementGroup struct {
-	timestamp    int64
+	Timestamp    int64
 	Measurements []Measurement
 }
 

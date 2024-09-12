@@ -22,7 +22,7 @@ func (h *InfluxDBV2Handler) CreateQuery(measurementGroup MeasurementGroup) strin
 	var query string
 
 	for _, measurement := range measurementGroup.Measurements {
-		query += fmt.Sprintf("%s,value=%s %d\n", measurement.Name, measurement.Value, measurementGroup.timestamp)
+		query += fmt.Sprintf("%s,value=%s %d\n", measurement.Name, measurement.Value, measurementGroup.Timestamp)
 	}
 	return query
 }
