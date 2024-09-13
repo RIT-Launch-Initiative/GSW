@@ -1,7 +1,7 @@
 package db
 
 type Handler interface {
-	Initialize()
+	Initialize() error
 	Insert(measurements MeasurementGroup) error
 	CreateQuery(measurements MeasurementGroup) string
 	Close()

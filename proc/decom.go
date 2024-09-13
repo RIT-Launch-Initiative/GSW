@@ -10,7 +10,7 @@ import (
 func getIpcShmHandler(packet TelemetryPacket, write bool) (*ipc.IpcShmHandler, error) {
 	handler, err := ipc.CreateIpcShmHandler(strconv.Itoa(packet.Port), GetPacketSize(packet), write)
 	if err != nil {
-		return nil, fmt.Errorf("Error creating shared memory handler: %v", err)
+		return nil, fmt.Errorf("error creating shared memory handler: %v", err)
 	}
 
 	return handler, nil

@@ -1,28 +1,47 @@
 package proc
 
 import (
+	"fmt"
 	"github.com/AarC10/GSW-V2/lib/db"
 	"github.com/AarC10/GSW-V2/lib/tlm"
 	"time"
 )
 
-func DatabaseWriter(handler db.Handler, chan []TelemetryPacket) {
-	handler.Initialize()
+func DatabaseWriter(handler db.Handler, packet TelemetryPacket, channel chan []byte) {
+	measGroup := initMeasurementGroup(packet)
 
-	defer handler.Close()
+	for {
+		data := <-channel
+		updateMeasurementGroup(packet, measGroup, data)
+		if handler.Insert(measGroup) != nil {
+			fmt.Printf("Error storing packet results in database.")
+		}
+	}
 }
 
-func TelemetryPacketToMeasGroup(packet TelemetryPacket, data []byte) db.MeasurementGroup {
+func initMeasurementGroup(packet TelemetryPacket) db.MeasurementGroup {
 	measurements := make([]db.Measurement, len(packet.Measurements))
-	offset := 0
+	measurementGroup := db.MeasurementGroup{Measurements: measurements}
 
 	for i, measurementName := range packet.Measurements {
-		measurement := GswConfig.Measurements[measurementName]
-		valStr := tlm.InterpretMeasurementValueString(measurement, data[offset:offset+measurement.Size])
-
-		measurements[i] = db.Measurement{packet.Name, valStr}
+		measurements[i].Name = measurementName
 	}
 
-	// Get unix timestamp
-	return db.MeasurementGroup{time.Now().UnixNano(), measurements}
+	return measurementGroup
+}
+
+func updateMeasurementGroup(packet TelemetryPacket, measurements db.MeasurementGroup, data []byte) {
+	offset := 0
+
+	measurements.Timestamp = time.Now().UnixNano()
+	for i, measurementName := range packet.Measurements {
+		measurement, ok := GswConfig.Measurements[measurementName]
+		if !ok {
+			fmt.Printf("\t\tMeasurement '%s' not found\n", measurementName)
+			continue
+		}
+
+		measurements.Measurements[i].Value = tlm.InterpretMeasurementValueString(measurement, data[offset:offset+measurement.Size])
+		offset += measurement.Size
+	}
 }
