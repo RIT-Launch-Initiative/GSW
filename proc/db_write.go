@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-func DatabaseWriter(handler db.Handler, packet TelemetryPacket, channel chan []byte) {
+func DatabaseWriter(handler db.Handler, packet tlm.TelemetryPacket, channel chan []byte) {
 	measGroup := initMeasurementGroup(packet)
 
 	for {
@@ -19,7 +19,7 @@ func DatabaseWriter(handler db.Handler, packet TelemetryPacket, channel chan []b
 	}
 }
 
-func initMeasurementGroup(packet TelemetryPacket) db.MeasurementGroup {
+func initMeasurementGroup(packet tlm.TelemetryPacket) db.MeasurementGroup {
 	measurements := make([]db.Measurement, len(packet.Measurements))
 	measurementGroup := db.MeasurementGroup{DatabaseName: GswConfig.Name, Measurements: measurements}
 
@@ -30,7 +30,7 @@ func initMeasurementGroup(packet TelemetryPacket) db.MeasurementGroup {
 	return measurementGroup
 }
 
-func updateMeasurementGroup(packet TelemetryPacket, measurements db.MeasurementGroup, data []byte) {
+func updateMeasurementGroup(packet tlm.TelemetryPacket, measurements db.MeasurementGroup, data []byte) {
 	offset := 0
 
 	measurements.Timestamp = time.Now().UnixNano()

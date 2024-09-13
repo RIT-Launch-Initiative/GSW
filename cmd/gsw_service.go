@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/AarC10/GSW-V2/lib/db"
+	"github.com/AarC10/GSW-V2/lib/tlm"
 	"os"
 	"os/signal"
 	"syscall"
@@ -50,7 +51,7 @@ func decomInitialize(ctx context.Context) map[int]chan []byte {
 		finalOutputChannel := make(chan []byte)
 		channelMap[packet.Port] = finalOutputChannel
 
-		go func(packet proc.TelemetryPacket, ch chan []byte) {
+		go func(packet tlm.TelemetryPacket, ch chan []byte) {
 			proc.TelemetryPacketWriter(packet)
 			<-ctx.Done()
 			close(ch)
@@ -69,7 +70,7 @@ func dbInitialize(ctx context.Context, channelMap map[int]chan []byte) {
 	}
 
 	for _, packet := range proc.GswConfig.TelemetryPackets {
-		go func(dbHandler db.Handler, packet proc.TelemetryPacket, ch chan []byte) {
+		go func(dbHandler db.Handler, packet tlm.TelemetryPacket, ch chan []byte) {
 			proc.DatabaseWriter(dbHandler, packet, ch)
 			<-ctx.Done()
 			close(ch)
