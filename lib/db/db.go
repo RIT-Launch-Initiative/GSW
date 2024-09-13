@@ -8,6 +8,7 @@ type Handler interface {
 }
 
 type MeasurementGroup struct {
+	DatabaseName string
 	Timestamp    int64
 	Measurements []Measurement
 }

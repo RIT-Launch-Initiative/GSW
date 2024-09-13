@@ -2,7 +2,6 @@ package db
 
 import (
 	"fmt"
-	"github.com/AarC10/GSW-V2/proc"
 	"net"
 )
 
@@ -28,11 +27,12 @@ func (h *InfluxDBV1Handler) Initialize() error {
 	}
 
 	h.conn = *conn
+	return nil
 }
 
 // CreateQuery Generates InfluxDB query for measurement group
 func (h *InfluxDBV1Handler) CreateQuery(measurements MeasurementGroup) string {
-	query := proc.GswConfig.Name + " "
+	query := measurements.DatabaseName + " "
 
 	for _, measurement := range measurements.Measurements {
 		query += fmt.Sprintf("%s=%s,", measurement.Name, measurement.Value)

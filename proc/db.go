@@ -21,7 +21,7 @@ func DatabaseWriter(handler db.Handler, packet TelemetryPacket, channel chan []b
 
 func initMeasurementGroup(packet TelemetryPacket) db.MeasurementGroup {
 	measurements := make([]db.Measurement, len(packet.Measurements))
-	measurementGroup := db.MeasurementGroup{Measurements: measurements}
+	measurementGroup := db.MeasurementGroup{DatabaseName: GswConfig.Name, Measurements: measurements}
 
 	for i, measurementName := range packet.Measurements {
 		measurements[i].Name = measurementName
