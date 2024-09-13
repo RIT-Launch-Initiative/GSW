@@ -41,8 +41,9 @@ func (h *InfluxDBV1Handler) CreateQuery(measurements MeasurementGroup) string {
 	// Don't check if string is empty. We expect the Name and the measurements to be non-empty.
 	query = query[:len(query)-1]
 
-	// TODO: Add Timestamp to query?
+	query += fmt.Sprintf(" %d", measurements.Timestamp)
 
+	fmt.Printf("%s\n", query)
 	return query
 }
 
