@@ -2,30 +2,15 @@ package proc
 
 import (
 	"fmt"
-	"os"
-	"strings"
-
+	"github.com/AarC10/GSW-V2/lib/tlm"
 	"gopkg.in/yaml.v2"
+	"os"
 )
 
 type Configuration struct {
-	Name             string                 `yaml:"name"`
-	Measurements     map[string]Measurement `yaml:"measurements"`
-	TelemetryPackets []TelemetryPacket      `yaml:"telemetry_packets"`
-}
-
-type Measurement struct {
-	Name       string `yaml:"name"`
-	Size       int    `yaml:"size"`
-	Type       string `yaml:"type,omitempty"`
-	Unsigned   bool   `yaml:"unsigned,omitempty"`
-	Endianness string `yaml:"endianness,omitempty"`
-}
-
-type TelemetryPacket struct {
-	Name         string   `yaml:"name"`
-	Port         int      `yaml:"port"`
-	Measurements []string `yaml:"measurements"`
+	Name             string                     `yaml:"name"`
+	Measurements     map[string]tlm.Measurement `yaml:"measurements"`
+	TelemetryPackets []tlm.TelemetryPacket      `yaml:"telemetry_packets"`
 }
 
 // TODO: Make global safer
@@ -74,7 +59,7 @@ func ParseConfig(filename string) (*Configuration, error) {
 	return &GswConfig, nil
 }
 
-func GetPacketSize(packet TelemetryPacket) int {
+func GetPacketSize(packet tlm.TelemetryPacket) int {
 	size := 0
 	for _, measurementName := range packet.Measurements {
 		measurement, ok := GswConfig.Measurements[measurementName]
@@ -85,20 +70,4 @@ func GetPacketSize(packet TelemetryPacket) int {
 		size += measurement.Size
 	}
 	return size
-}
-
-func (m Measurement) String() string {
-	var sb strings.Builder
-	sb.WriteString(fmt.Sprintf("Name: %s, Size: %d", m.Name, m.Size))
-	if m.Type != "" {
-		sb.WriteString(fmt.Sprintf(", Type: %s", m.Type))
-	}
-
-	if m.Unsigned {
-		sb.WriteString(", Unsigned")
-	} else {
-		sb.WriteString(", Signed")
-	}
-	sb.WriteString(fmt.Sprintf(", Endianness: %s", m.Endianness))
-	return sb.String()
 }

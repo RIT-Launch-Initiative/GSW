@@ -3,9 +3,23 @@ package tlm
 import (
 	"encoding/binary"
 	"fmt"
-	"github.com/AarC10/GSW-V2/proc"
 	"math"
+	"strings"
 )
+
+type Measurement struct {
+	Name       string `yaml:"name"`
+	Size       int    `yaml:"size"`
+	Type       string `yaml:"type,omitempty"`
+	Unsigned   bool   `yaml:"unsigned,omitempty"`
+	Endianness string `yaml:"endianness,omitempty"`
+}
+
+type TelemetryPacket struct {
+	Name         string   `yaml:"name"`
+	Port         int      `yaml:"port"`
+	Measurements []string `yaml:"measurements"`
+}
 
 func InterpretUnsignedInteger(data []byte, endianness string) interface{} {
 	switch len(data) {
@@ -65,7 +79,7 @@ func InterpretFloat(data []byte, endianness string) interface{} {
 	}
 }
 
-func InterpretMeasurementValue(measurement proc.Measurement, data []byte) interface{} {
+func InterpretMeasurementValue(measurement Measurement, data []byte) interface{} {
 	switch measurement.Type {
 	case "int":
 		if measurement.Unsigned {
@@ -80,7 +94,7 @@ func InterpretMeasurementValue(measurement proc.Measurement, data []byte) interf
 	}
 }
 
-func InterpretMeasurementValueString(measurement proc.Measurement, data []byte) string {
+func InterpretMeasurementValueString(measurement Measurement, data []byte) string {
 	switch measurement.Type {
 	case "int":
 		if measurement.Unsigned {
@@ -93,4 +107,20 @@ func InterpretMeasurementValueString(measurement proc.Measurement, data []byte) 
 		fmt.Printf("Unsupported type for measurement: %s\n", measurement.Type)
 		return ""
 	}
+}
+
+func (m Measurement) String() string {
+	var sb strings.Builder
+	sb.WriteString(fmt.Sprintf("Name: %s, Size: %d", m.Name, m.Size))
+	if m.Type != "" {
+		sb.WriteString(fmt.Sprintf(", Type: %s", m.Type))
+	}
+
+	if m.Unsigned {
+		sb.WriteString(", Unsigned")
+	} else {
+		sb.WriteString(", Signed")
+	}
+	sb.WriteString(fmt.Sprintf(", Endianness: %s", m.Endianness))
+	return sb.String()
 }

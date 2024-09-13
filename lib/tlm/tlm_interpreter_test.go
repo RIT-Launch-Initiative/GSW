@@ -1,7 +1,6 @@
 package tlm
 
 import (
-	"github.com/AarC10/GSW-V2/proc"
 	"testing"
 )
 
@@ -86,14 +85,14 @@ func TestInterpretFloat(t *testing.T) {
 func TestInterpretMeasurementValue(t *testing.T) {
 	tests := []struct {
 		name        string
-		measurement proc.Measurement
+		measurement Measurement
 		data        []byte
 		expected    interface{}
 	}{
-		{"unsigned int", proc.Measurement{Type: "int", Unsigned: true, Endianness: "little"}, []byte{0x12}, uint8(0x12)},
-		{"signed int", proc.Measurement{Type: "int", Unsigned: false, Endianness: "little"}, []byte{0x82}, int8(-126)},
-		{"float", proc.Measurement{Type: "float", Endianness: "little"}, []byte{0x00, 0x00, 0x80, 0x3F}, float32(1.0)},
-		{"unsupported type", proc.Measurement{Type: "string", Endianness: "little"}, []byte{0x12}, nil},
+		{"unsigned int", Measurement{Type: "int", Unsigned: true, Endianness: "little"}, []byte{0x12}, uint8(0x12)},
+		{"signed int", Measurement{Type: "int", Unsigned: false, Endianness: "little"}, []byte{0x82}, int8(-126)},
+		{"float", Measurement{Type: "float", Endianness: "little"}, []byte{0x00, 0x00, 0x80, 0x3F}, float32(1.0)},
+		{"unsupported type", Measurement{Type: "string", Endianness: "little"}, []byte{0x12}, nil},
 	}
 
 	for _, tt := range tests {
