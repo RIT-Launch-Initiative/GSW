@@ -52,7 +52,7 @@ func decomInitialize(ctx context.Context) map[int]chan []byte {
 		channelMap[packet.Port] = finalOutputChannel
 
 		go func(packet tlm.TelemetryPacket, ch chan []byte) {
-			proc.TelemetryPacketWriter(packet)
+			proc.TelemetryPacketWriter(packet, finalOutputChannel)
 			<-ctx.Done()
 			close(ch)
 		}(packet, finalOutputChannel)
@@ -96,8 +96,8 @@ func main() {
 		fmt.Println("Exiting GSW")
 	}
 
-	channelMap := decomInitialize(ctx)
-	dbInitialize(ctx, channelMap)
+	decomInitialize(ctx)
+	//dbInitialize(ctx, channelMap)
 
 	// Wait for context cancellation or signal handling
 	<-ctx.Done()

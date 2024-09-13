@@ -17,7 +17,7 @@ func getIpcShmHandler(packet tlm.TelemetryPacket, write bool) (*ipc.IpcShmHandle
 	return handler, nil
 }
 
-func TelemetryPacketWriter(packet tlm.TelemetryPacket) {
+func TelemetryPacketWriter(packet tlm.TelemetryPacket, outChannel chan []byte) {
 	packetSize := GetPacketSize(packet)
 	shmWriter, _ := getIpcShmHandler(packet, true)
 	if shmWriter == nil {
@@ -60,6 +60,16 @@ func TelemetryPacketWriter(packet tlm.TelemetryPacket) {
 			if err != nil {
 				fmt.Printf("Error writing to shared memory: %v\n", err)
 			}
+			//
+			//fmt.Println()
+			//
+			//select {
+			//case outChannel <- buffer:
+			//	fmt.Println("Sent to channel")
+			//default:
+			//	fmt.Println("Skipped sending")
+			//
+			//}
 		} else {
 			fmt.Printf("Received packet of incorrect size. Expected: %d, Received: %d\n", packetSize, n)
 		}
