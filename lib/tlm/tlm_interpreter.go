@@ -21,65 +21,69 @@ type TelemetryPacket struct {
 	Measurements []string `yaml:"measurements"`
 }
 
-func InterpretUnsignedInteger(data []byte, endianness string) interface{} {
+func InterpretUnsignedInteger(data []byte, endianness string) (interface{}, error) {
 	switch len(data) {
 	case 1:
-		return data[0]
+		return data[0], nil
 	case 2:
 		if endianness == "little" {
-			return binary.LittleEndian.Uint16(data)
+			return binary.LittleEndian.Uint16(data), nil
 		}
-		return binary.BigEndian.Uint16(data)
+		return binary.BigEndian.Uint16(data), nil
 	case 4:
 		if endianness == "little" {
-			return binary.LittleEndian.Uint32(data)
+			return binary.LittleEndian.Uint32(data), nil
 		}
-		return binary.BigEndian.Uint32(data)
+		return binary.BigEndian.Uint32(data), nil
 	case 8:
 		if endianness == "little" {
-			return binary.LittleEndian.Uint64(data)
+			return binary.LittleEndian.Uint64(data), nil
 		}
-		return binary.BigEndian.Uint64(data)
+		return binary.BigEndian.Uint64(data), nil
 	default:
 		fmt.Printf("Unsupported data length: %d\n", len(data))
-		return nil
+		return nil, fmt.Errorf("unsupported data length: %d", len(data))
 	}
 	// TODO: Support non-aligned bytes less than 8?
 }
 
-func InterpretSignedInteger(data []byte, endianness string) interface{} {
-	unsigned := InterpretUnsignedInteger(data, endianness)
+func InterpretSignedInteger(data []byte, endianness string) (interface{}, error) {
+	unsigned, err := InterpretUnsignedInteger(data, endianness)
+	if err != nil {
+		return nil, err
+	}
 
 	switch v := unsigned.(type) {
 	case uint8:
-		return int8(v)
+		return int8(v), nil
 	case uint16:
-		return int16(v)
+		return int16(v), nil
 	case uint32:
-		return int32(v)
+		return int32(v), nil
 	case uint64:
-		return int64(v)
+		return int64(v), nil
 	default:
-		fmt.Printf("Unsupported unsigned integer type: %T\n", v)
-		return nil
+		return nil, fmt.Errorf("unsupported integer type for signed conversion: %T", v)
 	}
 }
 
-func InterpretFloat(data []byte, endianness string) interface{} {
-	unsigned := InterpretUnsignedInteger(data, endianness)
+func InterpretFloat(data []byte, endianness string) (interface{}, error) {
+	unsigned, err := InterpretUnsignedInteger(data, endianness)
+	if err != nil {
+		return nil, err
+	}
 
 	switch v := unsigned.(type) {
 	case uint32:
-		return math.Float32frombits(v)
+		return math.Float32frombits(v), nil
 	case uint64:
-		return math.Float64frombits(v)
+		return math.Float64frombits(v), nil
 	default:
-		fmt.Printf("Unsupported unsigned integer type for float conversion: %T\n", v)
-		return nil
+		return nil, fmt.Errorf("unsupported type for float conversion: %T", v)
 	}
 }
 
-func InterpretMeasurementValue(measurement Measurement, data []byte) interface{} {
+func InterpretMeasurementValue(measurement Measurement, data []byte) (interface{}, error) {
 	switch measurement.Type {
 	case "int":
 		if measurement.Unsigned {
@@ -89,23 +93,35 @@ func InterpretMeasurementValue(measurement Measurement, data []byte) interface{}
 	case "float":
 		return InterpretFloat(data, measurement.Endianness)
 	default:
-		fmt.Printf("Unsupported type for measurement: %s\n", measurement.Type)
-		return nil
+		return nil, fmt.Errorf("unsupported type for measurement: %s", measurement.Type)
 	}
 }
 
-func InterpretMeasurementValueString(measurement Measurement, data []byte) string {
+func InterpretMeasurementValueString(measurement Measurement, data []byte) (string, error) {
 	switch measurement.Type {
 	case "int":
 		if measurement.Unsigned {
-			return fmt.Sprintf("%d", InterpretUnsignedInteger(data, measurement.Endianness))
+			measurementValue, err := InterpretUnsignedInteger(data, measurement.Endianness)
+			if err != nil {
+				return "", err
+			}
+			return fmt.Sprintf("%d", measurementValue), nil
 		}
-		return fmt.Sprintf("%d", InterpretSignedInteger(data, measurement.Endianness))
+
+		measurementValue, err := InterpretSignedInteger(data, measurement.Endianness)
+		if err != nil {
+			return "", err
+		}
+		
+		return fmt.Sprintf("%d", measurementValue), nil
 	case "float":
-		return fmt.Sprintf("%f", InterpretFloat(data, measurement.Endianness))
+		measurementValue, err := InterpretFloat(data, measurement.Endianness)
+		if err != nil {
+			return "", err
+		}
+		return fmt.Sprintf("%f", measurementValue), nil
 	default:
-		fmt.Printf("Unsupported type for measurement: %s\n", measurement.Type)
-		return ""
+		return "", fmt.Errorf("unsupported type for measurement: %s", measurement.Type)
 	}
 }
 

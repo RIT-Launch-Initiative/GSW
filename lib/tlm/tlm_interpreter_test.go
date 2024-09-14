@@ -23,7 +23,7 @@ func TestInterpretUnsignedInteger(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := InterpretUnsignedInteger(tt.data, tt.endianness)
+			result, _ := InterpretUnsignedInteger(tt.data, tt.endianness)
 			if result != tt.expected {
 				t.Errorf("expected %v, got %v", tt.expected, result)
 			}
@@ -50,7 +50,7 @@ func TestInterpretSignedInteger(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := InterpretSignedInteger(tt.data, tt.endianness)
+			result, _ := InterpretSignedInteger(tt.data, tt.endianness)
 			if result != tt.expected {
 				t.Errorf("expected %v, got %v", tt.expected, result)
 			}
@@ -74,7 +74,7 @@ func TestInterpretFloat(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := InterpretFloat(tt.data, tt.endianness)
+			result, _ := InterpretFloat(tt.data, tt.endianness)
 			if result != tt.expected {
 				t.Errorf("expected %v, got %v", tt.expected, result)
 			}
@@ -97,7 +97,7 @@ func TestInterpretMeasurementValue(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := InterpretMeasurementValue(tt.measurement, tt.data)
+			result, _ := InterpretMeasurementValue(tt.measurement, tt.data)
 			if result != tt.expected {
 				t.Errorf("expected %v, got %v", tt.expected, result)
 			}

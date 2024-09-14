@@ -44,7 +44,7 @@ func updateMeasurementGroup(packet tlm.TelemetryPacket, measurements db.Measurem
 			continue
 		}
 
-		measurements.Measurements[i].Value = tlm.InterpretMeasurementValueString(measurement, data[offset:offset+measurement.Size])
+		measurements.Measurements[i].Value, _ = tlm.InterpretMeasurementValueString(measurement, data[offset:offset+measurement.Size])
 		offset += measurement.Size
 	}
 }

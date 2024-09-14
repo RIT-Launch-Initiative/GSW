@@ -61,12 +61,12 @@ func decomInitialize(ctx context.Context) map[int]chan []byte {
 	return channelMap
 }
 
-func dbInitialize(ctx context.Context, channelMap map[int]chan []byte) {
+func dbInitialize(ctx context.Context, channelMap map[int]chan []byte) error {
 	dbHandler := db.InfluxDBV1Handler{}
 	err := dbHandler.Initialize()
 	if err != nil {
 		fmt.Println("Warning. Telemetry packets will not be published to database")
-		return
+		return err
 	}
 
 	for _, packet := range proc.GswConfig.TelemetryPackets {
@@ -76,6 +76,8 @@ func dbInitialize(ctx context.Context, channelMap map[int]chan []byte) {
 			close(ch)
 		}(&dbHandler, packet, channelMap[packet.Port])
 	}
+
+	return nil
 }
 
 func main() {
