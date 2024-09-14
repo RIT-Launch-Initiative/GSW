@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/binary"
 	"fmt"
+	"github.com/AarC10/GSW-V2/lib/tlm"
 	"os"
 	"os/signal"
 	"strings"
@@ -12,7 +13,7 @@ import (
 	"github.com/AarC10/GSW-V2/proc"
 )
 
-func calculateTimestamps(startLine int, packet proc.TelemetryPacket, rcvChan chan []byte) {
+func calculateTimestamps(startLine int, packet tlm.TelemetryPacket, rcvChan chan []byte) {
 	var averageDiff uint64
 
 	udpTimestampMeas, ok := proc.GswConfig.Measurements["UdpSendTimestamp"]
