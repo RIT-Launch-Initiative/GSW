@@ -71,10 +71,9 @@ func (h *InfluxDBV1Handler) Insert(measurements MeasurementGroup) error {
 }
 
 // Close closes the InfluxDB UDP client when done
-func (h *InfluxDBV1Handler) Close() {
+func (h *InfluxDBV1Handler) Close() error {
 	err := h.conn.Close()
 	if err != nil {
-		fmt.Println("Error closing InfluxDB UDP client:", err)
-		return
+		return fmt.Errorf("error closing InfluxDB UDP client: %w", err)
 	}
 }

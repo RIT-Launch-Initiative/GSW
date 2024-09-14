@@ -112,7 +112,7 @@ func InterpretMeasurementValueString(measurement Measurement, data []byte) (stri
 		if err != nil {
 			return "", err
 		}
-		
+
 		return fmt.Sprintf("%d", measurementValue), nil
 	case "float":
 		measurementValue, err := InterpretFloat(data, measurement.Endianness)

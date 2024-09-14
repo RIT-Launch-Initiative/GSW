@@ -36,6 +36,7 @@ func (h *InfluxDBV2Handler) Insert(measurementGroup MeasurementGroup) error {
 }
 
 // Close closes the InfluxDB client when done
-func (h *InfluxDBV2Handler) Close() {
+func (h *InfluxDBV2Handler) Close() error {
 	h.client.Close()
+	return nil
 }

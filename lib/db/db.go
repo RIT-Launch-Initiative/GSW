@@ -4,7 +4,7 @@ type Handler interface {
 	Initialize() error
 	Insert(measurements MeasurementGroup) error
 	CreateQuery(measurements MeasurementGroup) string
-	Close()
+	Close() error
 }
 
 type MeasurementGroup struct {
