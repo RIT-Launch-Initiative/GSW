@@ -96,8 +96,8 @@ func main() {
 		fmt.Println("Exiting GSW")
 	}
 
-	decomInitialize(ctx)
-	//dbInitialize(ctx, channelMap)
+	channelMap := decomInitialize(ctx)
+	dbInitialize(ctx, channelMap)
 
 	// Wait for context cancellation or signal handling
 	<-ctx.Done()

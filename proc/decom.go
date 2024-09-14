@@ -60,16 +60,13 @@ func TelemetryPacketWriter(packet tlm.TelemetryPacket, outChannel chan []byte) {
 			if err != nil {
 				fmt.Printf("Error writing to shared memory: %v\n", err)
 			}
-			//
-			//fmt.Println()
-			//
-			//select {
-			//case outChannel <- buffer:
-			//	fmt.Println("Sent to channel")
-			//default:
-			//	fmt.Println("Skipped sending")
-			//
-			//}
+
+			select {
+			case outChannel <- buffer:
+				break
+			default:
+				break
+			}
 		} else {
 			fmt.Printf("Received packet of incorrect size. Expected: %d, Received: %d\n", packetSize, n)
 		}

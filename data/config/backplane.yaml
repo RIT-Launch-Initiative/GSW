@@ -88,56 +88,56 @@ type_definitions:
         type: float
 
 measurements:
-    PRIM_ACCEL_X:
-      name: PRIM_ACCEL_X
+    ADX_ACCEL_X:
+      name: ADX_ACCEL_X
       size: 4
       type: float
       endianness: little
-    PRIM_ACCEL_Y:
-      name: PRIM_ACCEL_Y
+    ADX_ACCEL_Y:
+      name: ADX_ACCEL_Y
       size: 4
       type: float
       endianness: little
-    PRIM_ACCEL_Z:
-      name: PRIM_ACCEL_Z
+    ADX_ACCEL_Z:
+      name: ADX_ACCEL_Z
       size: 4
       type: float
       endianness: little
     
-    SECO_ACCEL_X:
-      name: SECO_ACCEL_X
+    LSM_ACCEL_X:
+      name: LSM_ACCEL_X
       size: 4
       type: float
       endianness: little
-    SECO_ACCEL_Y:
-      name: SECO_ACCEL_Y
+    LSM_ACCEL_Y:
+      name: LSM_ACCEL_Y
       size: 4
       type: float
       endianness: little
-    SECO_ACCEL_Z:
-      name: SECO_ACCEL_Z
+    LSM_ACCEL_Z:
+      name: LSM_ACCEL_Z
       size: 4
       type: float
       endianness: little
 
-    PRIM_BARO_PRESS:
-      name: PRIM_BARO_PRESS
+    PRESS_MS5611:
+      name: PRESS_MS5611
       size: 4
       type: float
       endianness: little
-    PRIM_BARO_TEMP:
-      name: PRIM_BARO_TEMP
+    TEMP_MS5611:
+      name: TEMP_MS5611
       size: 4
       type: float
       endianness: little
     
-    SECO_BARO_PRESS:
-      name: SECO_BARO_PRESS
+    PRESS_BMP388:
+      name: PRESS_BMP388
       size: 4
       type: float
       endianness: little
-    SECO_BARO_TEMP:
-      name: SECO_BARO_TEMP
+    TEMP_BMP388:
+      name: TEMP_BMP388
       size: 4
       type: float
       endianness: little
@@ -174,8 +174,8 @@ measurements:
       type: float
       endianness: little
     
-    TEMPERATURE:
-      name: TEMPERATURE
+    TEMP_TMP117:
+      name: TEMP_TMP117
       size: 4
       type: float
       endianness: little
@@ -183,20 +183,20 @@ telemetry_packets:
   - name: SensorModule
     port: 12100
     measurements:
-      - PRIM_BARO_PRESS
-      - PRIM_BARO_TEMP
-      - SECO_BARO_PRESS
-      - SECO_BARO_TEMP
-      - PRIM_ACCEL_X
-      - PRIM_ACCEL_Y
-      - PRIM_ACCEL_Z
-      - SECO_ACCEL_X
-      - SECO_ACCEL_Y
-      - SECO_ACCEL_Z
+      - PRESS_MS5611
+      - TEMP_MS5611
+      - PRESS_BMP388
+      - TEMP_BMP388
+      - ADX_ACCEL_X
+      - ADX_ACCEL_Y
+      - ADX_ACCEL_Z
+      - LSM_ACCEL_X
+      - LSM_ACCEL_Y
+      - LSM_ACCEL_Z
       - GYRO_X
       - GYRO_Y
       - GYRO_Z
       - MAGN_X
       - MAGN_Y
       - MAGN_Z
-      - TEMPERATURE
+      - TEMP_TMP117

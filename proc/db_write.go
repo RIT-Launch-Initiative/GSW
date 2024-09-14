@@ -14,9 +14,10 @@ func DatabaseWriter(handler db.Handler, packet tlm.TelemetryPacket, channel chan
 	for {
 		data := <-channel
 		updateMeasurementGroup(packet, measGroup, data)
-		fmt.Println("Measurement updated")
-		if handler.Insert(measGroup) != nil {
-			fmt.Printf("Error storing packet results in database.")
+
+		err := handler.Insert(measGroup)
+		if err != nil {
+			fmt.Printf("%s", err)
 		}
 	}
 }
