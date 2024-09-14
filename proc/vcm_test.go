@@ -1,6 +1,7 @@
 package proc
 
 import (
+	"github.com/AarC10/GSW-V2/lib/tlm"
 	"testing"
 )
 
@@ -10,13 +11,13 @@ func resetState() {
 	ResetConfig()
 }
 
-func compareMeasurements(expected Measurement, actual Measurement, test *testing.T) {
+func compareMeasurements(expected tlm.Measurement, actual tlm.Measurement, test *testing.T) {
 	if expected != actual {
 		test.Errorf("Expected:, \tName: %s, \tSize: %d, \tType: %s, \tUnsigned: %t, \tEndianness: %s, Got:, \tName: %s, \tSize: %d, \tType: %s, \tUnsigned: %t, \tEndianness: %s", expected.Name, expected.Size, expected.Type, expected.Unsigned, expected.Endianness, actual.Name, actual.Size, actual.Type, actual.Unsigned, actual.Endianness)
 	}
 }
 
-func compareTelemetryPackets(expected TelemetryPacket, actual TelemetryPacket, test *testing.T) {
+func compareTelemetryPackets(expected tlm.TelemetryPacket, actual tlm.TelemetryPacket, test *testing.T) {
 	if expected.Name != actual.Name {
 		test.Errorf("Expected %s, got %s for telemetry packet name", expected.Name, actual.Name)
 	}
@@ -88,14 +89,14 @@ func TestParseConfig(test *testing.T) {
 		test.Errorf("Expected 2 telemetry packets, got %d", len(config.TelemetryPackets))
 	}
 
-	compareMeasurements(Measurement{Name: "Default", Size: 4, Type: "int", Unsigned: false, Endianness: "big"}, config.Measurements["Default"], test)
-	compareMeasurements(Measurement{Name: "BigEndian", Size: 4, Type: "int", Unsigned: false, Endianness: "big"}, config.Measurements["BigEndian"], test)
-	compareMeasurements(Measurement{Name: "LittleEndian", Size: 4, Type: "int", Unsigned: false, Endianness: "little"}, config.Measurements["LittleEndian"], test)
-	compareMeasurements(Measurement{Name: "Unsigned", Size: 4, Type: "int", Unsigned: true, Endianness: "big"}, config.Measurements["Unsigned"], test)
-	compareMeasurements(Measurement{Name: "SixteenBit", Size: 2, Type: "int", Unsigned: false, Endianness: "big"}, config.Measurements["SixteenBit"], test)
+	compareMeasurements(tlm.Measurement{Name: "Default", Size: 4, Type: "int", Unsigned: false, Endianness: "big"}, config.Measurements["Default"], test)
+	compareMeasurements(tlm.Measurement{Name: "BigEndian", Size: 4, Type: "int", Unsigned: false, Endianness: "big"}, config.Measurements["BigEndian"], test)
+	compareMeasurements(tlm.Measurement{Name: "LittleEndian", Size: 4, Type: "int", Unsigned: false, Endianness: "little"}, config.Measurements["LittleEndian"], test)
+	compareMeasurements(tlm.Measurement{Name: "Unsigned", Size: 4, Type: "int", Unsigned: true, Endianness: "big"}, config.Measurements["Unsigned"], test)
+	compareMeasurements(tlm.Measurement{Name: "SixteenBit", Size: 2, Type: "int", Unsigned: false, Endianness: "big"}, config.Measurements["SixteenBit"], test)
 
-	compareTelemetryPackets(TelemetryPacket{Name: "Default", Port: 10000, Measurements: []string{"Default", "Unsigned", "SixteenBit"}}, config.TelemetryPackets[0], test)
-	compareTelemetryPackets(TelemetryPacket{Name: "Endian", Port: 10001, Measurements: []string{"BigEndian", "LittleEndian"}}, config.TelemetryPackets[1], test)
+	compareTelemetryPackets(tlm.TelemetryPacket{Name: "Default", Port: 10000, Measurements: []string{"Default", "Unsigned", "SixteenBit"}}, config.TelemetryPackets[0], test)
+	compareTelemetryPackets(tlm.TelemetryPacket{Name: "Endian", Port: 10001, Measurements: []string{"BigEndian", "LittleEndian"}}, config.TelemetryPackets[1], test)
 }
 
 func TestParseConfigMissingMeasurement(test *testing.T) {
@@ -124,7 +125,7 @@ func TestFindMeasurementByName(test *testing.T) {
 		test.Errorf("Expected true, got %v", ok)
 	}
 
-	compareMeasurements(Measurement{Name: "Default", Size: 4, Type: "int", Unsigned: false, Endianness: "big"}, measurement, test)
+	compareMeasurements(tlm.Measurement{Name: "Default", Size: 4, Type: "int", Unsigned: false, Endianness: "big"}, measurement, test)
 
 	measurement, ok = config.Measurements["Missing"]
 	if ok {
@@ -134,15 +135,15 @@ func TestFindMeasurementByName(test *testing.T) {
 
 func TestMeasurementToString(test *testing.T) {
 	test.Cleanup(resetState)
-	bigSigned := Measurement{Name: "Test", Size: 4, Type: "int", Unsigned: false, Endianness: "big"}
+	bigSigned := tlm.Measurement{Name: "Test", Size: 4, Type: "int", Unsigned: false, Endianness: "big"}
 	expected := "Name: Test, Size: 4, Type: int, Signed, Endianness: big"
 	CompareMeasurementString(expected, bigSigned.String(), test)
 
-	littleUnsigned := Measurement{Name: "Test", Size: 4, Type: "int", Unsigned: true, Endianness: "little"}
+	littleUnsigned := tlm.Measurement{Name: "Test", Size: 4, Type: "int", Unsigned: true, Endianness: "little"}
 	expected = "Name: Test, Size: 4, Type: int, Unsigned, Endianness: little"
 	CompareMeasurementString(expected, littleUnsigned.String(), test)
 
-	noType := Measurement{Name: "Test", Size: 4, Unsigned: true, Endianness: "little"}
+	noType := tlm.Measurement{Name: "Test", Size: 4, Unsigned: true, Endianness: "little"}
 	expected = "Name: Test, Size: 4, Unsigned, Endianness: little"
 	CompareMeasurementString(expected, noType.String(), test)
 }
@@ -156,7 +157,7 @@ func TestGetPacketSize(test *testing.T) {
 	}
 
 	// Test no measurement found
-	size = GetPacketSize(TelemetryPacket{Name: "Missing", Port: 10000, Measurements: []string{"Missing"}})
+	size = GetPacketSize(tlm.TelemetryPacket{Name: "Missing", Port: 10000, Measurements: []string{"Missing"}})
 	if size != 0 {
 		test.Errorf("Expected 0, got %d", size)
 	}
