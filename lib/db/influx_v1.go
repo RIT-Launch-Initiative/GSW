@@ -76,4 +76,6 @@ func (h *InfluxDBV1Handler) Close() error {
 	if err != nil {
 		return fmt.Errorf("error closing InfluxDB UDP client: %w", err)
 	}
+
+	return nil
 }
