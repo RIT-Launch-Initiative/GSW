@@ -96,6 +96,7 @@ func main() {
 
 	if vcmInitialize() != nil {
 		fmt.Println("Exiting GSW")
+		return
 	}
 
 	channelMap := decomInitialize(ctx)

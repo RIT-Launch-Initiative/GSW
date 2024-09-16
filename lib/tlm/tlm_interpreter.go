@@ -41,7 +41,6 @@ func InterpretUnsignedInteger(data []byte, endianness string) (interface{}, erro
 		}
 		return binary.BigEndian.Uint64(data), nil
 	default:
-		fmt.Printf("Unsupported data length: %d\n", len(data))
 		return nil, fmt.Errorf("unsupported data length: %d", len(data))
 	}
 	// TODO: Support non-aligned bytes less than 8?
