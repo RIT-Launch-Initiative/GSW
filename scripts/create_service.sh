@@ -3,10 +3,14 @@
 servicefile=/etc/systemd/system/gsw.service
 rm -f $servicefile
 touch $servicefile
-pwd
+chmod 664 $servicefile
+
+wd=$(pwd)
+wd=$(echo $wd | rev | cut -d'/' -f2- | rev)
+
 { printf "[Unit]\n"; printf "Description=RIT Launch Ground Software Service\n\n"; } >> $servicefile
 
-{ printf "[Service]\n"; printf "Type=Simple\n"; } >> $servicefile
+{ printf "[Service]\n";} >> $servicefile
 if chmod 777 ../gsw_service;
 then
     echo "gsw_service exists"
@@ -14,8 +18,9 @@ else
     echo "gsw_service not found, exiting"
     exit 1
 fi
-{ printf "Restart=on-failure\n"; }
-{ printf "ExecStart=%s/gsw_service\n" "../$(pwd)"; printf "WorkingDirectory=%s\n\n" "../$(pwd)"; } >> $servicefile
+
+{ printf "WorkingDirectory=%s\n" "$wd"; printf "ExecStart=%s/gsw_service\n" "$wd"; } >> $servicefile
+{ printf "Type=simple\n"; printf "User=root\n"; printf "Restart=on-failure\n\n"; } >> $servicefile
 
 { printf "[Install]\n"; printf "WantedBy=multi-user.target\n"; } >> $servicefile
 
