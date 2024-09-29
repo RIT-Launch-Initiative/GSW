@@ -23,3 +23,6 @@ go.work
 # IDEs
 .idea/
 .vscode/
+
+# compiled program
+gsw_service
