@@ -1,5 +1,6 @@
 #!/bin/sh
-#Before running, ensure gsw_service is built via: go build cmd/gsw_service.go
+# Before running, ensure gsw_service is built via: go build cmd/gsw_service.go
+# Must be run from /scripts directory
 servicefile=/etc/systemd/system/gsw.service
 rm $servicefile
 touch $servicefile
