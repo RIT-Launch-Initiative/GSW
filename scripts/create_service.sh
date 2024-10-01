@@ -1,7 +1,7 @@
 #!/bin/sh
 #Before running, ensure gsw_service is built via: go build cmd/gsw_service.go
 servicefile=/etc/systemd/system/gsw.service
-rm -f $servicefile
+rm $servicefile
 touch $servicefile
 chmod 664 $servicefile
 
@@ -20,10 +20,9 @@ else
 fi
 
 { printf "WorkingDirectory=%s\n" "$wd"; printf "ExecStart=%s/gsw_service\n" "$wd"; } >> $servicefile
-{ printf "Type=simple\n"; printf "User=root\n"; printf "Restart=on-failure\n\n"; } >> $servicefile
+{ printf "Type=simple\n"; printf "UMask=0002\n"; printf "Restart=on-failure\n\n"; } >> $servicefile
 
 { printf "[Install]\n"; printf "WantedBy=multi-user.target\n"; } >> $servicefile
 
 systemctl daemon-reload
 systemctl disable gsw
-systemctl status gsw 
