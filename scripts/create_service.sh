@@ -21,7 +21,7 @@ else
 fi
 
 { printf "WorkingDirectory=%s\n" "$wd"; printf "ExecStart=%s/gsw_service\n" "$wd"; } >> $servicefile
-{ printf "Type=simple\n"; printf "UMask=0002\n"; printf "Restart=on-failure\n\n"; } >> $servicefile
+{ printf "Type=simple\n"; printf "UMask=0002\n"; printf "User=%s\n" "$(logname)"; printf "Restart=on-failure\n\n"; } >> $servicefile
 
 { printf "[Install]\n"; printf "WantedBy=multi-user.target\n"; } >> $servicefile
 
