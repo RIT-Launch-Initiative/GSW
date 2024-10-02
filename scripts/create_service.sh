@@ -11,7 +11,6 @@ wd=$(echo $wd | rev | cut -d'/' -f2- | rev)
 
 { printf "[Unit]\n"; printf "Description=RIT Launch Ground Software Service\n\n"; } >> $servicefile
 
-{ printf "[Service]\n";} >> $servicefile
 if chmod 777 ../gsw_service;
 then
     echo "gsw_service exists"
@@ -20,6 +19,7 @@ else
     exit 1
 fi
 
+{ printf "[Service]\n";} >> $servicefile
 { printf "WorkingDirectory=%s\n" "$wd"; printf "ExecStart=%s/gsw_service\n" "$wd"; } >> $servicefile
 { printf "Type=simple\n"; printf "UMask=0002\n"; printf "User=%s\n" "$(logname)"; printf "Restart=on-failure\n\n"; } >> $servicefile
 
