@@ -13,3 +13,17 @@ You can always run the GSW service by doing a `./gsw_service` after building. Fo
 ### Unit Tests
 There are several unit tests that can be ran. You can do a `go test ./...` from the root project directory to execute all tests. It is also recommended to run with the -cover
 flag to get coverage statements.
+
+## Create Service Script (for linux)
+The script must be run from the /scripts directory.
+gsw_service must be built prior to the script being run (and it must exist for the service to work).
+
+Once the script has been run, start the service with:
+sudo systemctl start gsw
+
+### Running the Service
+Stop the service with:
+sudo systemctl stop gsw
+
+If you want the sevrice to run on startup:
+sudo systemctl enable gsw
