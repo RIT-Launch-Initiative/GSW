@@ -34,7 +34,6 @@ func printTelemetryPackets() {
 }
 
 func vcmInitialize() error {
-	// TODO: Need to set up configuration stuff
 	data, err := os.ReadFile("data/config/backplane.yaml")
 	if err != nil {
 		fmt.Printf("Error reading YAML file: %v\n", err)
@@ -45,7 +44,7 @@ func vcmInitialize() error {
 		fmt.Printf("Error parsing YAML: %v\n", err)
 		return err
 	}
-	configWriter, err := ipc.CreateIpcShmHandler("config", len(data), true)
+	configWriter, err := ipc.CreateIpcShmHandler("config", len(data), true) // TODO cleanup
 	if err != nil {
 		fmt.Printf("Error creating shared memory handler: %v\n", err)
 		return err
