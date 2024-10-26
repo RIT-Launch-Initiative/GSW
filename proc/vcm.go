@@ -25,7 +25,10 @@ func ParseConfig(filename string) (*Configuration, error) {
 	if err != nil {
 		return nil, fmt.Errorf("error reading YAML file: %v", err)
 	}
+	return ParseConfigFile(data)
+}
 
+func ParseConfigFile(data []byte) (*Configuration, error) {
 	// Unmarshalling doesn't seem to lead to errors with bad data. Better to check result config
 	_ = yaml.Unmarshal(data, &GswConfig)
 	if GswConfig.Name == "" {
