@@ -61,7 +61,7 @@ func main() {
 		fmt.Printf("Error creating shared memory handler: %v\n", err)
 		return
 	}
-	data, err := configReader.Read()
+	data, err := configReader.ReadNoTimestamp()
 	if err != nil {
 		fmt.Printf("Error reading shared memory: %v\n", err)
 		return

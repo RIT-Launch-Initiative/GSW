@@ -121,6 +121,15 @@ func (handler *IpcShmHandler) Read() ([]byte, error) {
 	return data, nil
 }
 
+func (handler *IpcShmHandler) ReadNoTimestamp() ([]byte, error) {
+	if handler.mode != modeReader {
+		return nil, fmt.Errorf("Handler is in writer mode")
+	}
+	data := make([]byte, handler.size-2*timestampSize)
+	copy(data, handler.data[:len(data)])
+	return data, nil
+}
+
 func (handler *IpcShmHandler) LastUpdate() time.Time {
 	timestamp := binary.BigEndian.Uint64(handler.data[handler.timestampOffset:])
 	return time.Unix(0, int64(timestamp))
