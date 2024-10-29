@@ -33,30 +33,30 @@ func printTelemetryPackets() {
 	}
 }
 
-func vcmInitialize() error {
+func vcmInitialize() (*ipc.IpcShmHandler, error) {
 	data, err := os.ReadFile("data/config/backplane.yaml")
 	if err != nil {
 		fmt.Printf("Error reading YAML file: %v\n", err)
-		return err
+		return nil, err
 	}
-	_, err = proc.ParseConfigFile(data)
+	_, err = proc.ParseConfigBytes(data)
 	if err != nil {
 		fmt.Printf("Error parsing YAML: %v\n", err)
-		return err
+		return nil, err
 	}
-	configWriter, err := ipc.CreateIpcShmHandler("config", len(data), true) // TODO cleanup
+	configWriter, err := ipc.CreateIpcShmHandler("config", len(data), true)
 	if err != nil {
 		fmt.Printf("Error creating shared memory handler: %v\n", err)
-		return err
+		return nil, err
 	}
-	err = configWriter.Write(data)
-	if err != nil {
+	if configWriter.Write(data) != nil {
 		fmt.Printf("Error writing config to shared memory: %v\n", err)
-		return err
+		configWriter.Cleanup()
+		return nil, err
 	}
 
 	printTelemetryPackets()
-	return nil
+	return configWriter, nil
 }
 
 func decomInitialize(ctx context.Context) map[int]chan []byte {
@@ -109,10 +109,12 @@ func main() {
 		cancel()
 	}()
 
-	if vcmInitialize() != nil {
+	configWriter, err := vcmInitialize()
+	if err != nil {
 		fmt.Println("Exiting GSW")
 		return
 	}
+	defer configWriter.Cleanup()
 
 	channelMap := decomInitialize(ctx)
 	dbInitialize(ctx, channelMap)

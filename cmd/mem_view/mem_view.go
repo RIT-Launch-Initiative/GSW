@@ -50,13 +50,7 @@ func printTelemetryPacket(startLine int, packet tlm.TelemetryPacket, rcvChan cha
 }
 
 func main() {
-	fileinfo, err := os.Stat("/dev/shm/gsw-service-config")
-	if err != nil {
-		fmt.Printf("Error getting shm file info: %v\n", err)
-		return
-	}
-	filesize := int(fileinfo.Size()) // TODO fix unsafe int64 conversion
-	configReader, err := ipc.CreateIpcShmHandler("config",  filesize, false)
+	configReader, err := ipc.CreateIpcShmReader("config")
 	if err != nil {
 		fmt.Printf("Error creating shared memory handler: %v\n", err)
 		return
@@ -66,7 +60,7 @@ func main() {
 		fmt.Printf("Error reading shared memory: %v\n", err)
 		return
 	}
-	_, err = proc.ParseConfigFile(data)
+	_, err = proc.ParseConfigBytes(data)
 	if err != nil {
 		fmt.Printf("Error parsing YAML: %v\n", err)
 		return

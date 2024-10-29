@@ -21,6 +21,7 @@ const (
 	modeReader = iota
 	modeWriter
 	timestampSize = 8 // Size of timestamp in bytes (8 bytes for int64)
+	shmFilePrefix = "gsw-service-"
 )
 
 func CreateIpcShmHandler(identifier string, size int, isWriter bool) (*IpcShmHandler, error) {
@@ -30,7 +31,7 @@ func CreateIpcShmHandler(identifier string, size int, isWriter bool) (*IpcShmHan
 		timestampOffset: size, // Timestamp is stored at the end
 	}
 
-	filename := filepath.Join("/dev/shm", fmt.Sprintf("gsw-service-%s", identifier))
+	filename := filepath.Join("/dev/shm", fmt.Sprintf("%s%s", shmFilePrefix, identifier))
 
 	if isWriter {
 		handler.mode = modeWriter
@@ -75,6 +76,15 @@ func CreateIpcShmHandler(identifier string, size int, isWriter bool) (*IpcShmHan
 	}
 
 	return handler, nil
+}
+
+func CreateIpcShmReader(identifier string) (*IpcShmHandler, error) {
+	fileinfo, err := os.Stat("/dev/shm/" + shmFilePrefix + identifier)
+	if err != nil {
+		return nil, fmt.Errorf("Error getting shm file info: %v", err)
+	}
+	filesize := int(fileinfo.Size()) // TODO fix unsafe int64 conversion
+	return CreateIpcShmHandler(identifier, filesize, false)
 }
 
 func (handler *IpcShmHandler) Cleanup() {
