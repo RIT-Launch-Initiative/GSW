@@ -39,6 +39,7 @@ func CreateIpcShmHandler(identifier string, size int, isWriter bool) (*IpcShmHan
 		if err != nil {
 			return nil, fmt.Errorf("Failed to create file: %v", err)
 		}
+		/* maybe we don't need this
 		defer func(file *os.File) {
 			if file != nil {
 				err := file.Close()
@@ -47,6 +48,7 @@ func CreateIpcShmHandler(identifier string, size int, isWriter bool) (*IpcShmHan
 				}
 			}
 		}(file)
+		*/
 
 		err = file.Truncate(int64(handler.size))
 		if err != nil {
