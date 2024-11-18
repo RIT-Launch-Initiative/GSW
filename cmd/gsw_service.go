@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/spf13/viper"
 	"context"
 	"fmt"
 	"github.com/AarC10/GSW-V2/lib/db"
@@ -9,6 +10,7 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"errors"
 
 	"github.com/AarC10/GSW-V2/proc"
 )
@@ -34,7 +36,12 @@ func printTelemetryPackets() {
 }
 
 func vcmInitialize() (*ipc.IpcShmHandler, error) {
-	data, err := os.ReadFile("data/config/backplane.yaml")
+	if !viper.IsSet("telemetry_config") {
+		err := errors.New("Error: Telemetry config filepath is not set in GSW config.")
+		fmt.Printf("%v\n", err)
+		return nil, err
+	}
+	data, err := os.ReadFile(viper.GetString("telemetry_config"))
 	if err != nil {
 		fmt.Printf("Error reading YAML file: %v\n", err)
 		return nil, err
@@ -95,7 +102,21 @@ func dbInitialize(ctx context.Context, channelMap map[int]chan []byte) error {
 	return nil
 }
 
+func readConfig() {
+	viper.SetConfigName("gsw_service")
+	viper.SetConfigType("yaml")
+	viper.AddConfigPath("data/config/")
+	err := viper.ReadInConfig()
+	if err != nil {
+		panic(fmt.Errorf("Error reading gsw_config: %w", err))
+	}
+}
+
 func main() {
+	// Read gsw_service config
+	readConfig()
+
+
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
