@@ -36,13 +36,13 @@ func printTelemetryPackets() {
 	}
 }
 
-func vcmInitialize() (*ipc.IpcShmHandler, error) {
-	if !viper.IsSet("telemetry_config") {
+func vcmInitialize(config *viper.Viper) (*ipc.IpcShmHandler, error) {
+	if !config.IsSet("telemetry_config") {
 		err := errors.New("Error: Telemetry config filepath is not set in GSW config.")
 		fmt.Printf("%v\n", err)
 		return nil, err
 	}
-	data, err := os.ReadFile(viper.GetString("telemetry_config"))
+	data, err := os.ReadFile(config.GetString("telemetry_config"))
 	if err != nil {
 		fmt.Printf("Error reading YAML file: %v\n", err)
 		return nil, err
@@ -103,21 +103,23 @@ func dbInitialize(ctx context.Context, channelMap map[int]chan []byte) error {
 	return nil
 }
 
-func readConfig() {
+func readConfig() *viper.Viper {
+	config := viper.New()
 	configFilepath := flag.String("c", "gsw_service", "name of config file")
 	flag.Parse()
-	viper.SetConfigName(*configFilepath)
-	viper.SetConfigType("yaml")
-	viper.AddConfigPath("data/config/")
-	err := viper.ReadInConfig()
+	config.SetConfigName(*configFilepath)
+	config.SetConfigType("yaml")
+	config.AddConfigPath("data/config/")
+	err := config.ReadInConfig()
 	if err != nil {
 		panic(fmt.Errorf("Error reading GSW config: %w", err))
 	}
+	return config
 }
 
 func main() {
 	// Read gsw_service config
-	readConfig()
+	config := readConfig()
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -132,7 +134,7 @@ func main() {
 		cancel()
 	}()
 
-	configWriter, err := vcmInitialize()
+	configWriter, err := vcmInitialize(config)
 	if err != nil {
 		fmt.Println("Exiting GSW")
 		return
