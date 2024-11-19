@@ -11,6 +11,7 @@ import (
 	"os/signal"
 	"syscall"
 	"errors"
+	"flag"
 
 	"github.com/AarC10/GSW-V2/proc"
 )
@@ -103,19 +104,20 @@ func dbInitialize(ctx context.Context, channelMap map[int]chan []byte) error {
 }
 
 func readConfig() {
-	viper.SetConfigName("gsw_service")
+	configFilepath := flag.String("c", "gsw_service", "name of config file")
+	flag.Parse()
+	viper.SetConfigName(*configFilepath)
 	viper.SetConfigType("yaml")
 	viper.AddConfigPath("data/config/")
 	err := viper.ReadInConfig()
 	if err != nil {
-		panic(fmt.Errorf("Error reading gsw_config: %w", err))
+		panic(fmt.Errorf("Error reading GSW config: %w", err))
 	}
 }
 
 func main() {
 	// Read gsw_service config
 	readConfig()
-
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
