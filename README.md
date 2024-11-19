@@ -7,12 +7,17 @@ By Golang convention, all files meant to be executed are stored in the cmd folde
 * GSW applications are stored in subdirectories within the cmd folder and the `go build` command can be ran on go files within those subdirectories
 
 ### Running
-You can always run the GSW service by doing a `./gsw_service` after building. For running any Go program though, instead of doing `go build (FILE_PATH)` you can do `go run (FILE_PATH` instead.
-(TODO) Running as a service
+You can always run the GSW service by doing a `./gsw_service` after building. For running any Go program though, instead of doing `go build (FILE_PATH)` you can do `go run (FILE_PATH)` instead.
 
 ### Unit Tests
 There are several unit tests that can be ran. You can do a `go test ./...` from the root project directory to execute all tests. It is also recommended to run with the -cover
 flag to get coverage statements.
+
+## Configuration
+By default, the GSW service is configured using the file `gsw_service.yaml` in the `data/config` directory. If the flag `-c (FILE_NAME)` is used, the GSW service will instead parse the configuration file at `data/config/(FILE_NAME).yaml`.
+
+### Keys
+* `telemetry_config`: Path to the telemetry config file. This flag *must* be specified for the service to run. Example: `telemetry_config: data/config/backplane.yaml`
 
 ## Create Service Script (for Linux)
 The script must be run from the /scripts directory.

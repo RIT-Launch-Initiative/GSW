@@ -52,13 +52,13 @@ func vcmInitialize() (*ipc.IpcShmHandler, error) {
 		fmt.Printf("Error parsing YAML: %v\n", err)
 		return nil, err
 	}
-	configWriter, err := ipc.CreateIpcShmHandler("config", len(data), true)
+	configWriter, err := ipc.CreateIpcShmHandler("telemetry-config", len(data), true)
 	if err != nil {
 		fmt.Printf("Error creating shared memory handler: %v\n", err)
 		return nil, err
 	}
 	if configWriter.Write(data) != nil {
-		fmt.Printf("Error writing config to shared memory: %v\n", err)
+		fmt.Printf("Error writing telemetry config to shared memory: %v\n", err)
 		configWriter.Cleanup()
 		return nil, err
 	}
