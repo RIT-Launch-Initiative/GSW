@@ -27,10 +27,6 @@ const (
 
 var shmDir = flag.String("shm", "/dev/shm", "directory to use for shared memory")
 
-func init() {
-    flag.Parse()
-}
-
 func CreateIpcShmHandler(identifier string, size int, isWriter bool) (*IpcShmHandler, error) {
 	handler := &IpcShmHandler{
 		size:            size + timestampSize, // Add space for timestamp
@@ -38,6 +34,7 @@ func CreateIpcShmHandler(identifier string, size int, isWriter bool) (*IpcShmHan
 		timestampOffset: size, // Timestamp is stored at the end
 	}
 
+    flag.Parse()
 	filename := filepath.Join(*shmDir, fmt.Sprintf("%s%s", shmFilePrefix, identifier))
 
 	if isWriter {
@@ -88,6 +85,7 @@ func CreateIpcShmHandler(identifier string, size int, isWriter bool) (*IpcShmHan
 }
 
 func CreateIpcShmReader(identifier string) (*IpcShmHandler, error) {
+    flag.Parse()
 	fileinfo, err := os.Stat(filepath.Join(*shmDir, fmt.Sprintf("%s%s", shmFilePrefix, identifier)))
 	if err != nil {
 		return nil, fmt.Errorf("Error getting shm file info: %v", err)
