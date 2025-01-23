@@ -1,0 +1,26 @@
+zap:
+  level:
+    level: "info" # Log level options: debug, info, warn, error, dpanic, panic, fatal
+    development: true # Set to true for enabling development mode
+  sampling:
+    initial: 3        # Number of logs to sample initially
+    thereafter: 10    # Number of logs to sample after the initial
+  encoding: "json"     # Encoding format: json or console
+  outputPaths:
+    - "stdout"         # Output logs to the console
+    - "./logs/app.log" # Save logs to a file
+  errorOutputPaths:
+    - "stderr"         # Output errors to the standard error stream
+  encoderConfig:
+    messageKey: "message"
+    levelKey: "level"
+    timeKey: "time"
+    nameKey: "logger"
+    callerKey: "caller"
+    stacktraceKey: "stacktrace"
+    lineEnding: ""
+    timeEncoder: "iso8601"     # Options: iso8601, epoch, millis, nanos
+    levelEncoder: "capital"    # Options: lowercase, capital, coloredLowercase, coloredCapital
+    callerEncoder: "short"     # Options: full, short, none
+  initialFields:
+    app: "my-app" # Add initial fields for all log messages

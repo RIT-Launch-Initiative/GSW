@@ -1,17 +1,19 @@
 package main
 
 import (
-	"github.com/spf13/viper"
 	"context"
+	"errors"
+	"flag"
 	"fmt"
-	"github.com/AarC10/GSW-V2/lib/db"
-	"github.com/AarC10/GSW-V2/lib/tlm"
-	"github.com/AarC10/GSW-V2/lib/ipc"
 	"os"
 	"os/signal"
 	"syscall"
-	"errors"
-	"flag"
+
+	"github.com/AarC10/GSW-V2/lib/db"
+	"github.com/AarC10/GSW-V2/lib/ipc"
+	"github.com/AarC10/GSW-V2/lib/tlm"
+	"github.com/spf13/viper"
+	"go.uber.org/zap"
 
 	"github.com/AarC10/GSW-V2/proc"
 )
@@ -115,6 +117,40 @@ func readConfig() *viper.Viper {
 		panic(fmt.Errorf("Error reading GSW config: %w", err))
 	}
 	return config
+}
+
+func readLogConfig() (*zap.Logger, error){
+	loggerConfig := viper.New()
+	loggerConfig.SetConfigType("yaml")
+	loggerConfig.SetConfigName("logger")
+	loggerConfig.AddConfigPath("data/config")
+	
+	if err := loggerConfig.ReadInConfig(); err != nil {
+		return nil, err 
+	}
+
+	var zapConfig zap.Config
+
+	if err := loggerConfig.UnmarshalKey("logger", &zapConfig); err != nil{
+		return nil, err 
+	}
+
+	logger, err := zapConfig.Build();
+	if  err != nil{
+		return nil, err 
+	}
+	return logger, nil 
+}
+
+
+func init(){
+	logger, err := readLogConfig()
+	if err != nil{
+		zap.ReplaceGlobals(zap.Must(zap.NewDevelopment()))
+		zap.L().Warn(err.Error())
+	} else {
+		zap.ReplaceGlobals(logger)
+	}
 }
 
 func main() {
