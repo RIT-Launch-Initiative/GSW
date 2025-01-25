@@ -1,0 +1,13 @@
+2025-01-25T11:56:42.336-0500	WARN	cmd/gsw_service.go:186	This is a warn
+2025-01-25T11:56:42.336-0500	INFO	cmd/gsw_service.go:187	This is info
+2025-01-25T11:56:42.336-0500	DEBUG	cmd/gsw_service.go:188	This is a debug
+2025-01-25T11:56:42.336-0500	ERROR	cmd/gsw_service.go:189	This is an error
+main.init.0
+	/home/sebm/Launch/GSW/cmd/gsw_service.go:189
+runtime.doInit1
+	/usr/local/go/src/runtime/proc.go:7290
+runtime.doInit
+	/usr/local/go/src/runtime/proc.go:7257
+runtime.main
+	/usr/local/go/src/runtime/proc.go:254
+2025-01-25T11:56:51.970-0500	INFO	cmd/gsw_service.go:221	Shutting down GSW...

@@ -28,13 +28,13 @@ func printTelemetryPackets() {
 			for _, measurementName := range packet.Measurements {
 				measurement, ok := proc.GswConfig.Measurements[measurementName]
 				if !ok {
-					fmt.Printf("\t\tMeasurement '%s' not found\n", measurementName)
+					zap.L().Warn(fmt.Sprint("Measurement '",measurementName,"' not found"))
 					continue
 				}
 				fmt.Printf("\t\t%s\n", measurement.String())
 			}
 		} else {
-			fmt.Println("\t\tNo measurements defined.")
+			zap.L().Warn("No measurement defined.")
 		}
 	}
 }
@@ -42,27 +42,25 @@ func printTelemetryPackets() {
 func vcmInitialize(config *viper.Viper) (*ipc.IpcShmHandler, error) {
 	if !config.IsSet("telemetry_config") {
 		err := errors.New("Error: Telemetry config filepath is not set in GSW config.")
-		fmt.Printf("%v\n", err)
-		return nil, err
+		zap.L().Error(fmt.Sprint(err))
 	}
 	data, err := os.ReadFile(config.GetString("telemetry_config"))
 	if err != nil {
-		fmt.Printf("Error reading YAML file: %v\n", err)
-		return nil, err
+		zap.L().Error(fmt.Sprint("Error reading YAML file: ", err))
 	}
 	_, err = proc.ParseConfigBytes(data)
 	if err != nil {
-		fmt.Printf("Error parsing YAML: %v\n", err)
+		zap.L().Error(fmt.Sprint("Error parsing YAML: ", err))
 		return nil, err
 	}
 	configWriter, err := ipc.CreateIpcShmHandler("telemetry-config", len(data), true)
 	if err != nil {
-		fmt.Printf("Error creating shared memory handler: %v\n", err)
+		zap.L().Error(fmt.Sprint("Error creating shared memory handler: ", err))
 		return nil, err
 	}
 	if configWriter.Write(data) != nil {
-		fmt.Printf("Error writing telemetry config to shared memory: %v\n", err)
 		configWriter.Cleanup()
+		zap.L().Error(fmt.Sprint("Error writing telemetry config to shared memory: ", err))
 		return nil, err
 	}
 
@@ -91,7 +89,7 @@ func dbInitialize(ctx context.Context, channelMap map[int]chan []byte) error {
 	dbHandler := db.InfluxDBV1Handler{}
 	err := dbHandler.Initialize()
 	if err != nil {
-		fmt.Println("Warning. Telemetry packets will not be published to database")
+		zap.L().Warn("Warning. Telemetry packets will not be published to database")
 		return err
 	}
 
@@ -115,7 +113,7 @@ func readConfig() *viper.Viper {
 	config.AddConfigPath("data/config/")
 	err := config.ReadInConfig()
 	if err != nil {
-		panic(fmt.Errorf("Error reading GSW config: %w", err))
+		zap.L().Error(fmt.Sprint("Error reading GSW config: %w", err))
 	}
 	return config
 }
@@ -143,7 +141,7 @@ func readLogConfig() *zap.Logger {
 	logFileName := fmt.Sprint("gsw_service_log-", time.Now().Format("2006-01-02 15:04:05"),".log")
 
 	// TODO find out how to write to /run/log/journal
-	totalLogPath := fmt.Sprint("../logs/",logFileName)
+	totalLogPath := fmt.Sprint("data/logs/",logFileName)
 
 	// Make unique file name
 	numIncrease := 0
@@ -209,16 +207,16 @@ func main() {
 	}()
 
 	configWriter, err := vcmInitialize(config)
+	defer configWriter.Cleanup()
 	if err != nil {
-		fmt.Println("Exiting GSW")
+		zap.L().Info("Exiting GSW...")
 		return
 	}
-	defer configWriter.Cleanup()
 
 	channelMap := decomInitialize(ctx)
 	dbInitialize(ctx, channelMap)
 
 	// Wait for context cancellation or signal handling
 	<-ctx.Done()
-	fmt.Println("Shutting down...")
+	zap.L().Info("Shutting down GSW...")
 }
