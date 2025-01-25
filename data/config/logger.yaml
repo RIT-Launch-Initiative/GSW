@@ -1,26 +1,19 @@
-zap:
-  level:
-    level: "info" # Log level options: debug, info, warn, error, dpanic, panic, fatal
-    development: true # Set to true for enabling development mode
-  sampling:
-    initial: 3        # Number of logs to sample initially
-    thereafter: 10    # Number of logs to sample after the initial
-  encoding: "json"     # Encoding format: json or console
-  outputPaths:
-    - "stdout"         # Output logs to the console
-    - "./logs/app.log" # Save logs to a file
-  errorOutputPaths:
-    - "stderr"         # Output errors to the standard error stream
-  encoderConfig:
-    messageKey: "message"
-    levelKey: "level"
-    timeKey: "time"
-    nameKey: "logger"
-    callerKey: "caller"
-    stacktraceKey: "stacktrace"
-    lineEnding: ""
-    timeEncoder: "iso8601"     # Options: iso8601, epoch, millis, nanos
-    levelEncoder: "capital"    # Options: lowercase, capital, coloredLowercase, coloredCapital
-    callerEncoder: "short"     # Options: full, short, none
-  initialFields:
-    app: "my-app" # Add initial fields for all log messages
+level: debug                    # Log level
+encoding: console               # Log format: json or console
+outputPaths:                    # Where logs are written
+    - stdout                    # Standard output
+errorOutputPaths:               # Where errors are logged | will auto output to /run/log/journal
+    - stderr                    # Standard error | will auto output to /run/log/journal
+encoderConfig:
+  messageKey: message           # Key for the log message
+  levelKey: level               # Key for the log level
+  timeKey: time                 # Key for the timestamp
+  nameKey: logger               # Key for the logger name
+  callerKey: caller             # Key for the caller information
+  stacktraceKey: stacktrace     # Key for stacktrace logs
+  lineEnding: "\n"              # Line ending character
+  levelEncoder: lowercase       # Encode log levels (lowercase, uppercase, color, etc.)
+  timeEncoder: iso8601          # Format timestamp (iso8601, epoch, etc.)
+  durationEncoder: string       # Encode durations as strings
+  callerEncoder: short          # Encode caller information (short or full path)
+

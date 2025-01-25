@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"github.com/AarC10/GSW-V2/lib/db"
 	"github.com/AarC10/GSW-V2/lib/ipc"
@@ -119,38 +120,75 @@ func readConfig() *viper.Viper {
 	return config
 }
 
-func readLogConfig() (*zap.Logger, error){
-	loggerConfig := viper.New()
-	loggerConfig.SetConfigType("yaml")
-	loggerConfig.SetConfigName("logger")
-	loggerConfig.AddConfigPath("data/config")
+
+func readLogConfig() *zap.Logger {
+	// Viper config parsing 	
+	viperConfig := viper.New()
+	viperConfig.SetConfigType("yaml")
+	viperConfig.SetConfigName("logger")
+	viperConfig.AddConfigPath("data/config")
 	
-	if err := loggerConfig.ReadInConfig(); err != nil {
-		return nil, err 
+	if err := viperConfig.ReadInConfig(); err != nil {
+		zap.L().Warn(fmt.Sprint(err))	
+		return nil
 	}
 
-	var zapConfig zap.Config
+	// Create zap config
+	var loggerConfig zap.Config
+	
+	outputPaths := viperConfig.GetStringSlice("OutputPaths")
+	errorOutputPaths := viperConfig.GetStringSlice("errorOutputPaths")
+	
+	// Create log file
+	logFileName := fmt.Sprint("gsw_service_log-", time.Now().Format("2006-01-02 15:04:05"),".log")
 
-	if err := loggerConfig.UnmarshalKey("logger", &zapConfig); err != nil{
-		return nil, err 
+	// TODO find out how to write to /run/log/journal
+	totalLogPath := fmt.Sprint("../logs/",logFileName)
+
+	// Make unique file name
+	numIncrease := 0
+	for {
+		if _ ,err := os.Stat(totalLogPath); err != nil{
+			break	
+		}
+		totalLogPath = fmt.Sprint(totalLogPath, ".", numIncrease)
+		numIncrease++
 	}
+	_, err :=	os.Create(totalLogPath)
 
-	logger, err := zapConfig.Build();
+	// Setting Logger Paths
+	loggerConfig.OutputPaths = append(outputPaths, totalLogPath) 
+	loggerConfig.ErrorOutputPaths = append(errorOutputPaths, totalLogPath) 
+
+	// Setting Logger Level
+	level, err := zap.ParseAtomicLevel(viperConfig.GetString("level"));
 	if  err != nil{
-		return nil, err 
+		zap.L().Warn(fmt.Sprint(err))	
+		return nil	
 	}
-	return logger, nil 
+	loggerConfig.Level = level 
+
+	// Setting Encoding Type
+	loggerConfig.Encoding = viperConfig.GetString("encoding")
+	
+	loggerConfig.EncoderConfig = zap.NewDevelopmentConfig().EncoderConfig
+
+	return zap.Must(loggerConfig.Build())
 }
 
-
 func init(){
-	logger, err := readLogConfig()
-	if err != nil{
+	logger := readLogConfig()
+	if logger == nil {
 		zap.ReplaceGlobals(zap.Must(zap.NewDevelopment()))
-		zap.L().Warn(err.Error())
 	} else {
 		zap.ReplaceGlobals(logger)
 	}
+
+	// Test things
+	zap.L().Warn("This is a warn")
+	zap.L().Info("This is info")
+	zap.L().Debug("This is a debug")
+	zap.L().Error("This is an error")
 }
 
 func main() {
