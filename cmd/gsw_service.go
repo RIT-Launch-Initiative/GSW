@@ -181,12 +181,6 @@ func init(){
 	} else {
 		zap.ReplaceGlobals(logger)
 	}
-
-	// Test things
-	zap.L().Warn("This is a warn")
-	zap.L().Info("This is info")
-	zap.L().Debug("This is a debug")
-	zap.L().Error("This is an error")
 }
 
 func main() {
