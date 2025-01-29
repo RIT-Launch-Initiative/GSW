@@ -139,9 +139,10 @@ func readLogConfig() *zap.Logger {
 	
 	// Create log file
 	logFileName := fmt.Sprint("gsw_service_log-", time.Now().Format("2006-01-02 15:04:05"),".log")
-
-	// TODO find out how to write to /run/log/journal
 	totalLogPath := fmt.Sprint("data/logs/",logFileName)
+
+	//check if log folder exists
+	_, err := os.Stat("data/logs/")
 
 	// Make unique file name
 	numIncrease := 0
@@ -152,8 +153,12 @@ func readLogConfig() *zap.Logger {
 		totalLogPath = fmt.Sprint(totalLogPath, ".", numIncrease)
 		numIncrease++
 	}
-	_, err :=	os.Create(totalLogPath)
+	_, noPath :=	os.Create(totalLogPath)
 
+	if (noPath != nil){
+		os.Mkdir("data/logs", 0755)
+	}
+	
 	// Setting Logger Paths
 	loggerConfig.OutputPaths = append(outputPaths, totalLogPath) 
 	loggerConfig.ErrorOutputPaths = append(errorOutputPaths, totalLogPath) 
