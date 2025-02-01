@@ -12,8 +12,10 @@ import(
 var logger *zap.Logger
 
 func init(){
+
+	fmt.Println("THIS IS IN THE INIT")
 	//Default Logger
-	logger := zap.Must(zap.NewDevelopment())
+	defaultLogger := zap.Must(zap.NewDevelopment())
 
 	// Viper config parsing 	
 	viperConfig := viper.New()
@@ -22,7 +24,8 @@ func init(){
 	viperConfig.AddConfigPath("data/config")
 	
 	if err := viperConfig.ReadInConfig(); err != nil {
-		logger.Warn(fmt.Sprint(err))	
+		defaultLogger.Warn(fmt.Sprint(err))	
+		logger = defaultLogger
 		return 
 	}
 
@@ -62,7 +65,7 @@ func init(){
 	// Setting Logger Level
 	level, err := zap.ParseAtomicLevel(viperConfig.GetString("level"));
 	if  err != nil{
-		zap.L().Warn(fmt.Sprint(err))	
+		defaultLogger.Warn(fmt.Sprint(err))	
 
 	}
 	loggerConfig.Level = level 
