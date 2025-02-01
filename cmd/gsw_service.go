@@ -8,13 +8,13 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
-	"time"
+
+	"lib/logger"
 
 	"github.com/AarC10/GSW-V2/lib/db"
 	"github.com/AarC10/GSW-V2/lib/ipc"
 	"github.com/AarC10/GSW-V2/lib/tlm"
 	"github.com/spf13/viper"
-	"go.uber.org/zap"
 
 	"github.com/AarC10/GSW-V2/proc"
 )
@@ -116,76 +116,6 @@ func readConfig() *viper.Viper {
 		zap.L().Error(fmt.Sprint("Error reading GSW config: %w", err))
 	}
 	return config
-}
-
-
-func readLogConfig() *zap.Logger {
-	// Viper config parsing 	
-	viperConfig := viper.New()
-	viperConfig.SetConfigType("yaml")
-	viperConfig.SetConfigName("logger")
-	viperConfig.AddConfigPath("data/config")
-	
-	if err := viperConfig.ReadInConfig(); err != nil {
-		zap.L().Warn(fmt.Sprint(err))	
-		return nil
-	}
-
-	// Create zap config
-	var loggerConfig zap.Config
-	
-	outputPaths := viperConfig.GetStringSlice("OutputPaths")
-	errorOutputPaths := viperConfig.GetStringSlice("errorOutputPaths")
-	
-	// Create log file
-	logFileName := fmt.Sprint("gsw_service_log-", time.Now().Format("2006-01-02 15:04:05"),".log")
-	totalLogPath := fmt.Sprint("data/logs/",logFileName)
-
-	//check if log folder exists
-	_, err := os.Stat("data/logs/")
-
-	// Make unique file name
-	numIncrease := 0
-	for {
-		if _ ,err := os.Stat(totalLogPath); err != nil{
-			break	
-		}
-		totalLogPath = fmt.Sprint(totalLogPath, ".", numIncrease)
-		numIncrease++
-	}
-	_, noPath :=	os.Create(totalLogPath)
-
-	if (noPath != nil){
-		os.Mkdir("data/logs", 0755)
-	}
-	
-	// Setting Logger Paths
-	loggerConfig.OutputPaths = append(outputPaths, totalLogPath) 
-	loggerConfig.ErrorOutputPaths = append(errorOutputPaths, totalLogPath) 
-
-	// Setting Logger Level
-	level, err := zap.ParseAtomicLevel(viperConfig.GetString("level"));
-	if  err != nil{
-		zap.L().Warn(fmt.Sprint(err))	
-		return nil	
-	}
-	loggerConfig.Level = level 
-
-	// Setting Encoding Type
-	loggerConfig.Encoding = viperConfig.GetString("encoding")
-	
-	loggerConfig.EncoderConfig = zap.NewDevelopmentConfig().EncoderConfig
-
-	return zap.Must(loggerConfig.Build())
-}
-
-func init(){
-	logger := readLogConfig()
-	if logger == nil {
-		zap.ReplaceGlobals(zap.Must(zap.NewDevelopment()))
-	} else {
-		zap.ReplaceGlobals(logger)
-	}
 }
 
 func main() {
