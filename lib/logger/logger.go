@@ -1,19 +1,18 @@
 package logger
 
-import(
+import (
 	"fmt"
-	"time"
 	"os"
+	"time"
 
-	"go.uber.org/zap"
 	"github.com/spf13/viper"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 )
 
 var logger *zap.Logger
 
 func init(){
-
-	fmt.Println("THIS IS IN THE INIT")
 	//Default Logger
 	defaultLogger := zap.Must(zap.NewDevelopment())
 
@@ -33,34 +32,40 @@ func init(){
 	var loggerConfig zap.Config
 	
 	outputPaths := viperConfig.GetStringSlice("OutputPaths")
-	errorOutputPaths := viperConfig.GetStringSlice("errorOutputPaths")
-	
-	// Create log file
-	logFileName := fmt.Sprint("gsw_service_log-", time.Now().Format("2006-01-02 15:04:05"),".log")
-	totalLogPath := fmt.Sprint("data/logs/",logFileName)
 
-	//check if log folder exists
-	_, err := os.Stat("data/logs/")
-	
-
-	// Make unique file name
-	numIncrease := 0
-	for {
-		if _ ,err := os.Stat(totalLogPath); err != nil{
-			break	
+	// Make and populate the output paths 
+	for index, path := range outputPaths {
+		if path == "stdout" || path == "stderr"{ 
+			outputPaths[index] = path
+			continue
 		}
-		totalLogPath = fmt.Sprint(totalLogPath, ".", numIncrease)
-		numIncrease++
-	}
-	_, noPath :=	os.Create(totalLogPath)
 
-	if (noPath != nil){
-		os.Mkdir("data/logs", 0755)
+		// Create log file
+		logFileName := fmt.Sprint("gsw_service_log-", time.Now().Format("2006-01-02 15:04:05"),".log")
+		totalLogPath := fmt.Sprint(path,logFileName)
+
+		// Ensures unique file name
+		numIncrease := 0
+		for {
+			if _ ,err := os.Stat(totalLogPath); err != nil{
+				break	
+			}
+			totalLogPath = fmt.Sprint(totalLogPath, ".", numIncrease)
+			numIncrease++
+		}
+
+		_, noPath :=	os.Create(totalLogPath)
+		if (noPath != nil){
+			os.Mkdir(path, 0755)
+			os.Create(totalLogPath)
+		}
+		outputPaths[index] = totalLogPath
+		fmt.Println(totalLogPath)
 	}
-	
-	// Setting Logger Paths
-	loggerConfig.OutputPaths = append(outputPaths, totalLogPath) 
-	loggerConfig.ErrorOutputPaths = append(errorOutputPaths, totalLogPath) 
+
+		// Setting Logger Paths
+		loggerConfig.OutputPaths = outputPaths 
+		loggerConfig.ErrorOutputPaths = outputPaths 
 
 	// Setting Logger Level
 	level, err := zap.ParseAtomicLevel(viperConfig.GetString("level"));
@@ -71,9 +76,32 @@ func init(){
 	loggerConfig.Level = level 
 
 	// Setting Encoding Type
+	var levelEncoder zapcore.LevelEncoder
+	var timeEncoder zapcore.TimeEncoder
+	var durationEncoder zapcore.DurationEncoder
+	var callerEncoder zapcore.CallerEncoder
+
+	levelEncoder.UnmarshalText([]byte(viperConfig.GetString("encoderConfig.levelEncoder")))
+	timeEncoder.UnmarshalText([]byte(viperConfig.GetString("encoderConfig.timeEncoder")))
+	durationEncoder.UnmarshalText([]byte(viperConfig.GetString("encoderConfig.durationEncoder")))
+	callerEncoder.UnmarshalText([]byte(viperConfig.GetString("encoderConfig.")))
+
 	loggerConfig.Encoding = viperConfig.GetString("encoding")
+	loggerConfig.EncoderConfig = zapcore.EncoderConfig{
+		MessageKey: viperConfig.GetString("encoderConfig.messageKey"),	
+		LevelKey: viperConfig.GetString("encoderConfig.levelKey"),
+		TimeKey: viperConfig.GetString("encoderConfig.timeKey"),
+		NameKey: viperConfig.GetString("encoderConfig.nameKey"),
+		CallerKey: viperConfig.GetString("encoderConfig.callerKey"),
+		StacktraceKey: viperConfig.GetString("encoderConfig.stacktraceKey"),
+		LineEnding: viperConfig.GetString("encoderConfig.LineEnding"),
+		EncodeLevel: levelEncoder,
+		EncodeTime: timeEncoder,
+		EncodeDuration: durationEncoder,
+		EncodeCaller: callerEncoder,
+	}
 	
-	loggerConfig.EncoderConfig = zap.NewDevelopmentConfig().EncoderConfig
+
 
 	logger = zap.Must(loggerConfig.Build())
 }

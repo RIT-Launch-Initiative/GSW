@@ -120,6 +120,7 @@ func readConfig() *viper.Viper {
 func main() {
 	
 	logger.Info("THIS WORKS")
+	logger.Error("THIS IS AN ERROR")
 
 	// Read gsw_service config
 	config := readConfig()
