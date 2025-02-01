@@ -91,3 +91,7 @@ func Fatal(message string, fields... zap.Field){
 	logger.Fatal(message, fields...)
 }
 
+func Error(message string, fields... zap.Field){
+	logger.Error(message, fields...)
+}
+

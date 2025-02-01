@@ -9,9 +9,8 @@ import (
 	"os/signal"
 	"syscall"
 
-	"lib/logger"
-
 	"github.com/AarC10/GSW-V2/lib/db"
+	"github.com/AarC10/GSW-V2/lib/logger"
 	"github.com/AarC10/GSW-V2/lib/ipc"
 	"github.com/AarC10/GSW-V2/lib/tlm"
 	"github.com/spf13/viper"
@@ -113,7 +112,7 @@ func readConfig() *viper.Viper {
 	config.AddConfigPath("data/config/")
 	err := config.ReadInConfig()
 	if err != nil {
-		zap.L().Error(fmt.Sprint("Error reading GSW config: %w", err))
+		logger.Error(fmt.Sprint("Error reading GSW config: %w", err))
 	}
 	return config
 }
