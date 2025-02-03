@@ -1,1 +1,2 @@
 telemetry_config: data/config/backplane.yaml
+logging_config: data/config/logger.yaml
