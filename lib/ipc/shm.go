@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"syscall"
 	"time"
+    	"flag"
 )
 
 type IpcShmHandler struct {
@@ -24,6 +25,8 @@ const (
 	shmFilePrefix = "gsw-service-"
 )
 
+var shmDir = flag.String("shm", "/dev/shm", "directory to use for shared memory")
+
 func CreateIpcShmHandler(identifier string, size int, isWriter bool) (*IpcShmHandler, error) {
 	handler := &IpcShmHandler{
 		size:            size + timestampSize, // Add space for timestamp
@@ -31,7 +34,8 @@ func CreateIpcShmHandler(identifier string, size int, isWriter bool) (*IpcShmHan
 		timestampOffset: size, // Timestamp is stored at the end
 	}
 
-	filename := filepath.Join("/dev/shm", fmt.Sprintf("%s%s", shmFilePrefix, identifier))
+    flag.Parse()
+	filename := filepath.Join(*shmDir, fmt.Sprintf("%s%s", shmFilePrefix, identifier))
 
 	if isWriter {
 		handler.mode = modeWriter
@@ -81,7 +85,8 @@ func CreateIpcShmHandler(identifier string, size int, isWriter bool) (*IpcShmHan
 }
 
 func CreateIpcShmReader(identifier string) (*IpcShmHandler, error) {
-	fileinfo, err := os.Stat("/dev/shm/" + shmFilePrefix + identifier)
+    flag.Parse()
+	fileinfo, err := os.Stat(filepath.Join(*shmDir, fmt.Sprintf("%s%s", shmFilePrefix, identifier)))
 	if err != nil {
 		return nil, fmt.Errorf("Error getting shm file info: %v", err)
 	}
