@@ -100,8 +100,6 @@ func init(){
 		EncodeDuration: durationEncoder,
 		EncodeCaller: callerEncoder,
 	}
-	
-
 
 	logger = zap.Must(loggerConfig.Build())
 }
