@@ -112,7 +112,7 @@ func readConfig() *viper.Viper {
 	config.AddConfigPath("data/config/")
 	err := config.ReadInConfig()
 	if err != nil {
-		logger.Error(fmt.Sprint("Error reading GSW config: %w", err))
+		logger.Fatal(fmt.Sprint("Error reading GSW config: %w", err))
 	}
 	return config
 }
