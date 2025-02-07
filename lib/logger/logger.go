@@ -63,15 +63,14 @@ func init(){
 		fmt.Println(totalLogPath)
 	}
 
-		// Setting Logger Paths
-		loggerConfig.OutputPaths = outputPaths 
-		loggerConfig.ErrorOutputPaths = outputPaths 
+	// Setting Logger Paths
+	loggerConfig.OutputPaths = outputPaths 
+	loggerConfig.ErrorOutputPaths = outputPaths 
 
 	// Setting Logger Level
 	level, err := zap.ParseAtomicLevel(viperConfig.GetString("level"));
 	if  err != nil{
 		defaultLogger.Warn(fmt.Sprint(err))	
-
 	}
 	loggerConfig.Level = level 
 
@@ -112,7 +111,7 @@ func Warn(message string, fields... zap.Field){
 	logger.Warn(message, fields...)
 }
 
-func 	Debug(message string, fields... zap.Field){
+func Debug(message string, fields... zap.Field){
 	logger.Debug(message, fields...)
 }
 
