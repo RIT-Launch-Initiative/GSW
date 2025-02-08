@@ -10,10 +10,11 @@ import (
 	"syscall"
 
 	"github.com/AarC10/GSW-V2/lib/db"
-	"github.com/AarC10/GSW-V2/lib/logger"
 	"github.com/AarC10/GSW-V2/lib/ipc"
+	"github.com/AarC10/GSW-V2/lib/logger"
 	"github.com/AarC10/GSW-V2/lib/tlm"
 	"github.com/spf13/viper"
+	"go.uber.org/zap"
 
 	"github.com/AarC10/GSW-V2/proc"
 )
@@ -45,21 +46,23 @@ func vcmInitialize(config *viper.Viper) (*ipc.IpcShmHandler, error) {
 	}
 	data, err := os.ReadFile(config.GetString("telemetry_config"))
 	if err != nil {
-		logger.Error(fmt.Sprint("Error reading YAML file: ", err))
+		logger.Error("Error reading YAML file: ", zap.Error(err))
+		return nil, err
 	}
 	_, err = proc.ParseConfigBytes(data)
 	if err != nil {
-		logger.Error(fmt.Sprint("Error parsing YAML: ", err))
+ 
+		logger.Error("Error parsing YAML:", zap.Error(err))
 		return nil, err
 	}
 	configWriter, err := ipc.CreateIpcShmHandler("telemetry-config", len(data), true)
 	if err != nil {
-		logger.Error(fmt.Sprint("Error creating shared memory handler: ", err))
+		logger.Error("Error creating shared memory handler: ", zap.Error(err))
 		return nil, err
 	}
 	if configWriter.Write(data) != nil {
 		configWriter.Cleanup()
-		logger.Error(fmt.Sprint("Error writing telemetry config to shared memory: ", err))
+		logger.Error("Error writing telemetry config to shared memory: ", zap.Error(err))
 		return nil, err
 	}
 
@@ -112,16 +115,13 @@ func readConfig() *viper.Viper {
 	config.AddConfigPath("data/config/")
 	err := config.ReadInConfig()
 	if err != nil {
-		logger.Fatal(fmt.Sprint("Error reading GSW config: %w", err))
+		logger.Error("Error reading GSW config: %w", zap.Error(err))
+		panic(err)
 	}
 	return config
 }
 
 func main() {
-	
-	logger.Info("THIS WORKS")
-	logger.Error("THIS IS AN ERROR")
-
 	// Read gsw_service config
 	config := readConfig()
 
