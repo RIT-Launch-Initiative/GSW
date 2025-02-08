@@ -43,6 +43,7 @@ func vcmInitialize(config *viper.Viper) (*ipc.IpcShmHandler, error) {
 	if !config.IsSet("telemetry_config") {
 		err := errors.New("Error: Telemetry config filepath is not set in GSW config.")
 		logger.Error(fmt.Sprint(err))
+		return nil, err
 	}
 	data, err := os.ReadFile(config.GetString("telemetry_config"))
 	if err != nil {
