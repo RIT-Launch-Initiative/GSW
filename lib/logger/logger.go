@@ -40,15 +40,17 @@ func init(){
 		}
 		// Create log file
 		logFileName := fmt.Sprint("gsw_service_log-", time.Now().Format("2006-01-02 15:04:05"),".log")
-		totalLogPath := fmt.Sprint(path,logFileName)
+		baseName := fmt.Sprint(path,logFileName)
+		totalLogPath := baseName
 
 		// Ensures unique file name
-		numIncrease := 0
+		numIncrease := 1
+
 		for {
-			if _ ,err := os.Stat(totalLogPath); err != nil{
+			if _ ,err := os.Stat(totalLogPath); os.IsNotExist(err){
 				break	
 			}
-			totalLogPath = fmt.Sprint(totalLogPath, ".", numIncrease)
+			totalLogPath = fmt.Sprintf("%s.%d", baseName, numIncrease)
 			numIncrease++
 		}
 
