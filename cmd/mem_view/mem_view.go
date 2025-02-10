@@ -8,7 +8,6 @@ import (
 	"syscall"
 
 	"github.com/AarC10/GSW-V2/lib/ipc"
-	"github.com/AarC10/GSW-V2/lib/logger"
 	"github.com/AarC10/GSW-V2/lib/tlm"
 	"github.com/AarC10/GSW-V2/lib/util"
 	"github.com/AarC10/GSW-V2/proc"
@@ -24,7 +23,7 @@ func buildString(packet tlm.TelemetryPacket, data []byte, startLine int) string 
 	for _, measurementName := range packet.Measurements {
 		measurement, ok := proc.GswConfig.Measurements[measurementName]
 		if !ok {
-			logger.Warn(fmt.Sprint("Measurement '",measurementName, "' not found"))
+			fmt.Printf("\t\tMeasurement '%s' not found\n", measurementName)
 			continue
 		}
 
@@ -53,18 +52,18 @@ func printTelemetryPacket(startLine int, packet tlm.TelemetryPacket, rcvChan cha
 func main() {
 	configReader, err := ipc.CreateIpcShmReader("telemetry-config")
 	if err != nil {
-		logger.Warn("*** Error accessing config file. Make sure the GSW service is running. ***")
-		logger.Error(fmt.Sprint(err))
+		fmt.Println("*** Error accessing config file. Make sure the GSW service is running. ***")
+		fmt.Printf("(%v)\n", err)
 		return
 	}
 	data, err := configReader.ReadNoTimestamp()
 	if err != nil {
-		logger.Error(fmt.Sprint("Error reading shared memory: ", err))
+		fmt.Printf("Error reading shared memory: %v\n", err)
 		return
 	}
 	_, err = proc.ParseConfigBytes(data)
 	if err != nil {
-		logger.Error(fmt.Sprint("Error parsing YAML: ", err))
+		fmt.Printf("Error parsing YAML: %v\n", err)
 		return
 	}
 
