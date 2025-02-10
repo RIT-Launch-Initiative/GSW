@@ -45,7 +45,7 @@ func init(){
 		// Ensures unique file name
 		numIncrease := 0
 		for {
-			if _ ,err := os.Stat(totalLogPath); err == nil{
+			if _ ,err := os.Stat(totalLogPath); err != nil{
 				break	
 			}
 			totalLogPath = fmt.Sprint(totalLogPath, ".", numIncrease)
