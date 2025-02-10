@@ -11,7 +11,7 @@ encoderConfig:
   callerKey: caller             # Key for the caller information
   stacktraceKey: stacktrace     # Key for stacktrace logs (stacktrace, "")
   lineEnding: "\n"              # Line ending character
-  levelEncoder: lowercase       # Encode log levels (lowercase, uppercase, color, etc.)
+  levelEncoder: capitalColor    # Encode log levels (lowercase, uppercase, color, etc.)
   timeEncoder: iso8601          # Format timestamp (iso8601, epoch, etc.)
   durationEncoder: string       # Encode durations as strings
   callerEncoder: short          # Encode caller information (short or full path)

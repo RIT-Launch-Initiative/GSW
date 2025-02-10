@@ -58,7 +58,6 @@ func init(){
 			os.Create(totalLogPath)
 		}
 		outputPaths[index] = totalLogPath
-		fmt.Println(totalLogPath)
 	}
 	// Setting Logger Paths
 	loggerConfig.OutputPaths = outputPaths 
@@ -81,7 +80,7 @@ func init(){
 	levelEncoder.UnmarshalText([]byte(viperConfig.GetString("encoderConfig.levelEncoder")))
 	timeEncoder.UnmarshalText([]byte(viperConfig.GetString("encoderConfig.timeEncoder")))
 	durationEncoder.UnmarshalText([]byte(viperConfig.GetString("encoderConfig.durationEncoder")))
-	callerEncoder.UnmarshalText([]byte(viperConfig.GetString("encoderConfig.")))
+	callerEncoder.UnmarshalText([]byte(viperConfig.GetString("encoderConfig.callerEncoder")))
 
 	loggerConfig.Encoding = viperConfig.GetString("encoding")
 	loggerConfig.EncoderConfig = zapcore.EncoderConfig{

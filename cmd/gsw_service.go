@@ -140,11 +140,11 @@ func main() {
 	}()
 
 	configWriter, err := vcmInitialize(config)
-	defer configWriter.Cleanup()
 	if err != nil {
 		logger.Info("Exiting GSW...")
 		return
 	}
+	defer configWriter.Cleanup()
 
 	channelMap := decomInitialize(ctx)
 	dbInitialize(ctx, channelMap)
