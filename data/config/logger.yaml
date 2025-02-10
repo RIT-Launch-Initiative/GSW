@@ -3,7 +3,6 @@ encoding: console               # Log format: json or console
 outputPaths:                    # Where logs are written
     - stdout                    # Standard output 
     - data/logs/                # (when adding a folder add the '/' at the end)
-    - data/testLogs/
 encoderConfig:
   messageKey: message           # Key for the log message
   levelKey: level               # Key for the log level

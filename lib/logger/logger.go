@@ -27,7 +27,6 @@ func init(){
 		logger = defaultLogger
 		return 
 	}
-
 	// Create zap config
 	var loggerConfig zap.Config
 	
@@ -39,7 +38,6 @@ func init(){
 			outputPaths[index] = path
 			continue
 		}
-
 		// Create log file
 		logFileName := fmt.Sprint("gsw_service_log-", time.Now().Format("2006-01-02 15:04:05"),".log")
 		totalLogPath := fmt.Sprint(path,logFileName)
@@ -62,13 +60,13 @@ func init(){
 		outputPaths[index] = totalLogPath
 		fmt.Println(totalLogPath)
 	}
-
 	// Setting Logger Paths
 	loggerConfig.OutputPaths = outputPaths 
 	loggerConfig.ErrorOutputPaths = outputPaths 
 
 	// Setting Logger Level
 	level, err := zap.ParseAtomicLevel(viperConfig.GetString("level"));
+
 	if  err != nil{
 		defaultLogger.Warn(fmt.Sprint(err))	
 	}
