@@ -1,6 +1,7 @@
 package logger
 
 import (
+	"crypto/internal/edwards25519/field"
 	"fmt"
 	"os"
 	"time"
@@ -118,5 +119,9 @@ func Fatal(message string, fields... zap.Field){
 
 func Error(message string, fields... zap.Field){
 	logger.Error(message, fields...)
+}
+
+func Panic(message string, fields... zap.Field){
+	logger.Panic(message, fields...)
 }
 
