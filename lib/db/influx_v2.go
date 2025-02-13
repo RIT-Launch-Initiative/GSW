@@ -5,10 +5,11 @@ import (
 	"github.com/influxdata/influxdb-client-go/v2"
 )
 
+// InfluxDBV2Handler is a handler for InfluxDB v2
 type InfluxDBV2Handler struct {
-	client influxdb2.Client
-	org    string
-	bucket string
+	client influxdb2.Client // InfluxDB client
+	org    string           // Organization string
+	bucket string           // Bucket string
 }
 
 // Initialize sets up the InfluxDB client

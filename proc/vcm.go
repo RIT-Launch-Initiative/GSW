@@ -7,19 +7,22 @@ import (
 	"os"
 )
 
+// Configuration is a struct that holds the configuration for the GSW
 type Configuration struct {
-	Name             string                     `yaml:"name"`
-	Measurements     map[string]tlm.Measurement `yaml:"measurements"`
-	TelemetryPackets []tlm.TelemetryPacket      `yaml:"telemetry_packets"`
+	Name             string                     `yaml:"name"`              // Name of the configuration
+	Measurements     map[string]tlm.Measurement `yaml:"measurements"`      // Map of measurements
+	TelemetryPackets []tlm.TelemetryPacket      `yaml:"telemetry_packets"` // List of telemetry packets
 }
 
 // TODO: Make global safer
 var GswConfig Configuration
 
+// ResetConfig resets the global configuration
 func ResetConfig() {
 	GswConfig = Configuration{}
 }
 
+// ParseConfig parses a YAML configuration file and returns a Configuration struct
 func ParseConfig(filename string) (*Configuration, error) {
 	data, err := os.ReadFile(filename)
 	if err != nil {
@@ -28,6 +31,7 @@ func ParseConfig(filename string) (*Configuration, error) {
 	return ParseConfigBytes(data)
 }
 
+// ParseConfigBytes parses a YAML formatted byte slice and returns a Configuration struct
 func ParseConfigBytes(data []byte) (*Configuration, error) {
 	// Unmarshalling doesn't seem to lead to errors with bad data. Better to check result config
 	_ = yaml.Unmarshal(data, &GswConfig)
@@ -62,6 +66,7 @@ func ParseConfigBytes(data []byte) (*Configuration, error) {
 	return &GswConfig, nil
 }
 
+// GetPacketSize returns the size of a telemetry packet in bytes
 func GetPacketSize(packet tlm.TelemetryPacket) int {
 	size := 0
 	for _, measurementName := range packet.Measurements {

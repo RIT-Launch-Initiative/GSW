@@ -8,6 +8,9 @@ import (
 	"strconv"
 )
 
+// getIpcShmHandler creates a shared memory IPC handler for a telemetry packet
+// If write is true, the handler will be created for writing to shared memory
+// If write is false, the handler will be created for reading from shared memory
 func getIpcShmHandler(packet tlm.TelemetryPacket, write bool) (*ipc.IpcShmHandler, error) {
 	handler, err := ipc.CreateIpcShmHandler(strconv.Itoa(packet.Port), GetPacketSize(packet), write)
 	if err != nil {
@@ -17,6 +20,7 @@ func getIpcShmHandler(packet tlm.TelemetryPacket, write bool) (*ipc.IpcShmHandle
 	return handler, nil
 }
 
+// TelemetryPacketWriter is a goroutine that listens for telemetry data on a UDP port and writes it to shared memory
 func TelemetryPacketWriter(packet tlm.TelemetryPacket, outChannel chan []byte) {
 	packetSize := GetPacketSize(packet)
 	shmWriter, _ := getIpcShmHandler(packet, true)
@@ -73,6 +77,7 @@ func TelemetryPacketWriter(packet tlm.TelemetryPacket, outChannel chan []byte) {
 	}
 }
 
+// TelemetryPacketReader is a goroutine that reads telemetry data from shared memory and sends it to an output channel
 func TelemetryPacketReader(packet tlm.TelemetryPacket, outChannel chan []byte) {
 	procReader, err := getIpcShmHandler(packet, false)
 	if err != nil {

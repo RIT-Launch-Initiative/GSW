@@ -7,20 +7,25 @@ import (
 	"strings"
 )
 
+// Measurement represents a single measurement in a telemetry packet.
 type Measurement struct {
-	Name       string `yaml:"name"`
-	Size       int    `yaml:"size"`
-	Type       string `yaml:"type,omitempty"`
-	Unsigned   bool   `yaml:"unsigned,omitempty"`
-	Endianness string `yaml:"endianness,omitempty"`
+	Name       string `yaml:"name"`                 // Name of the measurement
+	Size       int    `yaml:"size"`                 // Size of the measurement in bytes
+	Type       string `yaml:"type,omitempty"`       // Type of the measurement (int, float)
+	Unsigned   bool   `yaml:"unsigned,omitempty"`   // Whether the measurement is unsigned
+	Endianness string `yaml:"endianness,omitempty"` // Endianness of the measurement (big, little)
 }
 
+// TelemetryPacket represents information about a telemetry packet received over Ethernet.
 type TelemetryPacket struct {
-	Name         string   `yaml:"name"`
-	Port         int      `yaml:"port"`
-	Measurements []string `yaml:"measurements"`
+	Name         string   `yaml:"name"`         // Name of the telemetry packet
+	Port         int      `yaml:"port"`         // Port number for the telemetry packet
+	Measurements []string `yaml:"measurements"` // List of measurements in the telemetry packet
 }
 
+// InterpretUnsignedInteger interprets a byte slice as an unsigned integer.
+// The endianness parameter specifies the byte order of the data.
+// Size of the data must be 1, 2, 4, or 8 bytes.
 func InterpretUnsignedInteger(data []byte, endianness string) (interface{}, error) {
 	switch len(data) {
 	case 1:
@@ -46,6 +51,9 @@ func InterpretUnsignedInteger(data []byte, endianness string) (interface{}, erro
 	// TODO: Support non-aligned bytes less than 8?
 }
 
+// InterpretSignedInteger interprets a byte slice as a signed integer.
+// The endianness parameter specifies the byte order of the data.
+// Size of the data must be 1, 2, 4, or 8 bytes.
 func InterpretSignedInteger(data []byte, endianness string) (interface{}, error) {
 	unsigned, err := InterpretUnsignedInteger(data, endianness)
 	if err != nil {
@@ -66,6 +74,9 @@ func InterpretSignedInteger(data []byte, endianness string) (interface{}, error)
 	}
 }
 
+// InterpretFloat interprets a byte slice as a floating point number.
+// The endianness parameter specifies the byte order of the data.
+// Size of the data must be 4 or 8 bytes.
 func InterpretFloat(data []byte, endianness string) (interface{}, error) {
 	unsigned, err := InterpretUnsignedInteger(data, endianness)
 	if err != nil {
@@ -82,6 +93,9 @@ func InterpretFloat(data []byte, endianness string) (interface{}, error) {
 	}
 }
 
+// InterpretMeasurementValue interprets a byte slice as a value for a measurement.
+// The measurement parameter specifies the type and endianness of the data.
+// The function returns the interpreted value and an error if the interpretation fails.
 func InterpretMeasurementValue(measurement Measurement, data []byte) (interface{}, error) {
 	switch measurement.Type {
 	case "int":
@@ -96,6 +110,9 @@ func InterpretMeasurementValue(measurement Measurement, data []byte) (interface{
 	}
 }
 
+// InterpretMeasurementValueString interprets a byte slice as a value for a measurement and returns a string representation.
+// The measurement parameter specifies the type and endianness of the data.
+// The function returns the interpreted value as a string and an error if the interpretation fails.
 func InterpretMeasurementValueString(measurement Measurement, data []byte) (string, error) {
 	switch measurement.Type {
 	case "int":
@@ -124,6 +141,7 @@ func InterpretMeasurementValueString(measurement Measurement, data []byte) (stri
 	}
 }
 
+// String returns a string representation of the measurement.
 func (m Measurement) String() string {
 	var sb strings.Builder
 	sb.WriteString(fmt.Sprintf("Name: %s, Size: %d", m.Name, m.Size))

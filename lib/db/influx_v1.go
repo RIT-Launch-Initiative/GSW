@@ -5,9 +5,10 @@ import (
 	"net"
 )
 
+// InfluxDBV1Handler is a DB Handler implementation for InfluxDB v1
 type InfluxDBV1Handler struct {
-	conn net.UDPConn
-	addr string
+	conn net.UDPConn // UDP connection to InfluxDB
+	addr string      // IP address and port of InfluxDB
 }
 
 // Initialize sets up the InfluxDB UDP connection

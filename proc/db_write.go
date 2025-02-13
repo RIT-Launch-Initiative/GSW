@@ -7,6 +7,8 @@ import (
 	"time"
 )
 
+// DatabaseWriter writes telemetry data to the database
+// It reads data from the channel and writes it to the database
 func DatabaseWriter(handler db.Handler, packet tlm.TelemetryPacket, channel chan []byte) {
 	measGroup := initMeasurementGroup(packet)
 	fmt.Println("Started database writer for", packet.Name)
@@ -22,6 +24,7 @@ func DatabaseWriter(handler db.Handler, packet tlm.TelemetryPacket, channel chan
 	}
 }
 
+// initMeasurementGroup initializes a MeasurementGroup with the measurements from the packet
 func initMeasurementGroup(packet tlm.TelemetryPacket) db.MeasurementGroup {
 	measurements := make([]db.Measurement, len(packet.Measurements))
 	measurementGroup := db.MeasurementGroup{DatabaseName: GswConfig.Name, Measurements: measurements}
@@ -33,6 +36,7 @@ func initMeasurementGroup(packet tlm.TelemetryPacket) db.MeasurementGroup {
 	return measurementGroup
 }
 
+// updateMeasurementGroup updates the values of the measurements in the MeasurementGroup
 func updateMeasurementGroup(packet tlm.TelemetryPacket, measurements db.MeasurementGroup, data []byte) {
 	offset := 0
 
