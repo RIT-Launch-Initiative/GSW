@@ -2,20 +2,21 @@ package ipc
 
 import (
 	"encoding/binary"
+	"flag"
 	"fmt"
 	"os"
 	"path/filepath"
 	"syscall"
 	"time"
-    	"flag"
 )
 
+// IpcShmHandler is a shared memory handler for inter-process communication
 type IpcShmHandler struct {
-	file            *os.File
-	data            []byte
-	size            int
-	mode            int // 0 for reader, 1 for writer
-	timestampOffset int // Offset for the timestamp in shared memory
+	file            *os.File // File descriptor for shared memory
+	data            []byte   // Pointer to shared memory data
+	size            int      // Size of shared memory
+	mode            int      // 0 for reader, 1 for writer
+	timestampOffset int      // Offset for the timestamp in shared memory
 }
 
 const (
@@ -27,6 +28,7 @@ const (
 
 var shmDir = flag.String("shm", "/dev/shm", "directory to use for shared memory")
 
+// CreateIpcShmHandler creates a shared memory handler for inter-process communication
 func CreateIpcShmHandler(identifier string, size int, isWriter bool) (*IpcShmHandler, error) {
 	handler := &IpcShmHandler{
 		size:            size + timestampSize, // Add space for timestamp
@@ -34,7 +36,7 @@ func CreateIpcShmHandler(identifier string, size int, isWriter bool) (*IpcShmHan
 		timestampOffset: size, // Timestamp is stored at the end
 	}
 
-    flag.Parse()
+	flag.Parse()
 	filename := filepath.Join(*shmDir, fmt.Sprintf("%s%s", shmFilePrefix, identifier))
 
 	if isWriter {
@@ -84,8 +86,9 @@ func CreateIpcShmHandler(identifier string, size int, isWriter bool) (*IpcShmHan
 	return handler, nil
 }
 
+// CreateIpcShmReader creates a shared memory reader for inter-process communication
 func CreateIpcShmReader(identifier string) (*IpcShmHandler, error) {
-    flag.Parse()
+	flag.Parse()
 	fileinfo, err := os.Stat(filepath.Join(*shmDir, fmt.Sprintf("%s%s", shmFilePrefix, identifier)))
 	if err != nil {
 		return nil, fmt.Errorf("Error getting shm file info: %v", err)
@@ -94,6 +97,7 @@ func CreateIpcShmReader(identifier string) (*IpcShmHandler, error) {
 	return CreateIpcShmHandler(identifier, filesize, false)
 }
 
+// Cleanup cleans up the shared memory handler and removes the shared memory file
 func (handler *IpcShmHandler) Cleanup() {
 	if handler.data != nil {
 		if err := syscall.Munmap(handler.data); err != nil {
@@ -116,6 +120,7 @@ func (handler *IpcShmHandler) Cleanup() {
 	}
 }
 
+// Write writes data to shared memory
 func (handler *IpcShmHandler) Write(data []byte) error {
 	if handler.mode != modeWriter {
 		return fmt.Errorf("Handler is in reader mode")
@@ -129,6 +134,7 @@ func (handler *IpcShmHandler) Write(data []byte) error {
 	return nil
 }
 
+// Read reads data from shared memory
 func (handler *IpcShmHandler) Read() ([]byte, error) {
 	if handler.mode != modeReader {
 		return nil, fmt.Errorf("Handler is in writer mode")
@@ -138,6 +144,7 @@ func (handler *IpcShmHandler) Read() ([]byte, error) {
 	return data, nil
 }
 
+// ReadNoTimestamp reads data from shared memory without the timestamp
 func (handler *IpcShmHandler) ReadNoTimestamp() ([]byte, error) {
 	if handler.mode != modeReader {
 		return nil, fmt.Errorf("Handler is in writer mode")
@@ -147,6 +154,7 @@ func (handler *IpcShmHandler) ReadNoTimestamp() ([]byte, error) {
 	return data, nil
 }
 
+// LastUpdate returns the last update time of the shared memory
 func (handler *IpcShmHandler) LastUpdate() time.Time {
 	timestamp := binary.BigEndian.Uint64(handler.data[handler.timestampOffset:])
 	return time.Unix(0, int64(timestamp))

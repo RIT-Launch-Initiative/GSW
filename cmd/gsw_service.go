@@ -19,6 +19,7 @@ import (
 	"github.com/AarC10/GSW-V2/proc"
 )
 
+// printTelemetryPackets prints the telemetry packets and their measurements it found in the configuration.
 func printTelemetryPackets() {
 	fmt.Println("Telemetry Packets:")
 	for _, packet := range proc.GswConfig.TelemetryPackets {
@@ -28,7 +29,7 @@ func printTelemetryPackets() {
 			for _, measurementName := range packet.Measurements {
 				measurement, ok := proc.GswConfig.Measurements[measurementName]
 				if !ok {
-					logger.Warn(fmt.Sprint("Measurement '",measurementName,"' not found"))
+					logger.Warn(fmt.Sprint("Measurement '", measurementName, "' not found"))
 					continue
 				}
 				fmt.Printf("\t\t%s\n", measurement.String())
@@ -39,6 +40,8 @@ func printTelemetryPackets() {
 	}
 }
 
+// vcmInitialize initializes the Vehicle Config Manager
+// It reads the telemetry config file and writes it into shared memory
 func vcmInitialize(config *viper.Viper) (*ipc.IpcShmHandler, error) {
 	if !config.IsSet("telemetry_config") {
 		err := errors.New("Error: Telemetry config filepath is not set in GSW config.")
@@ -52,7 +55,7 @@ func vcmInitialize(config *viper.Viper) (*ipc.IpcShmHandler, error) {
 	}
 	_, err = proc.ParseConfigBytes(data)
 	if err != nil {
- 
+
 		logger.Error("Error parsing YAML:", zap.Error(err))
 		return nil, err
 	}
@@ -71,6 +74,7 @@ func vcmInitialize(config *viper.Viper) (*ipc.IpcShmHandler, error) {
 	return configWriter, nil
 }
 
+// decomInitialize starts decommutation goroutines for each telemetry packet
 func decomInitialize(ctx context.Context) map[int]chan []byte {
 	channelMap := make(map[int]chan []byte)
 

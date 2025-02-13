@@ -227,7 +227,7 @@ measurements:
       endianness: little
 telemetry_packets:
   - name: PowerModule
-    port: 11000
+    port: 11015
     measurements:
       - VOLT_BATT
       - CURR_BATT
