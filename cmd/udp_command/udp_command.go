@@ -1,34 +1,34 @@
 package main
 
 import (
-	"os"
+	"bufio"
 	"fmt"
-    "net"
+	"net"
+	"os"
 	"strconv"
 	"strings"
-	"bufio"
 )
 
 // "Opens a connection" over UDP with the specified host and port
 func openConn(host string, port int) (*net.UDPConn, error) {
-    addr, err := net.ResolveUDPAddr("udp", fmt.Sprintf("%v:%v", host, port))
-    if err != nil {
-        return nil, fmt.Errorf("Error resolving UDP address: %v", err)
-    }
-    conn, err := net.DialUDP("udp", nil, addr)
-    if err != nil {
-        return nil, fmt.Errorf("Error connecting to UDP address: %v", err)
-    }
-    return conn, nil;
+	addr, err := net.ResolveUDPAddr("udp", fmt.Sprintf("%v:%v", host, port))
+	if err != nil {
+		return nil, fmt.Errorf("Error resolving UDP address: %v", err)
+	}
+	conn, err := net.DialUDP("udp", nil, addr)
+	if err != nil {
+		return nil, fmt.Errorf("Error connecting to UDP address: %v", err)
+	}
+	return conn, nil
 }
 
 // Sends the given packet over the given connection
 func sendOverUDP(conn *net.UDPConn, packet []byte) error {
-    _, err := conn.Write(packet)
-    if err != nil {
-        return err
-    }
-    return nil
+	_, err := conn.Write(packet)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func main() {
@@ -58,15 +58,15 @@ func main() {
 		fmt.Println("Error parsing port:", err)
 		return
 	}
-    conn, err := openConn(host, int(parsedPort))
-    if err != nil {
+	conn, err := openConn(host, int(parsedPort))
+	if err != nil {
 		fmt.Println("Error opening connection:", err)
 		return
-    }
-	fmt.Println("Connection opened.\n")
+	}
+	fmt.Print("Connection opened.\n\n")
 
 	// Loop prompting for payload
-	PayloadLoop:
+PayloadLoop:
 	for {
 		fmt.Print("Payload: ")
 		scanner.Scan()
