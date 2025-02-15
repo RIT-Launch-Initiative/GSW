@@ -7,6 +7,8 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"bytes"
+	"encoding/binary"
 )
 
 // "Opens a connection" over UDP with the specified host and port
@@ -79,12 +81,14 @@ PayloadLoop:
 		// Loop adding byte from input line to payload
 		payload := make([]byte, 0, 10)
 		for _, str := range strings.Fields(payloadStr) {
-			parsedInt64, err := strconv.ParseUint(str, 0, 8)
+			parsedInt64, err := strconv.ParseUint(str, 0, 64)
 			if err != nil {
 				fmt.Println("\tError parsing payload:", err)
 				continue PayloadLoop
 			}
-			payload = append(payload, uint8(parsedInt64))
+			byteBuffer := make([]byte, 8)
+			binary.BigEndian.PutUint64(byteBuffer, parsedInt64)
+			payload = append(payload, bytes.TrimLeft(byteBuffer, "\x00")...)
 		}
 
 		// Send payload over connection
