@@ -28,6 +28,12 @@ jobs:
         nohup pkgsite -http :6060 & 
         sleep 5
         wget --mirror --convert-links --adjust-extension --page-requisites --no-parent -P docs http://localhost:6060/github.com/AarC10/GSW-V2
+  
+    - name: Disable Jekyll (add .nojekyll)
+      run: |
+        touch docs/.nojekyll
+
+
     - name: Deploy to GitHub Pages
       uses: JamesIves/github-pages-deploy-action@v4
       with:
