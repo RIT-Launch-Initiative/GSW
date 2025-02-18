@@ -27,7 +27,7 @@ jobs:
         mkdir docs 
         nohup pkgsite -http :6060 & 
         sleep 5
-        wget --mirror --convert-links --adjust-extension --page-requisites --no-parent -P docs http://localhost:6060/pkg/yourmodule
+        wget --mirror --convert-links --adjust-extension --page-requisites --no-parent -P docs http://localhost:6060/github.com/AarC10/GSW-V2
     - name: Deploy to GitHub Pages
       uses: JamesIves/github-pages-deploy-action@v4
       with:
