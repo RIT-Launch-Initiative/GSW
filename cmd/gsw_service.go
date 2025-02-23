@@ -1,17 +1,17 @@
 package main
 
 import (
-	"github.com/spf13/viper"
 	"context"
+	"errors"
+	"flag"
 	"fmt"
 	"github.com/AarC10/GSW-V2/lib/db"
-	"github.com/AarC10/GSW-V2/lib/tlm"
 	"github.com/AarC10/GSW-V2/lib/ipc"
+	"github.com/AarC10/GSW-V2/lib/tlm"
+	"github.com/spf13/viper"
 	"os"
 	"os/signal"
 	"syscall"
-	"errors"
-	"flag"
 
 	"github.com/AarC10/GSW-V2/proc"
 )
@@ -75,7 +75,7 @@ func decomInitialize(ctx context.Context) map[int]chan []byte {
 		channelMap[packet.Port] = finalOutputChannel
 
 		go func(packet tlm.TelemetryPacket, ch chan []byte) {
-			proc.TelemetryPacketWriter(packet, finalOutputChannel)
+			proc.TelemetryPacketWriter(packet, ch)
 			<-ctx.Done()
 			close(ch)
 		}(packet, finalOutputChannel)

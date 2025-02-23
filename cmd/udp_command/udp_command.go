@@ -34,7 +34,31 @@ func sendOverUDP(conn *net.UDPConn, packet []byte) error {
 	return nil
 }
 
-// Prompts for user input over stdin, either a payload or other command.
+// Prompts for user input specifying the host and port to send payloads to.
+// Returns the host and port.
+func promptConnInfo(scanner *bufio.Scanner) (string, int, error) {
+	fmt.Print("IP address: ")
+	scanner.Scan()
+	if err := scanner.Err(); err != nil {
+		return "", -1, fmt.Errorf("error reading IP address: %v", err)
+	}
+	host := scanner.Text()
+	fmt.Print("Port: ")
+	scanner.Scan()
+	if err := scanner.Err(); err != nil {
+		return "", -1, fmt.Errorf("error reading port: %v", err)
+	}
+	port := scanner.Text()
+
+	// Parse port to int
+	parsedPort, err := strconv.ParseInt(port, 0, 0)
+	if err != nil {
+		return "", -1, fmt.Errorf("error parsing port: %v", err)
+	}
+	return host, int(parsedPort), nil
+}
+
+// Prompts for user input, either a payload or other command.
 // Returns the payload (if one was given) formatted as a byte array.
 func promptInput(scanner *bufio.Scanner, history [][]byte) ([]byte, error) {
 	fmt.Print("Payload: ")
@@ -104,41 +128,8 @@ func promptInput(scanner *bufio.Scanner, history [][]byte) ([]byte, error) {
 	return payload, nil
 }
 
-func main() {
-	var host string
-	var port string
-	scanner := bufio.NewScanner(os.Stdin)
-
-	// Read in host and port
-	fmt.Print("IP address: ")
-	scanner.Scan()
-	if err := scanner.Err(); err != nil {
-		fmt.Println("Error reading IP address:", err)
-		return
-	}
-	host = scanner.Text()
-	fmt.Print("Port: ")
-	scanner.Scan()
-	if err := scanner.Err(); err != nil {
-		fmt.Println("Error reading port:", err)
-		return
-	}
-	port = scanner.Text()
-
-	// Parse port to int + open connection
-	parsedPort, err := strconv.ParseInt(port, 0, 0)
-	if err != nil {
-		fmt.Println("Error parsing port:", err)
-		return
-	}
-	conn, err := openConn(host, int(parsedPort))
-	if err != nil {
-		fmt.Println("Error opening connection:", err)
-		return
-	}
-	fmt.Print("Connection opened.\n\n")
-
-	// Loop prompting for input
+// Loop prompting for input.
+func mainInputLoop(scanner *bufio.Scanner, conn *net.UDPConn) {
 	history := make([][]byte, 0, 20)
 	for {
 		payload, err := promptInput(scanner, history)
@@ -153,11 +144,27 @@ func main() {
 		if len(history) == 0 || !slices.Equal(payload, history[len(history)-1]) {
 			history = append(history, payload)
 		}
-
 		// Send payload over connection
 		fmt.Printf("\tSending payload %# x\n", payload)
 		if err := sendOverUDP(conn, payload); err != nil {
 			fmt.Println("\tError sending payload:", err)
 		}
 	}
+}
+
+func main() {
+	scanner := bufio.NewScanner(os.Stdin)
+	// Read in host and port, then open connection
+	host, port, err := promptConnInfo(scanner)
+	if err != nil {
+		fmt.Println("Error reading connection info:", err)
+		return
+	}
+	conn, err := openConn(host, port)
+	if err != nil {
+		fmt.Println("Error opening connection:", err)
+		return
+	}
+	fmt.Print("Connection opened.\n\n")
+	mainInputLoop(scanner, conn)
 }
