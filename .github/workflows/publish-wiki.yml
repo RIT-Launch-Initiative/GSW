@@ -11,22 +11,24 @@ concurrency:
 permissions:
   contents: write
 jobs:
-
-  - uses: actions/checkout@v3
-  
-  - name: Install gomarkdoc
-    run: go install github.com/princjef/gomarkdoc/cmd/gomarkdoc@latest
-
-  - name: Generate Wiki Documentation
-    run: |
-      rm -rf wiki/* 
-      mkdir -p wiki
-
-      for dir in $(go list -f '{{.Dir}}' ./... | grep -v "cmd"); do
-        gomarkdoc --output "./wiki/$(basename $dir).md" $dir
-      done
-    publish-wiki:
-      runs-on: ubuntu-latest
+  publish-wiki:
+    runs-on: ubuntu-latest
     steps:
+      # Pulls repo
       - uses: actions/checkout@v3
+  
+      # Installs gomarkdoc
+      - name: Install gomarkdoc
+        run: go install github.com/princjef/gomarkdoc/cmd/gomarkdoc@latest
+      
+      # Generates wiki with gomarkdoc
+      - name: Generate Wiki Documentation
+        run: |
+          rm -rf wiki/* 
+          mkdir -p wiki
+          for dir in $(go list -f '{{.Dir}}' ./... | grep -v "cmd"); do
+          gomarkdoc --output "./wiki/$(basename $dir).md" $dir
+          done
+
+        # Pushes wiki folder to wiki repo
       - uses: Andrew-Chen-Wang/github-wiki-action@v4
