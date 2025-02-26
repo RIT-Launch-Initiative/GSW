@@ -14,7 +14,9 @@ jobs:
   publish-wiki:
     runs-on: ubuntu-latest
     steps:
+
       # Pulls repo
+      - name: Checkout repository
       - uses: actions/checkout@v3
   
       # Installs gomarkdoc
@@ -33,5 +35,5 @@ jobs:
           git config --global user.name "github-actions[bot]"
           git diff --exit-code || (git commit -am "Formatted code" && git push)
 
-          # Pushes wiki folder to wiki repo
+      # Pushes wiki folder to wiki repo
       - uses: Andrew-Chen-Wang/github-wiki-action@v4
