@@ -29,6 +29,9 @@ jobs:
           for dir in $(go list -f '{{.Dir}}' ./... | grep -v "cmd"); do
           gomarkdoc --output "./wiki/$(basename $dir).md" $dir
           done
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git config --global user.name "github-actions[bot]"
+          git diff --exit-code || (git commit -am "Formatted code" && git push)
 
-        # Pushes wiki folder to wiki repo
+          # Pushes wiki folder to wiki repo
       - uses: Andrew-Chen-Wang/github-wiki-action@v4
