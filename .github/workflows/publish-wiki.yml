@@ -1,24 +1,14 @@
-name: Publish wiki
-on:
-  push:
-    branches: [main]
-    paths:
-      - wiki/**
-      - .github/workflows/publish-wiki.yml
-concurrency:
-  group: publish-wiki
-  cancel-in-progress: true
-permissions:
-  contents: write
-jobs:
-  publish-wiki:
-    runs-on: ubuntu-latest
-    steps:
+name: Documentation
 
-      # Pulls repo
-      - name: Checkout repository
-      - uses: actions/checkout@v3
-  
+on: [push]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v1
+
       # Installs gomarkdoc
       - name: Install gomarkdoc
         run: go install github.com/princjef/gomarkdoc/cmd/gomarkdoc@latest
@@ -31,9 +21,10 @@ jobs:
           for dir in $(go list -f '{{.Dir}}' ./... | grep -v "cmd"); do
           gomarkdoc --output "./wiki/$(basename $dir).md" $dir
           done
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          git config --global user.name "github-actions[bot]"
-          git diff --exit-code || (git commit -am "Formatted code" && git push)
 
-      # Pushes wiki folder to wiki repo
-      - uses: Andrew-Chen-Wang/github-wiki-action@v4
+      - name: Upload Documentation to Wiki
+        uses: SwiftDocOrg/github-wiki-publish-action@v1
+        with:
+          path: "Documentation"
+        env:
+          GH_PERSONAL_ACCESS_TOKEN: ${{ secrets.GH_PERSONAL_ACCESS_TOKEN }}
