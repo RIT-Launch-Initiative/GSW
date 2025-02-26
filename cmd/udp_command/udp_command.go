@@ -12,6 +12,17 @@ import (
 	"strings"
 )
 
+// Prints usage info for the application.
+func printHelpMessage() {
+	fmt.Println()
+	fmt.Println("Specify the bytes of the payload to send by entering a list of integers separated by spaces.")
+	fmt.Println("Integers can be in base 10, binary (start with 0b), or hex (start with 0x).")
+	fmt.Println("To resend the most recent payload, press the up arrow followed by Enter.")
+	fmt.Println("To view the history of previously sent payloads, type 'h'.")
+	fmt.Println("h <#> - resends the payload with the given history item number.")
+	fmt.Println()
+}
+
 // "Opens a connection" over UDP with the specified host and port.
 func openConn(host string, port int) (*net.UDPConn, error) {
 	addr, err := net.ResolveUDPAddr("udp", fmt.Sprintf("%v:%v", host, port))
@@ -71,6 +82,11 @@ func promptInput(scanner *bufio.Scanner, history [][]byte) ([]byte, error) {
 		return nil, fmt.Errorf("no input")
 	}
 
+	// Print help message
+	if inputTokens[0] == "help" {
+		printHelpMessage()
+		return nil, nil
+	}
 	// Check for history commands
 	if inputTokens[0] == "h" {
 		if len(inputTokens) == 1 {
@@ -166,5 +182,6 @@ func main() {
 		return
 	}
 	fmt.Print("Connection opened.\n\n")
+	fmt.Println("** For usage info, type 'help'. **")
 	mainInputLoop(scanner, conn)
 }
