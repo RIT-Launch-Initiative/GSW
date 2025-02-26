@@ -9,6 +9,12 @@ jobs:
     steps:
       - uses: actions/checkout@v1
 
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.21.3'
+
       # Installs gomarkdoc
       - name: Install gomarkdoc
         run: go install github.com/princjef/gomarkdoc/cmd/gomarkdoc@latest
