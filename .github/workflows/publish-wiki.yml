@@ -1,44 +1,32 @@
-name: Publish Wiki
-
+name: Publish wiki
 on:
   push:
-    branches: [main]  # Remove if you want to trigger for every branch
+    branches: [main]
     paths:
       - wiki/**
       - .github/workflows/publish-wiki.yml
-
 concurrency:
   group: publish-wiki
   cancel-in-progress: true
-
 permissions:
   contents: write
-
 jobs:
-  publish-wiki:
-    runs-on: ubuntu-latest
 
+  - uses: actions/checkout@v3
+  
+  - name: Install gomarkdoc
+    run: go install github.com/princjef/gomarkdoc/cmd/gomarkdoc@latest
+
+  - name: Generate Wiki Documentation
+    run: |
+      rm -rf wiki/* 
+      mkdir -p wiki
+
+      for dir in $(go list -f '{{.Dir}}' ./... | grep -v "cmd"); do
+        gomarkdoc --output "./wiki/$(basename $dir).md" $dir
+      done
+    publish-wiki:
+      runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Install Go
-        uses: actions/setup-go@v5
-        with:
-          go-version: stable
-
-      - name: Install gomarkdoc
-        run: go install github.com/princjef/gomarkdoc/cmd/gomarkdoc@latest
-
-      - name: Generate Wiki Documentation
-        run: |
-          rm -rf wiki/*  # Ensures a clean wiki directory
-          mkdir -p wiki   # Creates wiki directory if missing
-          
-          for dir in $(go list -f '{{.Dir}}' ./... | grep -v "cmd"); do
-            gomarkdoc --output "./wiki/$(basename $dir).md" $dir
-          done
-
-      - name: Publish Wiki
-        uses: Andrew-Chen-Wang/github-wiki-action@v4
-
+      - uses: actions/checkout@v3
+      - uses: Andrew-Chen-Wang/github-wiki-action@v4
