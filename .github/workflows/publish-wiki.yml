@@ -23,16 +23,18 @@ jobs:
       # Generates wiki with gomarkdoc
       - name: Generate Wiki Documentation
         run: |
-          rm -rf wiki/* 
-          mkdir -p wiki
+          rm -rf Docs/wiki/* 
+          mkdir -p Docs/wiki
           for dir in $(go list -f '{{.Dir}}' ./... | grep -v "cmd"); do
-          gomarkdoc --output "./wiki/$(basename $dir).md" $dir
+            gomarkdoc --output "./Docs/wiki/$(basename $dir).md" $dir
           done
 
       # Uploads wiki directory to github wiki page
       - name: Upload Documentation to Wiki
         uses: SwiftDocOrg/github-wiki-publish-action@v1
         with:
-          path: "Documentation"
+          path: "Docs/wiki"
         env:
-          GH_PERSONAL_ACCESS_TOKEN: ${{ secrets.LAUNCH_ACCESS_TOKEN}}
+          GH_PERSONAL_ACCESS_TOKEN: ${{ secrets.GH_ACCESS_TOKEN}}
+
+
