@@ -35,4 +35,4 @@ jobs:
         with:
           path: "Documentation"
         env:
-          GH_PERSONAL_ACCESS_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_PERSONAL_ACCESS_TOKEN: ${{ secrets.LAUNCH_ACCESS_TOKEN}}
