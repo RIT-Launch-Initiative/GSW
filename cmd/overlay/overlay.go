@@ -4,7 +4,10 @@ import (
 	"fmt"
 	"image/color"
 	"log"
+	"math"
 	"os"
+	"strconv"
+	"strings"
 
 	"github.com/AarC10/GSW-V2/lib/ipc"
 	"github.com/AarC10/GSW-V2/lib/tlm"
@@ -14,13 +17,17 @@ import (
 )
 
 const (
-	screenWidth  = 1920
-	screenHeight = 500
+	SCREEN_WIDTH      = 1920
+	SCREEN_HEIGHT     = 500
+	STATION_PREASSURE = 103  // in kPa, currently from Sapceport America, Truth or Consequences, NM 3/2/2025
+	STATION_TEMP      = 16   // in degrees C, currently from Sapceport America, Truth or Consequences, NM 3/2/2025
+	STATION_ELEVATION = 1400 // in meters, currently from Sapceport America, Truth or Consequences, NM 3/2/2025
 )
 
 type Window struct {
-	inited      bool
-	measurments map[string]string
+	inited        bool
+	measurments   map[string]string
+	displayValues map[string]string
 }
 
 func packetInterpreter(graphics *Window, packet tlm.TelemetryPacket, rcvChan chan []byte) {
@@ -59,6 +66,7 @@ func (graphics *Window) init() {
 	}()
 
 	graphics.measurments = make(map[string]string)
+	graphics.displayValues = make(map[string]string)
 
 	//Setup to read from SHM
 	configReader, err := ipc.CreateIpcShmReader("telemetry-config")
@@ -88,6 +96,14 @@ func (graphics *Window) Update() error {
 		graphics.init()
 	}
 
+	// Caclulate altitude
+	ms5611P, ms5611POk := graphics.measurments["PRESS_MS5611"]
+	if ms5611POk {
+		pressFloat, _ := strconv.ParseFloat(strings.TrimSpace(ms5611P), 64)
+		altitude := (1 - math.Pow(pressFloat/1013.25, 0.190284)) * 145366.45
+		graphics.displayValues["altitude"] = fmt.Sprintf("%v", int(altitude))
+	}
+
 	return nil
 }
 
@@ -101,12 +117,11 @@ func (graphics *Window) Draw(screen *ebiten.Image) {
 }
 
 func (graphics *Window) Layout(outsideWidth, outsideHeight int) (int, int) {
-	return screenWidth, screenHeight
+	return SCREEN_WIDTH, SCREEN_HEIGHT
 }
 
 func main() {
-	// Graphics Starts
-	ebiten.SetWindowSize(screenWidth, screenHeight)
+	ebiten.SetWindowSize(SCREEN_WIDTH, SCREEN_HEIGHT)
 	ebiten.SetWindowTitle("RIT Launch Initiative Ground Station Overlay")
 	if err := ebiten.RunGame(&Window{}); err != nil {
 		log.Fatal(err)
