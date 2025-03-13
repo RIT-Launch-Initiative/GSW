@@ -1,13 +1,16 @@
 name: Documentation
 
+# Will only activate on pushes to main
 on: 
   push:
     branches: [main]
 
+# Will run concurent to any other action
 concurrency:
   group: publish-wiki.yml
   cancel-in-progress: true
 
+# Required for pushing to the wiki repo
 permissions:
   contents: write
 
