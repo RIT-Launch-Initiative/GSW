@@ -166,11 +166,25 @@ func (graphics *Window) drawMiddle(screen *ebiten.Image) {
 	screen.DrawImage(middleSec, middleOp)
 }
 
+func (graphics *Window) drawRight(screen *ebiten.Image) {
+	rightSec := ebiten.NewImage(500, SCREEN_HEIGHT)
+	// Draw background
+	vector.DrawFilledRect(rightSec, 0, 0, 500, SCREEN_HEIGHT, color.Black, false)
+
+	// TODO: State stuff
+
+	// Draw section to overlay
+	rightOp := &ebiten.DrawImageOptions{}
+	rightOp.GeoM.Translate(SCREEN_WIDTH/2+400, 0)
+	screen.DrawImage(rightSec, rightOp)
+}
+
 func (graphics *Window) Draw(screen *ebiten.Image) {
 	screen.Fill(color.RGBA{0, 255, 0, 100})
 
 	graphics.drawLeft(screen)
 	graphics.drawMiddle(screen)
+	graphics.drawRight(screen)
 }
 
 func (graphics *Window) Layout(outsideWidth, outsideHeight int) (int, int) {
