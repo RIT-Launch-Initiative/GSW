@@ -21,7 +21,7 @@ import (
 
 const (
 	SCREEN_WIDTH      = 1920
-	SCREEN_HEIGHT     = 300
+	SCREEN_HEIGHT     = 200
 	STATION_PREASSURE = 103  // in kPa, currently from Sapceport America, Truth or Consequences, NM 3/2/2025
 	STATION_TEMP      = 16   // in degrees C, currently from Sapceport America, Truth or Consequences, NM 3/2/2025
 	STATION_ELEVATION = 4600 // in feet, currently from Sapceport America, Truth or Consequences, NM 3/2/2025
@@ -102,6 +102,10 @@ func (graphics *Window) init() {
 	}
 
 	go packetHandler(graphics)
+
+	graphics.displayValues["altitude"] = "0"
+	graphics.displayValues["vbat"] = "0"
+	graphics.displayValues["temperature"] = "0.00"
 }
 
 func (graphics *Window) Update() error {
@@ -138,9 +142,39 @@ func (graphics *Window) drawLeft(screen *ebiten.Image) {
 	// Draw background
 	vector.DrawFilledRect(leftSec, 0, 0, 500, SCREEN_HEIGHT, color.Black, false)
 
-	// TODO: VBat
+	// VBat
+	val, ok := graphics.displayValues["vbat"]
+	if ok {
+		voltage := fmt.Sprintf("VBAT: %3sV", val)
+		voltOp := &text.DrawOptions{}
+		width, _ := text.Measure(voltage, &text.GoTextFace{
+			Source: robotoFontSource,
+			Size:   24,
+		}, 5)
+		voltOp.GeoM.Translate(250-(width/2), 20)
+		voltOp.ColorScale.ScaleWithColor(color.White)
+		text.Draw(leftSec, voltage, &text.GoTextFace{
+			Source: robotoFontSource,
+			Size:   24,
+		}, voltOp)
+	}
 
-	// TODO: Temperature
+	// Temperature
+	val, ok = graphics.displayValues["temperature"]
+	if ok {
+		temp := fmt.Sprintf("Temperatrue: %6s°C", val)
+		tempOp := &text.DrawOptions{}
+		width, _ := text.Measure(temp, &text.GoTextFace{
+			Source: robotoFontSource,
+			Size:   24,
+		}, 5)
+		tempOp.GeoM.Translate(250-(width/2), 60)
+		tempOp.ColorScale.ScaleWithColor(color.White)
+		text.Draw(leftSec, temp, &text.GoTextFace{
+			Source: robotoFontSource,
+			Size:   24,
+		}, tempOp)
+	}
 
 	// TODO: G's
 
@@ -160,11 +194,11 @@ func (graphics *Window) drawMiddle(screen *ebiten.Image) {
 	if ok {
 		altitude := fmt.Sprintf("Altitude: %5s ft", val)
 		altOp := &text.DrawOptions{}
-		x, _ := text.Measure(altitude, &text.GoTextFace{
+		width, _ := text.Measure(altitude, &text.GoTextFace{
 			Source: robotoFontSource,
 			Size:   24,
 		}, 5)
-		altOp.GeoM.Translate(400-(x/2), 20)
+		altOp.GeoM.Translate(400-(width/2), 20)
 		altOp.ColorScale.ScaleWithColor(color.White)
 		text.Draw(middleSec, altitude, &text.GoTextFace{
 			Source: robotoFontSource,
