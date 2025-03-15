@@ -9,6 +9,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"sync"
 
 	"github.com/AarC10/GSW-V2/assets/fonts"
 	"github.com/AarC10/GSW-V2/lib/ipc"
@@ -35,7 +36,7 @@ var (
 
 type Window struct {
 	inited        bool
-	measurments   map[string]string
+	measurments   sync.Map
 	displayValues map[string]string
 }
 
@@ -54,7 +55,7 @@ func packetInterpreter(graphics *Window, packet tlm.TelemetryPacket, rcvChan cha
 				continue
 			}
 
-			graphics.measurments[measurmentName] = fmt.Sprintf("%v", value)
+			graphics.measurments.Store(measurmentName, fmt.Sprintf("%v", value))
 
 			offset += measurement.Size
 		}
@@ -74,14 +75,13 @@ func (graphics *Window) init() {
 		graphics.inited = true
 	}()
 
+	graphics.displayValues = make(map[string]string)
+
 	source, err := text.NewGoTextFaceSource(bytes.NewReader(fonts.RobotoMonoVariable_ttf))
 	if err != nil {
 		log.Fatal(err)
 	}
 	robotoFontSource = source
-
-	graphics.measurments = make(map[string]string)
-	graphics.displayValues = make(map[string]string)
 
 	//Setup to read from SHM
 	configReader, err := ipc.CreateIpcShmReader("telemetry-config")
@@ -106,7 +106,7 @@ func (graphics *Window) init() {
 	go packetHandler(graphics)
 
 	graphics.displayValues["altitude"] = "0"
-	graphics.displayValues["vbat"] = "0"
+	graphics.displayValues["vbat"] = "0.00"
 	graphics.displayValues["temperature"] = "0.00"
 	graphics.displayValues["acceleration"] = "0.0"
 }
@@ -117,34 +117,34 @@ func (graphics *Window) Update() error {
 	}
 
 	// Caclulate altitude
-	ms5611P, ms5611POk := graphics.measurments["PRESS_MS5611"]
+	ms5611P, ms5611POk := graphics.measurments.Load("PRESS_MS5611")
 	if ms5611POk {
-		pressFloat, _ := strconv.ParseFloat(strings.TrimSpace(ms5611P), 64)
+		pressFloat, _ := strconv.ParseFloat(strings.TrimSpace(ms5611P.(string)), 64)
 		altitude := (1 - math.Pow((pressFloat*10)/1013.25, 0.190284)) * 145366.45
 		graphics.displayValues["altitude"] = fmt.Sprintf("%v", int(altitude)-STATION_ELEVATION)
 	}
 
 	// Get VBAT
-	VBAT, VBATOk := graphics.measurments["VOLT_BATT"]
+	VBAT, VBATOk := graphics.measurments.Load("VOLT_BATT")
 	if VBATOk {
-		graphics.displayValues["vbat"] = VBAT
+		graphics.displayValues["vbat"] = VBAT.(string)
 	}
 
 	// Get Temp
-	ms5611T, ms5611TOk := graphics.measurments["TEMP_MS5611"]
+	ms5611T, ms5611TOk := graphics.measurments.Load("TEMP_MS5611")
 	if ms5611TOk {
-		tempFloat, _ := strconv.ParseFloat(strings.TrimSpace(ms5611T), 64)
+		tempFloat, _ := strconv.ParseFloat(strings.TrimSpace(ms5611T.(string)), 64)
 		graphics.displayValues["temperature"] = fmt.Sprintf("%.2f", tempFloat)
 	}
 
-	// Calculate Gs
-	adxX, xOk := graphics.measurments["ADX_ACCEL_X"]
-	adxY, yOk := graphics.measurments["ADX_ACCEL_Y"]
-	adxZ, zOk := graphics.measurments["ADX_ACCEL_Z"]
+	// Calculate m/s^2
+	adxX, xOk := graphics.measurments.Load("ADX_ACCEL_X")
+	adxY, yOk := graphics.measurments.Load("ADX_ACCEL_Y")
+	adxZ, zOk := graphics.measurments.Load("ADX_ACCEL_Z")
 	if xOk && yOk && zOk {
-		xFloat, _ := strconv.ParseFloat(strings.TrimSpace(adxX), 64)
-		yFloat, _ := strconv.ParseFloat(strings.TrimSpace(adxY), 64)
-		zFloat, _ := strconv.ParseFloat(strings.TrimSpace(adxZ), 64)
+		xFloat, _ := strconv.ParseFloat(strings.TrimSpace(adxX.(string)), 64)
+		yFloat, _ := strconv.ParseFloat(strings.TrimSpace(adxY.(string)), 64)
+		zFloat, _ := strconv.ParseFloat(strings.TrimSpace(adxZ.(string)), 64)
 		acceleration := math.Sqrt(math.Pow(xFloat, 2) + math.Pow(yFloat, 2) + math.Pow(zFloat, 2))
 		graphics.displayValues["acceleration"] = fmt.Sprintf("%.1f", acceleration)
 	}
@@ -194,7 +194,7 @@ func (graphics *Window) drawLeft(screen *ebiten.Image) {
 	// Acceleration
 	val, ok = graphics.displayValues["acceleration"]
 	if ok {
-		acceleration := fmt.Sprintf("Acceleration: %5sGs", val)
+		acceleration := fmt.Sprintf("Acceleration: %5sm/s^2", val)
 		accelOp := &text.DrawOptions{}
 		width, _ := text.Measure(acceleration, &text.GoTextFace{
 			Source: robotoFontSource,
