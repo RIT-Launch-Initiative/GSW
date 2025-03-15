@@ -22,6 +22,8 @@ import (
 const (
 	SCREEN_WIDTH      = 1920
 	SCREEN_HEIGHT     = 200
+	SIDE_WIDTH        = 400
+	MIDDLE_WIDTH      = 600
 	STATION_PREASSURE = 103  // in kPa, currently from Sapceport America, Truth or Consequences, NM 3/2/2025
 	STATION_TEMP      = 16   // in degrees C, currently from Sapceport America, Truth or Consequences, NM 3/2/2025
 	STATION_ELEVATION = 4600 // in feet, currently from Sapceport America, Truth or Consequences, NM 3/2/2025
@@ -106,6 +108,7 @@ func (graphics *Window) init() {
 	graphics.displayValues["altitude"] = "0"
 	graphics.displayValues["vbat"] = "0"
 	graphics.displayValues["temperature"] = "0.00"
+	graphics.displayValues["acceleration"] = "0.0"
 }
 
 func (graphics *Window) Update() error {
@@ -134,13 +137,25 @@ func (graphics *Window) Update() error {
 		graphics.displayValues["temperature"] = fmt.Sprintf("%.2f", tempFloat)
 	}
 
+	// Calculate Gs
+	adxX, xOk := graphics.measurments["ADX_ACCEL_X"]
+	adxY, yOk := graphics.measurments["ADX_ACCEL_Y"]
+	adxZ, zOk := graphics.measurments["ADX_ACCEL_Z"]
+	if xOk && yOk && zOk {
+		xFloat, _ := strconv.ParseFloat(strings.TrimSpace(adxX), 64)
+		yFloat, _ := strconv.ParseFloat(strings.TrimSpace(adxY), 64)
+		zFloat, _ := strconv.ParseFloat(strings.TrimSpace(adxZ), 64)
+		acceleration := math.Sqrt(math.Pow(xFloat, 2) + math.Pow(yFloat, 2) + math.Pow(zFloat, 2))
+		graphics.displayValues["acceleration"] = fmt.Sprintf("%.1f", acceleration)
+	}
+
 	return nil
 }
 
 func (graphics *Window) drawLeft(screen *ebiten.Image) {
-	leftSec := ebiten.NewImage(500, SCREEN_HEIGHT)
+	leftSec := ebiten.NewImage(SIDE_WIDTH, SCREEN_HEIGHT)
 	// Draw background
-	vector.DrawFilledRect(leftSec, 0, 0, 500, SCREEN_HEIGHT, color.Black, false)
+	vector.DrawFilledRect(leftSec, 0, 0, SIDE_WIDTH, SCREEN_HEIGHT, color.Black, false)
 
 	// VBat
 	val, ok := graphics.displayValues["vbat"]
@@ -151,7 +166,7 @@ func (graphics *Window) drawLeft(screen *ebiten.Image) {
 			Source: robotoFontSource,
 			Size:   24,
 		}, 5)
-		voltOp.GeoM.Translate(250-(width/2), 20)
+		voltOp.GeoM.Translate((SIDE_WIDTH/2)-(width/2), 20)
 		voltOp.ColorScale.ScaleWithColor(color.White)
 		text.Draw(leftSec, voltage, &text.GoTextFace{
 			Source: robotoFontSource,
@@ -162,13 +177,13 @@ func (graphics *Window) drawLeft(screen *ebiten.Image) {
 	// Temperature
 	val, ok = graphics.displayValues["temperature"]
 	if ok {
-		temp := fmt.Sprintf("Temperatrue: %6s°C", val)
+		temp := fmt.Sprintf("Temperature: %6s°C", val)
 		tempOp := &text.DrawOptions{}
 		width, _ := text.Measure(temp, &text.GoTextFace{
 			Source: robotoFontSource,
 			Size:   24,
 		}, 5)
-		tempOp.GeoM.Translate(250-(width/2), 60)
+		tempOp.GeoM.Translate((SIDE_WIDTH/2)-(width/2), 60)
 		tempOp.ColorScale.ScaleWithColor(color.White)
 		text.Draw(leftSec, temp, &text.GoTextFace{
 			Source: robotoFontSource,
@@ -176,18 +191,33 @@ func (graphics *Window) drawLeft(screen *ebiten.Image) {
 		}, tempOp)
 	}
 
-	// TODO: G's
+	// Acceleration
+	val, ok = graphics.displayValues["acceleration"]
+	if ok {
+		acceleration := fmt.Sprintf("Acceleration: %5sGs", val)
+		accelOp := &text.DrawOptions{}
+		width, _ := text.Measure(acceleration, &text.GoTextFace{
+			Source: robotoFontSource,
+			Size:   24,
+		}, 5)
+		accelOp.GeoM.Translate((SIDE_WIDTH/2)-(width/2), 100)
+		accelOp.ColorScale.ScaleWithColor(color.White)
+		text.Draw(leftSec, acceleration, &text.GoTextFace{
+			Source: robotoFontSource,
+			Size:   24,
+		}, accelOp)
+	}
 
 	// Draw section to overlay
 	leftOp := &ebiten.DrawImageOptions{}
-	leftOp.GeoM.Translate(SCREEN_WIDTH/2-900, 0)
+	leftOp.GeoM.Translate(SCREEN_WIDTH/2-(MIDDLE_WIDTH/2+SIDE_WIDTH), 0)
 	screen.DrawImage(leftSec, leftOp)
 }
 
 func (graphics *Window) drawMiddle(screen *ebiten.Image) {
-	middleSec := ebiten.NewImage(800, SCREEN_HEIGHT)
+	middleSec := ebiten.NewImage(MIDDLE_WIDTH, SCREEN_HEIGHT)
 	// Draw background
-	vector.DrawFilledRect(middleSec, 0, 0, 800, SCREEN_HEIGHT, color.Black, false)
+	vector.DrawFilledRect(middleSec, 0, 0, MIDDLE_WIDTH, SCREEN_HEIGHT, color.Black, false)
 
 	// Draw altittude
 	val, ok := graphics.displayValues["altitude"]
@@ -198,7 +228,7 @@ func (graphics *Window) drawMiddle(screen *ebiten.Image) {
 			Source: robotoFontSource,
 			Size:   24,
 		}, 5)
-		altOp.GeoM.Translate(400-(width/2), 20)
+		altOp.GeoM.Translate((MIDDLE_WIDTH/2)-(width/2), 20)
 		altOp.ColorScale.ScaleWithColor(color.White)
 		text.Draw(middleSec, altitude, &text.GoTextFace{
 			Source: robotoFontSource,
@@ -212,20 +242,20 @@ func (graphics *Window) drawMiddle(screen *ebiten.Image) {
 
 	// Draw setion to overlay
 	middleOp := &ebiten.DrawImageOptions{}
-	middleOp.GeoM.Translate(SCREEN_WIDTH/2-400, 0)
+	middleOp.GeoM.Translate(SCREEN_WIDTH/2-(MIDDLE_WIDTH/2), 0)
 	screen.DrawImage(middleSec, middleOp)
 }
 
 func (graphics *Window) drawRight(screen *ebiten.Image) {
-	rightSec := ebiten.NewImage(500, SCREEN_HEIGHT)
+	rightSec := ebiten.NewImage(SIDE_WIDTH, SCREEN_HEIGHT)
 	// Draw background
-	vector.DrawFilledRect(rightSec, 0, 0, 500, SCREEN_HEIGHT, color.Black, false)
+	vector.DrawFilledRect(rightSec, 0, 0, SIDE_WIDTH, SCREEN_HEIGHT, color.Black, false)
 
 	// TODO: State stuff
 
 	// Draw section to overlay
 	rightOp := &ebiten.DrawImageOptions{}
-	rightOp.GeoM.Translate(SCREEN_WIDTH/2+400, 0)
+	rightOp.GeoM.Translate(SCREEN_WIDTH/2+(MIDDLE_WIDTH/2), 0)
 	screen.DrawImage(rightSec, rightOp)
 }
 
