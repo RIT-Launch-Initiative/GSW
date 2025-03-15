@@ -35,7 +35,6 @@ type Window struct {
 	inited        bool
 	measurments   map[string]string
 	displayValues map[string]string
-	middle        *ebiten.Image
 }
 
 func packetInterpreter(graphics *Window, packet tlm.TelemetryPacket, rcvChan chan []byte) {
@@ -103,8 +102,6 @@ func (graphics *Window) init() {
 	}
 
 	go packetHandler(graphics)
-
-	graphics.middle = ebiten.NewImage(800, SCREEN_HEIGHT)
 }
 
 func (graphics *Window) Update() error {
@@ -123,31 +120,56 @@ func (graphics *Window) Update() error {
 	return nil
 }
 
-func (graphics *Window) drawMiddle(screen *ebiten.Image) {
+func (graphics *Window) drawLeft(screen *ebiten.Image) {
+	leftSec := ebiten.NewImage(500, SCREEN_HEIGHT)
 	// Draw background
-	vector.DrawFilledRect(graphics.middle, 0, 0, 800, SCREEN_HEIGHT, color.Black, false)
+	vector.DrawFilledRect(leftSec, 0, 0, 500, SCREEN_HEIGHT, color.Black, false)
+
+	// TODO: VBat
+
+	// TODO: Temperature
+
+	// TODO: G's
+
+	// Draw section to overlay
+	leftOp := &ebiten.DrawImageOptions{}
+	leftOp.GeoM.Translate(SCREEN_WIDTH/2-900, 0)
+	screen.DrawImage(leftSec, leftOp)
+}
+
+func (graphics *Window) drawMiddle(screen *ebiten.Image) {
+	middleSec := ebiten.NewImage(800, SCREEN_HEIGHT)
+	// Draw background
+	vector.DrawFilledRect(middleSec, 0, 0, 800, SCREEN_HEIGHT, color.Black, false)
 
 	// Draw altittude
 	val, ok := graphics.displayValues["altitude"]
 	if ok {
 		altitude := fmt.Sprintf("Altitude: %5s ft", val)
 		altOp := &text.DrawOptions{}
-		altOp.GeoM.Translate(400, 20)
+		// TODO: Make this not be a magic number
+		altOp.GeoM.Translate(260, 20)
 		altOp.ColorScale.ScaleWithColor(color.White)
-		text.Draw(graphics.middle, altitude, &text.GoTextFace{
+		text.Draw(middleSec, altitude, &text.GoTextFace{
 			Source: robotoFontSource,
 			Size:   24,
 		}, altOp)
 	}
 
+	// TODO: Spinny gyro rocket orientation thing
+
+	// TODO: Speed
+
+	// Draw setion to overlay
 	middleOp := &ebiten.DrawImageOptions{}
 	middleOp.GeoM.Translate(SCREEN_WIDTH/2-400, 0)
-	screen.DrawImage(graphics.middle, middleOp)
+	screen.DrawImage(middleSec, middleOp)
 }
 
 func (graphics *Window) Draw(screen *ebiten.Image) {
 	screen.Fill(color.RGBA{0, 255, 0, 100})
 
+	graphics.drawLeft(screen)
 	graphics.drawMiddle(screen)
 }
 
