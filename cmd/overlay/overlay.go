@@ -117,6 +117,19 @@ func (graphics *Window) Update() error {
 		graphics.displayValues["altitude"] = fmt.Sprintf("%v", int(altitude)-STATION_ELEVATION)
 	}
 
+	// Get VBAT
+	VBAT, VBATOk := graphics.measurments["VOLT_BATT"]
+	if VBATOk {
+		graphics.displayValues["vbat"] = VBAT
+	}
+
+	// Get Temp
+	ms5611T, ms5611TOk := graphics.measurments["TEMP_MS5611"]
+	if ms5611TOk {
+		tempFloat, _ := strconv.ParseFloat(strings.TrimSpace(ms5611T), 64)
+		graphics.displayValues["temperature"] = fmt.Sprintf("%.2f", tempFloat)
+	}
+
 	return nil
 }
 
@@ -147,8 +160,11 @@ func (graphics *Window) drawMiddle(screen *ebiten.Image) {
 	if ok {
 		altitude := fmt.Sprintf("Altitude: %5s ft", val)
 		altOp := &text.DrawOptions{}
-		// TODO: Make this not be a magic number
-		altOp.GeoM.Translate(260, 20)
+		x, _ := text.Measure(altitude, &text.GoTextFace{
+			Source: robotoFontSource,
+			Size:   24,
+		}, 5)
+		altOp.GeoM.Translate(400-(x/2), 20)
 		altOp.ColorScale.ScaleWithColor(color.White)
 		text.Draw(middleSec, altitude, &text.GoTextFace{
 			Source: robotoFontSource,
