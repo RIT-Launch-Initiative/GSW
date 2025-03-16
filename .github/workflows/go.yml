@@ -31,4 +31,13 @@ jobs:
         gofmt -s -l -w .
         git config --global user.email "github-actions[bot]@users.noreply.github.com"
         git config --global user.name "github-actions[bot]"
-        git diff --exit-code || (git commit -am "Formatted code" && git push)
+        
+        BRANCH_NAME=$(git rev-parse --abbrev-ref HEAD)
+        
+        if ! git diff --quiet; then
+          git add .
+          git commit -m "Formatted code"
+          git push origin $BRANCH_NAME
+        else
+          echo "No formatting changes needed"
+        fi
