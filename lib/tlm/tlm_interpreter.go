@@ -18,7 +18,7 @@ type Measurement struct {
 
 // TelemetryPacket represents information about a telemetry packet received over Ethernet.
 type TelemetryPacket struct {
-	Name         string   `yaml:"name"`         // Name of the telemetry packet
+		Name         string   `yaml:"name"`         // Name of the telemetry packet
 	Port         int      `yaml:"port"`         // Port number for the telemetry packet
 	Measurements []string `yaml:"measurements"` // List of measurements in the telemetry packet
 }

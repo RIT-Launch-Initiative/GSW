@@ -33,12 +33,11 @@ jobs:
         git config --global user.email "github-actions[bot]@users.noreply.github.com"
         git config --global user.name "github-actions[bot]"
         
-        BRANCH_NAME=$(git rev-parse --abbrev-ref HEAD)
-        
-        if ! git diff --quiet; then
-          git add .
-          git commit -m "Formatted code"
-          git push origin $BRANCH_NAME
+        if git diff-files --quiet; then
+          echo 'No formatting changes'
         else
-          echo "No formatting changes needed"
+          echo 'Formatting changes applied:'
+          git diff --raw
+          git commit -a -m "Applied Formatting Changes During GitHub Build"
+          git push origin
         fi
