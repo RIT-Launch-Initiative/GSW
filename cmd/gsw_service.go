@@ -114,14 +114,12 @@ func dbInitialize(ctx context.Context, channelMap map[int]chan []byte, host stri
 func readConfig() *viper.Viper {
 	config := viper.New()
 	configFilepath := flag.String("c", "gsw_service", "name of config file")
-	databasePortNumber := flag.Int("dp", 8089, "port number for the database")
-	databaseHostName := flag.String("dh", "localhost", "database host name")
 	flag.Parse()
+	config.SetDefault("database_port_number", 8089)
+	config.SetDefault("database_host_name", "localhost")
 	config.SetConfigName(*configFilepath)
 	config.SetConfigType("yaml")
 	config.AddConfigPath("data/config/")
-	config.Set("databasePortNumber", databasePortNumber)
-	config.Set("databaseHostName", databaseHostName)
 	err := config.ReadInConfig()
 	if err != nil {
 		logger.Panic("Error reading GSW config: %w", zap.Error(err))
@@ -154,7 +152,7 @@ func main() {
 	defer configWriter.Cleanup()
 
 	channelMap := decomInitialize(ctx)
-	dbInitialize(ctx, channelMap, config.GetString("databaseHostName"), config.GetInt("databasePortNumber"))
+	dbInitialize(ctx, channelMap, config.GetString("database_host_name"), config.GetInt("database_port_number"))
 
 	// Wait for context cancellation or signal handling
 	<-ctx.Done()
