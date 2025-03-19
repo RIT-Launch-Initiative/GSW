@@ -125,8 +125,6 @@ func readConfig() *viper.Viper {
 	return config
 }
 
-
-
 func main() {
 	// Read gsw_service config
 	config := readConfig()
