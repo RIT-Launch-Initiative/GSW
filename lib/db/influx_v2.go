@@ -13,7 +13,7 @@ type InfluxDBV2Handler struct {
 }
 
 // Initialize sets up the InfluxDB client
-func (h *InfluxDBV2Handler) Initialize() {
+func (h *InfluxDBV2Handler) Initialize(host string, port int) {
 	// TODO: Get URL and token from config
 	//h.client = influxdb2.NewClient(url, token)
 }
