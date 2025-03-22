@@ -92,9 +92,9 @@ func decomInitialize(ctx context.Context) map[int]chan []byte {
 	return channelMap
 }
 
-func dbInitialize(ctx context.Context, channelMap map[int]chan []byte) error {
+func dbInitialize(ctx context.Context, channelMap map[int]chan []byte, host string, port int) error {
 	dbHandler := db.InfluxDBV1Handler{}
-	err := dbHandler.Initialize()
+	err := dbHandler.Initialize(host, port)
 	if err != nil {
 		logger.Warn("Warning. Telemetry packets will not be published to database")
 		return err
@@ -115,6 +115,8 @@ func readConfig() *viper.Viper {
 	config := viper.New()
 	configFilepath := flag.String("c", "gsw_service", "name of config file")
 	flag.Parse()
+	config.SetDefault("database_port_number", 8089)
+	config.SetDefault("database_host_name", "localhost")
 	config.SetConfigName(*configFilepath)
 	config.SetConfigType("yaml")
 	config.AddConfigPath("data/config/")
@@ -150,7 +152,7 @@ func main() {
 	defer configWriter.Cleanup()
 
 	channelMap := decomInitialize(ctx)
-	dbInitialize(ctx, channelMap)
+	dbInitialize(ctx, channelMap, config.GetString("database_host_name"), config.GetInt("database_port_number"))
 
 	// Wait for context cancellation or signal handling
 	<-ctx.Done()

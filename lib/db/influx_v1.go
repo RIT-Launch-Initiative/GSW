@@ -12,9 +12,8 @@ type InfluxDBV1Handler struct {
 }
 
 // Initialize sets up the InfluxDB UDP connection
-func (h *InfluxDBV1Handler) Initialize() error {
-	h.addr = "localhost:8089" // TODO: Make this IP and port configurable
-
+func (h *InfluxDBV1Handler) Initialize(host string, port int) error {
+	h.addr = fmt.Sprintf("%s:%d", host, port)
 	addr, err := net.ResolveUDPAddr("udp", h.addr)
 	if err != nil {
 		fmt.Println("Error creating InfluxDB UDP client:", err)
