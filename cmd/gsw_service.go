@@ -5,17 +5,21 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"github.com/AarC10/GSW-V2/lib/db"
-	"github.com/AarC10/GSW-V2/lib/ipc"
-	"github.com/AarC10/GSW-V2/lib/tlm"
-	"github.com/spf13/viper"
 	"os"
 	"os/signal"
 	"syscall"
 
+	"github.com/AarC10/GSW-V2/lib/db"
+	"github.com/AarC10/GSW-V2/lib/ipc"
+	"github.com/AarC10/GSW-V2/lib/logger"
+	"github.com/AarC10/GSW-V2/lib/tlm"
+	"github.com/spf13/viper"
+	"go.uber.org/zap"
+
 	"github.com/AarC10/GSW-V2/proc"
 )
 
+// printTelemetryPackets prints the telemetry packets and their measurements it found in the configuration.
 func printTelemetryPackets() {
 	fmt.Println("Telemetry Packets:")
 	for _, packet := range proc.GswConfig.TelemetryPackets {
@@ -25,41 +29,44 @@ func printTelemetryPackets() {
 			for _, measurementName := range packet.Measurements {
 				measurement, ok := proc.GswConfig.Measurements[measurementName]
 				if !ok {
-					fmt.Printf("\t\tMeasurement '%s' not found\n", measurementName)
+					logger.Warn(fmt.Sprint("Measurement '", measurementName, "' not found"))
 					continue
 				}
 				fmt.Printf("\t\t%s\n", measurement.String())
 			}
 		} else {
-			fmt.Println("\t\tNo measurements defined.")
+			logger.Warn("No measurement defined.")
 		}
 	}
 }
 
+// vcmInitialize initializes the Vehicle Config Manager
+// It reads the telemetry config file and writes it into shared memory
 func vcmInitialize(config *viper.Viper) (*ipc.IpcShmHandler, error) {
 	if !config.IsSet("telemetry_config") {
 		err := errors.New("Error: Telemetry config filepath is not set in GSW config.")
-		fmt.Printf("%v\n", err)
+		logger.Error(fmt.Sprint(err))
 		return nil, err
 	}
 	data, err := os.ReadFile(config.GetString("telemetry_config"))
 	if err != nil {
-		fmt.Printf("Error reading YAML file: %v\n", err)
+		logger.Error("Error reading YAML file: ", zap.Error(err))
 		return nil, err
 	}
 	_, err = proc.ParseConfigBytes(data)
 	if err != nil {
-		fmt.Printf("Error parsing YAML: %v\n", err)
+
+		logger.Error("Error parsing YAML:", zap.Error(err))
 		return nil, err
 	}
 	configWriter, err := ipc.CreateIpcShmHandler("telemetry-config", len(data), true)
 	if err != nil {
-		fmt.Printf("Error creating shared memory handler: %v\n", err)
+		logger.Error("Error creating shared memory handler: ", zap.Error(err))
 		return nil, err
 	}
 	if configWriter.Write(data) != nil {
-		fmt.Printf("Error writing telemetry config to shared memory: %v\n", err)
 		configWriter.Cleanup()
+		logger.Error("Error writing telemetry config to shared memory: ", zap.Error(err))
 		return nil, err
 	}
 
@@ -67,6 +74,7 @@ func vcmInitialize(config *viper.Viper) (*ipc.IpcShmHandler, error) {
 	return configWriter, nil
 }
 
+// decomInitialize starts decommutation goroutines for each telemetry packet
 func decomInitialize(ctx context.Context) map[int]chan []byte {
 	channelMap := make(map[int]chan []byte)
 
@@ -88,7 +96,7 @@ func dbInitialize(ctx context.Context, channelMap map[int]chan []byte) error {
 	dbHandler := db.InfluxDBV1Handler{}
 	err := dbHandler.Initialize()
 	if err != nil {
-		fmt.Println("Warning. Telemetry packets will not be published to database")
+		logger.Warn("Warning. Telemetry packets will not be published to database")
 		return err
 	}
 
@@ -112,7 +120,7 @@ func readConfig() *viper.Viper {
 	config.AddConfigPath("data/config/")
 	err := config.ReadInConfig()
 	if err != nil {
-		panic(fmt.Errorf("Error reading GSW config: %w", err))
+		logger.Panic("Error reading GSW config: %w", zap.Error(err))
 	}
 	return config
 }
@@ -136,7 +144,7 @@ func main() {
 
 	configWriter, err := vcmInitialize(config)
 	if err != nil {
-		fmt.Println("Exiting GSW")
+		logger.Info("Exiting GSW...")
 		return
 	}
 	defer configWriter.Cleanup()
@@ -146,5 +154,5 @@ func main() {
 
 	// Wait for context cancellation or signal handling
 	<-ctx.Done()
-	fmt.Println("Shutting down...")
+	logger.Info("Shutting down GSW...")
 }

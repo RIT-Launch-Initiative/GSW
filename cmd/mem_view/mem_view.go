@@ -7,12 +7,14 @@ import (
 	"strings"
 	"syscall"
 
+	"github.com/AarC10/GSW-V2/lib/ipc"
 	"github.com/AarC10/GSW-V2/lib/tlm"
 	"github.com/AarC10/GSW-V2/lib/util"
-	"github.com/AarC10/GSW-V2/lib/ipc"
 	"github.com/AarC10/GSW-V2/proc"
 )
 
+// buildString creates a string representation of the telemetry packet data
+// Format: MeasurementName: Value (Base-10) [(Base-16)]
 func buildString(packet tlm.TelemetryPacket, data []byte, startLine int) string {
 	var sb strings.Builder
 	offset := 0
@@ -39,6 +41,8 @@ func buildString(packet tlm.TelemetryPacket, data []byte, startLine int) string 
 	return sb.String()
 }
 
+// printTelemetryPacket prints the telemetry packet data to the console
+// Written to the console at the specified start line and updated as new data is received
 func printTelemetryPacket(startLine int, packet tlm.TelemetryPacket, rcvChan chan []byte) {
 	fmt.Print(buildString(packet, make([]byte, proc.GetPacketSize(packet)), startLine))
 
