@@ -1,8 +1,11 @@
 package db
 
 import (
+	"bytes"
 	"fmt"
+	"io"
 	"net"
+	"net/http"
 )
 
 // InfluxDBV1Handler is a DB Handler implementation for InfluxDB v1
@@ -28,6 +31,7 @@ func (h *InfluxDBV1Handler) Initialize() error {
 	}
 
 	h.conn = *conn
+
 	return nil
 }
 
@@ -67,6 +71,33 @@ func (h *InfluxDBV1Handler) Insert(measurements MeasurementGroup) error {
 	if err != nil {
 		return fmt.Errorf("error sending data to InfluxDB over UDP: %w", err)
 	}
+
+	// Send the query data over HTTP to Grafana Live
+	// TODO: config!!!
+	liveAddr := "http://localhost:3000/api/live/push/custom_stream_id/"
+	body := bytes.NewReader(data)
+	request, err := http.NewRequest(http.MethodPost, liveAddr, body)
+	auth_token := "REDACTED" // TODO auth_token config
+	request.Header.Set("Authorization", "Bearer "+auth_token)
+	if err != nil {
+		return fmt.Errorf("error forming HTTP request: %v", err)
+	}
+	response, err := http.DefaultClient.Do(request)
+	if err != nil {
+		return fmt.Errorf("error returned by HTTP request: %v", err)
+	}
+	fmt.Printf("Response recieved.")
+	fmt.Printf("Status code: %d\n", response.StatusCode)
+	resBodyContents, err := io.ReadAll(response.Body)
+	if err != nil {
+		response.Body.Close()
+		return fmt.Errorf("error returned by HTTP request: %v", err)
+	}
+	err = response.Body.Close()
+	if err != nil {
+		return fmt.Errorf("error closing response body: %v", err)
+	}
+	fmt.Printf("Response body: %s\n", resBodyContents)
 
 	return nil
 }
