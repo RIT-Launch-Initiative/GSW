@@ -149,7 +149,7 @@
             "h": 8,
             "w": 4,
             "x": 0,
-            "y": 1
+            "y": 9
           },
           "id": 41,
           "options": {
@@ -286,7 +286,7 @@
             "h": 8,
             "w": 4,
             "x": 4,
-            "y": 1
+            "y": 9
           },
           "id": 42,
           "options": {
@@ -416,7 +416,7 @@
             "h": 8,
             "w": 16,
             "x": 8,
-            "y": 1
+            "y": 9
           },
           "id": 40,
           "options": {
@@ -1396,7 +1396,7 @@
                 "value": {
                   "legend": false,
                   "tooltip": false,
-                  "viz": true
+                  "viz": false
                 }
               }
             ]
@@ -1485,7 +1485,7 @@
           "hide": false,
           "orderByTime": "ASC",
           "policy": "default",
-          "query": "SELECT LSM_ACCEL_X, LSM_ACCEL_Y, LSM_ACCEL_Z, ADX_ACCEL_X, ADX_ACCEL_Y, ADX_ACCEL_Z  FROM gsw..backplane  WHERE $timeFilter;;",
+          "query": "SELECT LSM_ACCEL_X, LSM_ACCEL_Y, LSM_ACCEL_Z, ADX_ACCEL_X, ADX_ACCEL_Y, ADX_ACCEL_Z  FROM gsw..backplane  WHERE $timeFilter;",
           "rawQuery": true,
           "refId": "X",
           "resultFormat": "time_series",
@@ -2048,7 +2048,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": null
               },
               {
                 "color": "red",
@@ -2215,7 +2216,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": null
               },
               {
                 "color": "red",
@@ -2382,7 +2384,7 @@
             "h": 16,
             "w": 20,
             "x": 0,
-            "y": 39
+            "y": 47
           },
           "id": 30,
           "options": {
@@ -2535,7 +2537,7 @@
             "h": 8,
             "w": 4,
             "x": 20,
-            "y": 39
+            "y": 47
           },
           "id": 21,
           "options": {
@@ -2676,7 +2678,7 @@
             "h": 8,
             "w": 4,
             "x": 20,
-            "y": 47
+            "y": 55
           },
           "id": 24,
           "options": {
@@ -3684,7 +3686,7 @@
     "list": []
   },
   "time": {
-    "from": "now-6h",
+    "from": "now-5m",
     "to": "now"
   },
   "timeRangeUpdatedDuringEditOrView": false,
