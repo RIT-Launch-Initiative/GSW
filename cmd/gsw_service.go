@@ -17,6 +17,9 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/AarC10/GSW-V2/proc"
+
+	"net/http"
+	_ "net/http/pprof"
 )
 
 // printTelemetryPackets prints the telemetry packets and their measurements it found in the configuration.
@@ -111,9 +114,10 @@ func dbInitialize(ctx context.Context, channelMap map[int]chan []byte) error {
 	return nil
 }
 
-func readConfig() *viper.Viper {
+func readConfig() (*viper.Viper, bool) {
 	config := viper.New()
 	configFilepath := flag.String("c", "gsw_service", "name of config file")
+	doPprof := flag.Bool("p", false, "Whether to enable pprof web server")
 	flag.Parse()
 	config.SetConfigName(*configFilepath)
 	config.SetConfigType("yaml")
@@ -122,15 +126,22 @@ func readConfig() *viper.Viper {
 	if err != nil {
 		logger.Panic("Error reading GSW config: %w", zap.Error(err))
 	}
-	return config
+	return config, *doPprof
 }
 
 func main() {
 	// Read gsw_service config
-	config := readConfig()
+	config, doProfiling := readConfig()
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
+
+	if doProfiling {
+		go func() {
+			logger.Info("Running pprof server at localhost:12345")
+			http.ListenAndServe("localhost:12345", nil)
+		}()
+	}
 
 	// Setup signal handling
 	sigs := make(chan os.Signal, 1)
@@ -138,7 +149,7 @@ func main() {
 
 	go func() {
 		sig := <-sigs
-		fmt.Printf("Received signal: %s\n", sig)
+		logger.Info(fmt.Sprintf("Received signal: %v", sig))
 		cancel()
 	}()
 
