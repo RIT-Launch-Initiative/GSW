@@ -18,7 +18,7 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
-  "id": 9,
+  "id": 10,
   "links": [],
   "panels": [
     {
@@ -431,8 +431,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -504,7 +503,7 @@
         "sizing": "auto",
         "text": {}
       },
-      "pluginVersion": "11.5.2",
+      "pluginVersion": "11.6.0",
       "targets": [
         {
           "datasource": {
@@ -568,8 +567,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -641,7 +639,7 @@
         "sizing": "auto",
         "text": {}
       },
-      "pluginVersion": "11.5.2",
+      "pluginVersion": "11.6.0",
       "targets": [
         {
           "datasource": {
@@ -704,8 +702,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -777,10 +774,10 @@
         "sizing": "auto",
         "text": {}
       },
-      "pluginVersion": "11.5.2",
+      "pluginVersion": "11.6.0",
       "targets": [
         {
-          "channel": "stream/custom_stream_id/backplane",
+          "channel": "stream/telemetry/backplane",
           "datasource": {
             "type": "datasource",
             "uid": "grafana"
@@ -814,8 +811,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               }
             ]
           },
@@ -887,10 +883,10 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "11.5.2",
+      "pluginVersion": "11.6.0",
       "targets": [
         {
-          "channel": "stream/custom_stream_id/backplane",
+          "channel": "stream/telemetry/backplane",
           "datasource": {
             "type": "datasource",
             "uid": "grafana"
@@ -926,8 +922,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               }
             ]
           },
@@ -999,10 +994,10 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "11.5.2",
+      "pluginVersion": "11.6.0",
       "targets": [
         {
-          "channel": "stream/custom_stream_id/backplane",
+          "channel": "stream/telemetry/backplane",
           "datasource": {
             "type": "datasource",
             "uid": "grafana"
@@ -1038,8 +1033,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -1115,10 +1109,10 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "11.5.2",
+      "pluginVersion": "11.6.0",
       "targets": [
         {
-          "channel": "stream/custom_stream_id/backplane",
+          "channel": "stream/telemetry/backplane",
           "datasource": {
             "type": "datasource",
             "uid": "grafana"
@@ -1186,8 +1180,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               }
             ]
           },
@@ -1315,10 +1308,10 @@
           "sort": "none"
         }
       },
-      "pluginVersion": "11.5.2",
+      "pluginVersion": "11.6.0",
       "targets": [
         {
-          "channel": "stream/custom_stream_id/backplane",
+          "channel": "stream/telemetry/backplane",
           "datasource": {
             "type": "datasource",
             "uid": "grafana"
@@ -1389,8 +1382,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -1451,10 +1443,10 @@
           "sort": "none"
         }
       },
-      "pluginVersion": "11.5.2",
+      "pluginVersion": "11.6.0",
       "targets": [
         {
-          "channel": "stream/custom_stream_id/backplane",
+          "channel": "stream/telemetry/backplane",
           "datasource": {
             "type": "datasource",
             "uid": "grafana"
@@ -1521,8 +1513,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -1595,10 +1586,10 @@
           "sort": "none"
         }
       },
-      "pluginVersion": "11.5.2",
+      "pluginVersion": "11.6.0",
       "targets": [
         {
-          "channel": "stream/custom_stream_id/backplane",
+          "channel": "stream/telemetry/backplane",
           "datasource": {
             "type": "datasource",
             "uid": "grafana"
@@ -1666,8 +1657,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -1740,10 +1730,10 @@
           "sort": "none"
         }
       },
-      "pluginVersion": "11.5.2",
+      "pluginVersion": "11.6.0",
       "targets": [
         {
-          "channel": "stream/custom_stream_id/backplane",
+          "channel": "stream/telemetry/backplane",
           "datasource": {
             "type": "datasource",
             "uid": "grafana"
@@ -1811,8 +1801,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -1885,10 +1874,10 @@
           "sort": "none"
         }
       },
-      "pluginVersion": "11.5.2",
+      "pluginVersion": "11.6.0",
       "targets": [
         {
-          "channel": "stream/custom_stream_id/backplane",
+          "channel": "stream/telemetry/backplane",
           "datasource": {
             "type": "datasource",
             "uid": "grafana"
@@ -1956,8 +1945,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -2020,7 +2008,7 @@
           "sort": "none"
         }
       },
-      "pluginVersion": "11.5.2",
+      "pluginVersion": "11.6.0",
       "targets": [
         {
           "datasource": {
@@ -2256,8 +2244,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -2340,7 +2327,7 @@
           "zoom": 4
         }
       },
-      "pluginVersion": "11.5.2",
+      "pluginVersion": "11.6.0",
       "targets": [
         {
           "datasource": {
@@ -2358,8 +2345,8 @@
     },
     {
       "datasource": {
-        "type": "datasource",
-        "uid": "grafana"
+        "type": "influxdb",
+        "uid": "ee3oa347zt5hcc"
       },
       "fieldConfig": {
         "defaults": {
@@ -2372,8 +2359,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -2447,16 +2433,17 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "11.5.2",
+      "pluginVersion": "11.6.0",
       "targets": [
         {
-          "channel": "stream/custom_stream_id/backplane",
           "datasource": {
-            "type": "datasource",
-            "uid": "grafana"
+            "type": "influxdb",
+            "uid": "ee3oa347zt5hcc"
           },
-          "queryType": "measurements",
-          "refId": "A"
+          "query": "SELECT LORA_RSSI, LORA_SNR, NUM_LORA_PACKETS FROM gsw..backplane WHERE $timeFilter ORDER BY time DESC LIMIT 1;",
+          "rawQuery": true,
+          "refId": "A",
+          "resultFormat": "time_series"
         }
       ],
       "title": "GNSS",
@@ -2478,8 +2465,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -2560,7 +2546,7 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "11.5.2",
+      "pluginVersion": "11.6.0",
       "targets": [
         {
           "datasource": {
@@ -2671,8 +2657,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -2744,10 +2729,10 @@
           "sort": "none"
         }
       },
-      "pluginVersion": "11.5.2",
+      "pluginVersion": "11.6.0",
       "targets": [
         {
-          "channel": "stream/custom_stream_id/backplane",
+          "channel": "stream/telemetry/backplane",
           "datasource": {
             "type": "datasource",
             "uid": "grafana"
@@ -2852,7 +2837,7 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "11.5.2",
+      "pluginVersion": "11.6.0",
       "targets": [
         {
           "datasource": {
@@ -2914,8 +2899,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -2988,10 +2972,10 @@
           "sort": "none"
         }
       },
-      "pluginVersion": "11.5.2",
+      "pluginVersion": "11.6.0",
       "targets": [
         {
-          "channel": "stream/custom_stream_id/backplane",
+          "channel": "stream/telemetry/backplane",
           "datasource": {
             "type": "datasource",
             "uid": "grafana"
@@ -3026,8 +3010,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -3104,7 +3087,7 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "11.5.2",
+      "pluginVersion": "11.6.0",
       "targets": [
         {
           "datasource": {
@@ -3167,8 +3150,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -3240,10 +3222,10 @@
           "sort": "none"
         }
       },
-      "pluginVersion": "11.5.2",
+      "pluginVersion": "11.6.0",
       "targets": [
         {
-          "channel": "stream/custom_stream_id/backplane",
+          "channel": "stream/telemetry/backplane",
           "datasource": {
             "type": "datasource",
             "uid": "grafana"
@@ -3278,8 +3260,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -3356,7 +3337,7 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "11.5.2",
+      "pluginVersion": "11.6.0",
       "targets": [
         {
           "datasource": {
@@ -3373,13 +3354,13 @@
   ],
   "preload": false,
   "refresh": "5s",
-  "schemaVersion": 40,
+  "schemaVersion": 41,
   "tags": [],
   "templating": {
     "list": []
   },
   "time": {
-    "from": "now-5m",
+    "from": "now-30s",
     "to": "now"
   },
   "timepicker": {
@@ -3398,8 +3379,7 @@
     ]
   },
   "timezone": "",
-  "title": "Backplane Live",
-  "uid": "eegdmi6mfwmbka",
-  "version": 3,
-  "weekStart": ""
+  "title": "Backplane Live 2!!!",
+  "uid": "yuijlhkgyft",
+  "version": 2
 }
