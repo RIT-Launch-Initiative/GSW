@@ -18,7 +18,7 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
-  "id": 10,
+  "id": null,
   "links": [],
   "panels": [
     {
@@ -3379,7 +3379,6 @@
     ]
   },
   "timezone": "",
-  "title": "Backplane Live 2!!!",
-  "uid": "yuijlhkgyft",
+  "title": "Backplane Live",
   "version": 2
 }

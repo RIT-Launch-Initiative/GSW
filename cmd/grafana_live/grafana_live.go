@@ -2,7 +2,6 @@ package main
 
 import (
 	"bytes"
-	"flag"
 	"fmt"
 	"github.com/AarC10/GSW-V2/lib/db"
 	"io"
@@ -90,9 +89,12 @@ func readConfigFiles() (*viper.Viper, error) {
 	}
 
 	liveConfig := viper.New()
+	/* commented due to janky -shm flag handling
 	configFilepath := flag.String("c", "grafana_live", "name of config file")
 	flag.Parse()
 	liveConfig.SetConfigName(*configFilepath)
+	*/
+	liveConfig.SetConfigName("grafana_live")
 	liveConfig.SetConfigType("yaml")
 	liveConfig.AddConfigPath("data/config/")
 	err = liveConfig.ReadInConfig()
