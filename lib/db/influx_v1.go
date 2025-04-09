@@ -3,6 +3,9 @@ package db
 import (
 	"fmt"
 	"net"
+
+	"github.com/AarC10/GSW-V2/lib/logger"
+	"go.uber.org/zap"
 )
 
 // InfluxDBV1Handler is a DB Handler implementation for InfluxDB v1
@@ -19,6 +22,8 @@ func (h *InfluxDBV1Handler) Initialize(host string, port int) error {
 		fmt.Println("Error creating InfluxDB UDP client:", err)
 		return err
 	}
+
+  logger.Info("Database UDP connection string: ", zap.String("url", addr.String()))
 
 	conn, err := net.DialUDP("udp", nil, addr)
 	if err != nil {

@@ -15,7 +15,6 @@ import (
 	"github.com/AarC10/GSW-V2/lib/tlm"
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
-
 	"github.com/AarC10/GSW-V2/proc"
 )
 
@@ -115,15 +114,21 @@ func readConfig() *viper.Viper {
 	config := viper.New()
 	configFilepath := flag.String("c", "gsw_service", "name of config file")
 	flag.Parse()
-	config.SetDefault("database_port_number", 8089)
-	config.SetDefault("database_host_name", "localhost")
 	config.SetConfigName(*configFilepath)
 	config.SetConfigType("yaml")
 	config.AddConfigPath("data/config/")
 	err := config.ReadInConfig()
+
 	if err != nil {
 		logger.Panic("Error reading GSW config: %w", zap.Error(err))
 	}
+  if !config.IsSet("database_host_name"){
+    logger.Panic("Error reading GSW config: database_host_name not set...")
+  }
+  if !config.IsSet("database_port_number"){
+    logger.Panic("Error reading GSW config: database_port_number not set...")
+  }
+
 	return config
 }
 
@@ -151,8 +156,9 @@ func main() {
 	}
 	defer configWriter.Cleanup()
 
-	channelMap := decomInitialize(ctx)
-	dbInitialize(ctx, channelMap, config.GetString("database_host_name"), config.GetInt("database_port_number"))
+
+  channelMap := decomInitialize(ctx)
+  dbInitialize(ctx, channelMap, config.GetString("database_host_name"), config.GetInt("database_port_number"))
 
 	// Wait for context cancellation or signal handling
 	<-ctx.Done()
