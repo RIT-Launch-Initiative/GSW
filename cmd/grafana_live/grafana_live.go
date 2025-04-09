@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"flag"
 	"fmt"
 	"github.com/AarC10/GSW-V2/lib/db"
 	"io"
@@ -16,6 +17,9 @@ import (
 	"github.com/joho/godotenv"
 	"github.com/spf13/viper"
 )
+
+var shmDir = flag.String("shm", "/dev/shm", "directory to use for shared memory")
+var configFilepath = flag.String("c", "grafana_live", "name of config file")
 
 // streamTelemetryPacket streams telemetry packet data to Grafana Live as it is received on the channel.
 func streamTelemetryPacket(packet tlm.TelemetryPacket, packetChan chan []byte, config *viper.Viper, authToken string) {
@@ -74,7 +78,7 @@ func sendQuery(query string, liveAddr string, authToken string) error {
 // readConfigFiles reads the configuration file for grafana_live.go as well as the
 // telemetry configuration from shared memory. It returns a Viper config object.
 func readConfigFiles() (*viper.Viper, error) {
-	configReader, err := ipc.CreateIpcShmReader("telemetry-config")
+	configReader, err := ipc.CreateIpcShmReader("telemetry-config", *shmDir)
 	if err != nil {
 		fmt.Println("*** Error accessing config file. Make sure the GSW service is running. ***")
 		return nil, err
@@ -89,12 +93,7 @@ func readConfigFiles() (*viper.Viper, error) {
 	}
 
 	liveConfig := viper.New()
-	/* commented due to janky -shm flag handling
-	configFilepath := flag.String("c", "grafana_live", "name of config file")
-	flag.Parse()
 	liveConfig.SetConfigName(*configFilepath)
-	*/
-	liveConfig.SetConfigName("grafana_live")
 	liveConfig.SetConfigType("yaml")
 	liveConfig.AddConfigPath("data/config/")
 	err = liveConfig.ReadInConfig()
@@ -106,6 +105,7 @@ func readConfigFiles() (*viper.Viper, error) {
 }
 
 func main() {
+	flag.Parse()
 	err := godotenv.Load()
 	if err != nil {
 		fmt.Printf("Error reading .env file: %v\n", err)
@@ -125,7 +125,7 @@ func main() {
 	fmt.Println("Starting Grafana Live streaming.")
 	for _, packet := range proc.GswConfig.TelemetryPackets {
 		packetChan := make(chan []byte)
-		go proc.TelemetryPacketReader(packet, packetChan)
+		go proc.TelemetryPacketReader(packet, packetChan, *shmDir)
 		go streamTelemetryPacket(packet, packetChan, liveConfig, authToken)
 	}
 
