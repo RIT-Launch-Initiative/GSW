@@ -3,7 +3,7 @@ package db
 // Handler is an interface for database access implementations
 type Handler interface {
 	// Initialize sets up the database client
-	Initialize() error
+	Initialize(host string, port int) error
 	// Insert sends the measurement data to the database
 	Insert(measurements MeasurementGroup) error
 	// CreateQuery generates the database query for measurementGroup
