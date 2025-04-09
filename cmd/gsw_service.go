@@ -13,9 +13,9 @@ import (
 	"github.com/AarC10/GSW-V2/lib/ipc"
 	"github.com/AarC10/GSW-V2/lib/logger"
 	"github.com/AarC10/GSW-V2/lib/tlm"
+	"github.com/AarC10/GSW-V2/proc"
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
-	"github.com/AarC10/GSW-V2/proc"
 )
 
 // printTelemetryPackets prints the telemetry packets and their measurements it found in the configuration.
@@ -122,12 +122,12 @@ func readConfig() *viper.Viper {
 	if err != nil {
 		logger.Panic("Error reading GSW config: %w", zap.Error(err))
 	}
-  if !config.IsSet("database_host_name"){
-    logger.Panic("Error reading GSW config: database_host_name not set...")
-  }
-  if !config.IsSet("database_port_number"){
-    logger.Panic("Error reading GSW config: database_port_number not set...")
-  }
+	if !config.IsSet("database_host_name") {
+		logger.Panic("Error reading GSW config: database_host_name not set...")
+	}
+	if !config.IsSet("database_port_number") {
+		logger.Panic("Error reading GSW config: database_port_number not set...")
+	}
 
 	return config
 }
@@ -156,9 +156,8 @@ func main() {
 	}
 	defer configWriter.Cleanup()
 
-
-  channelMap := decomInitialize(ctx)
-  dbInitialize(ctx, channelMap, config.GetString("database_host_name"), config.GetInt("database_port_number"))
+	channelMap := decomInitialize(ctx)
+	dbInitialize(ctx, channelMap, config.GetString("database_host_name"), config.GetInt("database_port_number"))
 
 	// Wait for context cancellation or signal handling
 	<-ctx.Done()

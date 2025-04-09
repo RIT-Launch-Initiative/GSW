@@ -23,7 +23,7 @@ func (h *InfluxDBV1Handler) Initialize(host string, port int) error {
 		return err
 	}
 
-  logger.Info("Database UDP connection string: ", zap.String("url", addr.String()))
+	logger.Info("Database UDP connection string: ", zap.String("url", addr.String()))
 
 	conn, err := net.DialUDP("udp", nil, addr)
 	if err != nil {
