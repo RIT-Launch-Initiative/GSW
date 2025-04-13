@@ -157,6 +157,19 @@ measurements:
       type: float
       endianness: little
 
+    SNR:
+      name: RCV_SNR
+      size: 2
+      type: float
+      endianness: little
+      unsigned: false
+
+    RSSI:
+      name: RCV_RSSI
+      size: 2
+      type: int
+      unsigned: false
+
 telemetry_packets:
   - name: PowerModule
     port: 11015
