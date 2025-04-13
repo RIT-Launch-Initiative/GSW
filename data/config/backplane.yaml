@@ -139,6 +139,24 @@ measurements:
       type: float
       endianness: little
 
+    LATITUDE:
+      name: LATITUDE
+      size: 4
+      type: float
+      endianness: little
+  
+    LONGITUDE:
+      name: LONGITUDE
+      size: 4
+      type: float
+      endianness: little
+
+    ALTITUDE:
+      name: ALTITUDE
+      size: 4
+      type: float
+      endianness: little
+
 telemetry_packets:
   - name: PowerModule
     port: 11015
@@ -173,3 +191,12 @@ telemetry_packets:
       - MAGN_Y
       - MAGN_Z
       - TEMP_TMP117
+
+  - name: GNSSCoordinates
+    port: 12005
+    measurements:
+      - LATITUDE
+      - LONGITUDE
+      - ALTITUDE
+
+
