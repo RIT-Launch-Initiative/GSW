@@ -120,7 +120,7 @@ func readConfig() *viper.Viper {
 	config.AddConfigPath("data/config/")
 	err := config.ReadInConfig()
 	if err != nil {
-		logger.Panic("Error reading GSW config: %w", zap.Error(err))
+		logger.Fatal("Error reading GSW config: %w", zap.Error(err))
 	}
 	return config
 }
@@ -138,13 +138,13 @@ func main() {
 
 	go func() {
 		sig := <-sigs
-		fmt.Printf("Received signal: %s\n", sig)
+		logger.Debug("Received signal: ", zap.String("signal", sig.String()))
 		cancel()
 	}()
 
 	configWriter, err := vcmInitialize(config)
 	if err != nil {
-		logger.Info("Exiting GSW...")
+		logger.Panic("Exiting GSW...")
 		return
 	}
 	defer configWriter.Cleanup()
