@@ -43,7 +43,12 @@ func TelemetryPacketWriter(packet tlm.TelemetryPacket, outChannel chan []byte) {
 		fmt.Printf("Error listening on UDP: %v\n", err)
 		return
 	}
-	defer conn.Close()
+	defer func(conn *net.UDPConn) {
+		err := conn.Close()
+		if err != nil {
+			fmt.Printf("Error closing UDP connection: %v\n", err)
+		}
+	}(conn)
 
 	fmt.Printf("Listening on port %d for telemetry packet...\n", packet.Port)
 

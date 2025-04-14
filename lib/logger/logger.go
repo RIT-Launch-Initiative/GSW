@@ -67,7 +67,12 @@ func init() {
 				return
 			}
 
-			os.Create(totalLogPath)
+			_, err = os.Create(totalLogPath)
+			if err != nil {
+				defaultLogger.Warn("Using default logger")
+				defaultLogger.Warn(fmt.Sprint(err))
+				logger = defaultLogger
+			}
 		}
 		outputPaths[index] = totalLogPath
 	}
