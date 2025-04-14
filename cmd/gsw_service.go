@@ -114,10 +114,10 @@ func dbInitialize(ctx context.Context, channelMap map[int]chan []byte) error {
 	return nil
 }
 
-func readConfig() (*viper.Viper, bool) {
+func readConfig() (*viper.Viper, int) {
 	config := viper.New()
 	configFilepath := flag.String("c", "gsw_service", "name of config file")
-	doPprof := flag.Bool("p", false, "Whether to enable pprof web server")
+	doPprof := flag.Int("p", 0, "Port to run pprof server on. Leave empty or set to 0 to disable pprof server")
 	flag.Parse()
 	config.SetConfigName(*configFilepath)
 	config.SetConfigType("yaml")
@@ -131,15 +131,15 @@ func readConfig() (*viper.Viper, bool) {
 
 func main() {
 	// Read gsw_service config
-	config, doProfiling := readConfig()
+	config, profilingPort := readConfig()
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	if doProfiling {
+	if profilingPort != 0 {
 		go func() {
 			logger.Info("Running pprof server at localhost:12345")
-			http.ListenAndServe("localhost:12345", nil)
+			http.ListenAndServe(fmt.Sprintf("localhost:%d", profilingPort), nil)
 		}()
 	}
 
