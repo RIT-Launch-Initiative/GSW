@@ -13,10 +13,10 @@ import (
 
 var logger *zap.Logger
 
-// initLogger Initializes the logger
+// InitLogger Initializes the logger
 // Configured using the logger.yaml file in the data/config directory
 // If the file is not found, the logger will default to a development logger
-func initLogger() {
+func InitLogger() {
 	defaultLogger := zap.Must(zap.NewDevelopment())
 
 	viperConfig, err := loadLoggerConfig()
@@ -29,6 +29,7 @@ func initLogger() {
 	outputPaths, err := resolveOutputPaths(viperConfig.GetStringSlice("OutputPaths"), defaultLogger)
 	if err != nil {
 		logger = defaultLogger
+		logger.Warn("Failed to resolve output paths, using default logger")
 		return
 	}
 
