@@ -138,7 +138,7 @@ func main() {
 
 	if profilingPort != 0 {
 		go func() {
-			logger.Info("Running pprof server at localhost:12345")
+			logger.Info(fmt.Sprintf("Running pprof server at localhost:%d", profilingPort))
 			http.ListenAndServe(fmt.Sprintf("localhost:%d", profilingPort), nil)
 		}()
 	}
