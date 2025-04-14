@@ -11,7 +11,7 @@ import (
 // getIpcShmHandler creates a shared memory IPC handler for a telemetry packet
 // If write is true, the handler will be created for writing to shared memory
 // If write is false, the handler will be created for reading from shared memory
-func getIpcShmHandler(packet tlm.TelemetryPacket, write bool) (*ipc.IpcShmHandler, error) {
+func getIpcShmHandler(packet tlm.TelemetryPacket, write bool) (*ipc.ShmHandler, error) {
 	handler, err := ipc.CreateIpcShmHandler(strconv.Itoa(packet.Port), GetPacketSize(packet), write)
 	if err != nil {
 		return nil, fmt.Errorf("error creating shared memory handler: %v", err)

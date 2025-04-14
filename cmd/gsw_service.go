@@ -42,7 +42,7 @@ func printTelemetryPackets() {
 
 // vcmInitialize initializes the Vehicle Config Manager
 // It reads the telemetry config file and writes it into shared memory
-func vcmInitialize(config *viper.Viper) (*ipc.IpcShmHandler, error) {
+func vcmInitialize(config *viper.Viper) (*ipc.ShmHandler, error) {
 	if !config.IsSet("telemetry_config") {
 		err := errors.New("telemetry config filepath is not set in GSW config")
 		logger.Error(fmt.Sprint(err))
