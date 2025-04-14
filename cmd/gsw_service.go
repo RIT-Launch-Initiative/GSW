@@ -59,7 +59,7 @@ func vcmInitialize(config *viper.Viper) (*ipc.ShmHandler, error) {
 		logger.Error("Error parsing YAML:", zap.Error(err))
 		return nil, err
 	}
-	configWriter, err := ipc.CreateIpcShmHandler("telemetry-config", len(data), true)
+	configWriter, err := ipc.CreateShmHandler("telemetry-config", len(data), true)
 	if err != nil {
 		logger.Error("Error creating shared memory handler: ", zap.Error(err))
 		return nil, err
