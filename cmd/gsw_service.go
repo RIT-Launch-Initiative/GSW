@@ -44,7 +44,7 @@ func printTelemetryPackets() {
 // It reads the telemetry config file and writes it into shared memory
 func vcmInitialize(config *viper.Viper) (*ipc.IpcShmHandler, error) {
 	if !config.IsSet("telemetry_config") {
-		err := errors.New("Error: Telemetry config filepath is not set in GSW config.")
+		err := errors.New("telemetry config filepath is not set in GSW config")
 		logger.Error(fmt.Sprint(err))
 		return nil, err
 	}
