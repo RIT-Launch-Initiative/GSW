@@ -127,7 +127,7 @@ func readConfig() *viper.Viper {
 
 func main() {
 	logger.InitLogger()
-	
+
 	// Read gsw_service config
 	config := readConfig()
 
