@@ -1,92 +1,5 @@
 name: backplane
 
-type_definitions:
-  AccelerometerData:
-      X:
-        name: X
-        size: 4
-        type: float
-      Y:
-        name: Y
-        size: 4
-        type: float
-      Z:
-        name: Z
-        size: 4
-        type: float
-
-  BarometerData:
-      Pressure:
-        name: Pressure
-        size: 4
-        type: float
-      Temperature:
-        name: Temperature
-        size: 4
-        type: float
-
-  GyroscopeData:
-      x:
-        name: X
-        size: 4
-        type: float
-      Y:
-        name: Y
-        size: 4
-        type: float
-      Z:
-        name: Z
-        size: 4
-        type: float
-
-  MagnetometerData:
-      X:
-        name: X
-        size: 4
-        type: float
-      Y:
-        name: Y
-        size: 4
-        type: float
-      Z:
-        name: Z
-        size: 4
-        type: float
-
-  ShuntData:
-      Current:
-        name: Current
-        size: 4
-        type: float
-      Voltage:
-        name: Voltage
-        size: 4
-        type: float
-      Power:
-        name: Power
-        size: 4
-        type: float
-
-  GnssPositioningData:
-      Latitude:
-        name: Latitude
-        size: 8
-        type: double
-      Longitude:
-        name: Longitude
-        size: 8
-        type: double
-      Altitude:
-        name: Altitude
-        size: 4
-        type: float
-
-  TemperatureData:
-      Temperatrue:
-        name: Temperature
-        size: 4
-        type: float
-
 measurements:
     CURR_BATT:
       name: CURR_BATT
@@ -225,6 +138,38 @@ measurements:
       size: 4
       type: float
       endianness: little
+
+    LATITUDE:
+      name: LATITUDE
+      size: 4
+      type: float
+      endianness: little
+  
+    LONGITUDE:
+      name: LONGITUDE
+      size: 4
+      type: float
+      endianness: little
+
+    ALTITUDE:
+      name: ALTITUDE
+      size: 4
+      type: float
+      endianness: little
+
+    SNR:
+      name: RCV_SNR
+      size: 2
+      type: float
+      endianness: little
+      unsigned: false
+
+    RSSI:
+      name: RCV_RSSI
+      size: 2
+      type: int
+      unsigned: false
+
 telemetry_packets:
   - name: PowerModule
     port: 11015
@@ -259,3 +204,12 @@ telemetry_packets:
       - MAGN_Y
       - MAGN_Z
       - TEMP_TMP117
+
+  - name: GNSSCoordinates
+    port: 12005
+    measurements:
+      - LATITUDE
+      - LONGITUDE
+      - ALTITUDE
+
+
