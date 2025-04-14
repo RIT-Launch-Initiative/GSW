@@ -150,7 +150,10 @@ func main() {
 	defer configWriter.Cleanup()
 
 	channelMap := decomInitialize(ctx)
-	dbInitialize(ctx, channelMap)
+	err = dbInitialize(ctx, channelMap)
+	if err != nil {
+		logger.Warn("DB Initialization failed", zap.Error(err))
+	}
 
 	// Wait for context cancellation or signal handling
 	<-ctx.Done()

@@ -59,7 +59,14 @@ func init() {
 
 		_, noPath := os.Create(totalLogPath)
 		if noPath != nil {
-			os.Mkdir(path, 0755)
+			err := os.Mkdir(path, 0755)
+			if err != nil {
+				defaultLogger.Warn("Using default logger")
+				defaultLogger.Warn(fmt.Sprint(err))
+				logger = defaultLogger
+				return
+			}
+
 			os.Create(totalLogPath)
 		}
 		outputPaths[index] = totalLogPath
@@ -82,11 +89,29 @@ func init() {
 	var durationEncoder zapcore.DurationEncoder
 	var callerEncoder zapcore.CallerEncoder
 
-	levelEncoder.UnmarshalText([]byte(viperConfig.GetString("encoderConfig.levelEncoder")))
-	timeEncoder.UnmarshalText([]byte(viperConfig.GetString("encoderConfig.timeEncoder")))
-	durationEncoder.UnmarshalText([]byte(viperConfig.GetString("encoderConfig.durationEncoder")))
-	callerEncoder.UnmarshalText([]byte(viperConfig.GetString("encoderConfig.callerEncoder")))
+	err = levelEncoder.UnmarshalText([]byte(viperConfig.GetString("encoderConfig.levelEncoder")))
+	if err != nil {
+		defaultLogger.Warn(fmt.Sprint(err))
+		return
+	}
 
+	err = timeEncoder.UnmarshalText([]byte(viperConfig.GetString("encoderConfig.timeEncoder")))
+	if err != nil {
+		defaultLogger.Warn(fmt.Sprint(err))
+		return
+	}
+
+	err = durationEncoder.UnmarshalText([]byte(viperConfig.GetString("encoderConfig.durationEncoder")))
+	if err != nil {
+		defaultLogger.Warn(fmt.Sprint(err))
+		return
+	}
+
+	err = callerEncoder.UnmarshalText([]byte(viperConfig.GetString("encoderConfig.callerEncoder")))
+	if err != nil {
+		defaultLogger.Warn(fmt.Sprint(err))
+		return
+	}
 	loggerConfig.Encoding = viperConfig.GetString("encoding")
 	loggerConfig.EncoderConfig = zapcore.EncoderConfig{
 		MessageKey:     viperConfig.GetString("encoderConfig.messageKey"),

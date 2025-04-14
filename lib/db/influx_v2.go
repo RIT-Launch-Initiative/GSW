@@ -29,7 +29,7 @@ func (h *InfluxDBV2Handler) CreateQuery(measurementGroup MeasurementGroup) strin
 }
 
 // Insert sends the measurement data to InfluxDB
-func (h *InfluxDBV2Handler) Insert(measurementGroup MeasurementGroup) error {
+func (h *InfluxDBV2Handler) Insert(_ MeasurementGroup) error {
 	// TODO: Implement
 	//query := h.CreateQuery(measurementGroup)
 
