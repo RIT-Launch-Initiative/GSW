@@ -3,6 +3,7 @@ module github.com/AarC10/GSW-V2
 go 1.21.3
 
 require (
+	github.com/gorilla/websocket v1.5.3
 	github.com/influxdata/influxdb-client-go/v2 v2.14.0
 	github.com/joho/godotenv v1.5.1
 	github.com/spf13/viper v1.19.0

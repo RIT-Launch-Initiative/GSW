@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"github.com/AarC10/GSW-V2/lib/db"
+	"github.com/gorilla/websocket"
 	"io"
 	"net/http"
 	"os"
@@ -34,13 +35,42 @@ func streamTelemetryPacket(packet tlm.TelemetryPacket, packetChan chan []byte, c
 		measurements[i].Name = measurementName
 	}
 
+	header := http.Header{}
+	header.Add("Authorization", "Bearer "+authToken)
+	conn, _, err := websocket.DefaultDialer.Dial(liveAddr, header)
+	if err != nil {
+		fmt.Println("Failed to dial:", err)
+		return
+	}
+
+	fmt.Println("Success.")
+	go func() {
+		for {
+			_, message, err := conn.ReadMessage()
+			if err != nil {
+				fmt.Println("Failed to read:", err)
+				return
+			}
+			fmt.Println("Received message:", string(message))
+		}
+	}()
+
 	// stream data
 	for packetData := range packetChan {
 		proc.UpdateMeasurementGroup(packet, measurementGroup, packetData)
-		query := db.CreateQuery(measurementGroup)
-		if err := sendQuery(query, liveAddr, authToken); err != nil {
-			fmt.Printf("Error streaming data: %v\n", err)
+		query := []byte(db.CreateQuery(measurementGroup))
+		err = conn.WriteMessage(websocket.BinaryMessage, query)
+		if err != nil {
+			fmt.Println("Failed to write:", err)
 		}
+		/*
+			proc.UpdateMeasurementGroup(packet, measurementGroup, packetData)
+			query := db.CreateQuery(measurementGroup)
+			if err := sendQuery(query, liveAddr, authToken); err != nil {
+				fmt.Printf("Error streaming data: %v\n", err)
+			}
+
+		*/
 	}
 }
 
