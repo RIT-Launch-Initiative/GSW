@@ -5,6 +5,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
@@ -14,6 +15,7 @@ import (
 	"github.com/AarC10/GSW-V2/lib/logger"
 	"github.com/AarC10/GSW-V2/lib/tlm"
 	"github.com/AarC10/GSW-V2/proc"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
 )
@@ -110,6 +112,20 @@ func dbInitialize(ctx context.Context, channelMap map[int]chan []byte, host stri
 	return nil
 }
 
+func serviceMetricsInitialize(config *viper.Viper) {
+	if !config.IsSet("service_metrics_port") {
+		logger.Info("service_metrics_port not set")
+		return
+	}
+
+	if config.GetInt("service_metrics_port") > 0 {
+		logger.Info("service_metrics_port set to ", zap.Int("port", config.GetInt("service_metrics_port")))
+	}
+
+	http.Handle("/gsw_metrics", promhttp.Handler())
+	http.ListenAndServe(":"+config.GetString("service_metrics.port"), nil)
+}
+
 func readConfig() *viper.Viper {
 	config := viper.New()
 	configFilepath := flag.String("c", "gsw_service", "name of config file")
@@ -138,6 +154,8 @@ func main() {
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
+
+	serviceMetricsInitialize(config)
 
 	// Setup signal handling
 	sigs := make(chan os.Signal, 1)
