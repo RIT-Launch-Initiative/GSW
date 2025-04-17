@@ -122,8 +122,13 @@ func serviceMetricsInitialize(config *viper.Viper) {
 		logger.Info("service_metrics_port set to ", zap.Int("port", config.GetInt("service_metrics_port")))
 	}
 
-	http.Handle("/gsw_metrics", promhttp.Handler())
-	http.ListenAndServe(":"+config.GetString("service_metrics.port"), nil)
+	go func() {
+		http.Handle("/gsw_metrics", promhttp.Handler())
+		err := http.ListenAndServe(fmt.Sprintf(":%d", config.GetInt("service_metrics_port")), nil)
+		if err != nil {
+			logger.Error("error running metrics server: ", zap.Error(err))
+		}
+	}()
 }
 
 func readConfig() *viper.Viper {
