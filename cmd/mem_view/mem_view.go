@@ -54,7 +54,7 @@ func printTelemetryPacket(startLine int, packet tlm.TelemetryPacket, rcvChan cha
 }
 
 func main() {
-	configReader, err := ipc.CreateIpcShmReader("telemetry-config")
+	configReader, err := ipc.CreateShmReader("telemetry-config")
 	if err != nil {
 		fmt.Println("*** Error accessing config file. Make sure the GSW service is running. ***")
 		fmt.Printf("(%v)\n", err)
