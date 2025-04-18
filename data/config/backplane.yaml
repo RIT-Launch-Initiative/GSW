@@ -157,6 +157,27 @@ measurements:
       type: float
       endianness: little
 
+    SAT_COUNT:
+      name: SAT_COUNT
+      size: 2
+      type: int
+      endianness: little
+      unsigned: true
+
+    FIX_STATUS:
+      name: FIX_STATUS
+      size: 1
+      type: int
+      endianness: little
+      unsigned: false
+
+    FIX_QUALITY:
+      name: FIX_QUALITY
+      size: 1
+      type: int
+      endianness: little
+      unsigned: false
+
     SNR:
       name: RCV_SNR
       size: 2
@@ -211,5 +232,13 @@ telemetry_packets:
       - LATITUDE
       - LONGITUDE
       - ALTITUDE
+      - SAT_COUNT
+      - FIX_STATUS
+      - FIX_QUALITY
 
+  - name: ReceiverStats
+    port: 12006
+    measurements:
+      - RSSI
+      - SNR
 
