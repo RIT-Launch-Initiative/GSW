@@ -85,6 +85,9 @@ func sendQuery(query string, liveAddr string, authToken string) error {
 		return fmt.Errorf("error returned by HTTP request: %v", err)
 	}
 	if response.StatusCode != 200 {
+		if response.StatusCode == 401 {
+			return fmt.Errorf("invalid auth token")
+		}
 		fmt.Printf("Possible unexpected status code: %d\n", response.StatusCode)
 	}
 
