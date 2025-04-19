@@ -3360,7 +3360,7 @@
     "list": []
   },
   "time": {
-    "from": "now-30s",
+    "from": "now-10s",
     "to": "now"
   },
   "timepicker": {

@@ -23,10 +23,9 @@ var shmDir = flag.String("shm", "/dev/shm", "directory to use for shared memory"
 var configFilepath = flag.String("c", "grafana_live", "name of config file")
 
 // streamTelemetryPacket streams telemetry packet data to Grafana Live as it is received on the channel.
-func streamTelemetryPacket(packet tlm.TelemetryPacket, packetChan chan []byte, config *viper.Viper, authToken string) {
+func streamTelemetryPacket(packet tlm.TelemetryPacket, packetChan chan []byte, config *viper.Viper, authToken string, websocketConn *websocket.Conn) {
 	// read config values
 	grafanaChannelPath := config.GetString("channel_path")
-	liveAddr := config.GetString("live_addr")
 
 	// set up MeasurementGroup
 	measurements := make([]db.Measurement, len(packet.Measurements))
@@ -35,46 +34,41 @@ func streamTelemetryPacket(packet tlm.TelemetryPacket, packetChan chan []byte, c
 		measurements[i].Name = measurementName
 	}
 
-	header := http.Header{}
-	header.Add("Authorization", "Bearer "+authToken)
-	conn, _, err := websocket.DefaultDialer.Dial(liveAddr, header)
-	if err != nil {
-		fmt.Println("Failed to dial:", err)
-		return
+	// stream data over WebSocket
+	if websocketConn != nil {
+		for packetData := range packetChan {
+			proc.UpdateMeasurementGroup(packet, measurementGroup, packetData)
+			query := []byte(db.CreateQuery(measurementGroup))
+			err := websocketConn.WriteMessage(websocket.BinaryMessage, query)
+			if err != nil {
+				fmt.Println("WebSocket failed to send data for packet "+packet.Name+": ", err)
+				if config.GetBool("use_http") {
+					fmt.Println("Switching to HTTP streaming for packet " + packet.Name + ".")
+				}
+				break
+			}
+		}
+	} else {
+		fmt.Println("WARNING: WebSocket unavailable, using HTTP streaming.")
 	}
 
-	fmt.Println("Success.")
-	go func() {
-		for {
-			_, message, err := conn.ReadMessage()
-			if err != nil {
-				fmt.Println("Failed to read:", err)
-				return
-			}
-			fmt.Println("Received message:", string(message))
-		}
-	}()
-
-	// stream data
-	for packetData := range packetChan {
-		proc.UpdateMeasurementGroup(packet, measurementGroup, packetData)
-		query := []byte(db.CreateQuery(measurementGroup))
-		err = conn.WriteMessage(websocket.BinaryMessage, query)
-		if err != nil {
-			fmt.Println("Failed to write:", err)
-		}
-		/*
+	// stream data over HTTP (if WebSocket fails / is disabled)
+	if config.GetBool("use_http") {
+		liveAddr := config.GetString("http_addr")
+		for packetData := range packetChan {
 			proc.UpdateMeasurementGroup(packet, measurementGroup, packetData)
 			query := db.CreateQuery(measurementGroup)
 			if err := sendQuery(query, liveAddr, authToken); err != nil {
 				fmt.Printf("Error streaming data: %v\n", err)
 			}
-
-		*/
+		}
+	} else {
+		fmt.Println("WARNING, HTTP streaming disabled. Streaming of packet " + packet.Name + " stopped.")
+		return
 	}
 }
 
-// sendQuery sends the query string containing telemetry data to Grafana Live.
+// sendQuery sends the query string containing telemetry data to Grafana Live over HTTP.
 func sendQuery(query string, liveAddr string, authToken string) error {
 	// Convert the query string to bytes
 	data := []byte(query)
@@ -134,11 +128,42 @@ func readConfigFiles() (*viper.Viper, error) {
 	return liveConfig, nil
 }
 
+// setupWebSocket creates a websocket connection to Grafana Live.
+// If websocket streaming is disabled in the configuration, returns a nil connection.
+func setupWebSocket(config *viper.Viper, authToken string) (*websocket.Conn, error) {
+	if !config.GetBool("use_websocket") {
+		fmt.Println("WARNING: WebSocket disabled in configuration.")
+		return nil, nil
+	}
+
+	liveAddr := config.GetString("websocket_addr")
+	header := http.Header{}
+	header.Add("Authorization", "Bearer "+authToken)
+	conn, _, err := websocket.DefaultDialer.Dial(liveAddr, header)
+	if err != nil {
+		fmt.Errorf("WebSocket failed to dial: %v", err)
+		return nil, err
+	} else {
+		fmt.Println("WebSocket connected.")
+		go func() {
+			for {
+				_, message, err := conn.ReadMessage()
+				if err != nil {
+					fmt.Println("WebSocket failed to read:", err)
+					return
+				}
+				fmt.Println("Received message:", string(message))
+			}
+		}()
+	}
+	return conn, nil
+}
+
 func main() {
 	flag.Parse()
 	err := godotenv.Load()
 	if err != nil {
-		fmt.Printf("Error reading .env file: %v\n", err)
+		fmt.Printf("WARNING, failed to read .env file: %v\n", err)
 		// Program can continue if env variable was set elsewhere
 	}
 	authToken := os.Getenv("GRAFANA_LIVE_TOKEN")
@@ -153,10 +178,17 @@ func main() {
 	}
 
 	fmt.Println("Starting Grafana Live streaming.")
+	websocketConn, err := setupWebSocket(liveConfig, authToken)
+	if err != nil {
+		fmt.Printf("Error setting up WebSocket connection: %v\n", err)
+		// Will use HTTP instead if enabled.
+	}
+
 	for _, packet := range proc.GswConfig.TelemetryPackets {
+		fmt.Println("Starting streaming for packet " + packet.Name)
 		packetChan := make(chan []byte)
 		go proc.TelemetryPacketReader(packet, packetChan, *shmDir)
-		go streamTelemetryPacket(packet, packetChan, liveConfig, authToken)
+		go streamTelemetryPacket(packet, packetChan, liveConfig, authToken, websocketConn)
 	}
 
 	// Catch interrupt signals

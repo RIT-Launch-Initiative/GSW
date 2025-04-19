@@ -40,7 +40,7 @@ If you want the service to run on startup:
 `sudo systemctl enable gsw`
 
 ## Grafana Live
-To set up live data streaming to Grafana, the setup utility can be run from the root directory with `go run cmd/grafana_live/live_setup.go`
+**To set up live data streaming to Grafana, the setup utility can be run from the root directory with `go run cmd/grafana_live/live_setup.go`**
 
 Once set up, the grafana_live application can be run from the root directory (with `go run cmd/grafana_live/grafana_live.go`) to stream live data to Grafana.
 Make sure the GSW service is running before starting the application.
@@ -61,6 +61,9 @@ By default, the application is configured using the file `grafana_live.yaml` in 
 
 #### Keys (must be specified)
 * `channel_path`: Final portion of the Grafana Live channel string (e.g. "backplane" in `stream/telemetry/backplane`).
-* `live_addr`: Address where data is pushed to Grafana Live. If data is being streamed to a local Grafana instance,
-this will probably start with `http://localhost:3000`, but this can be replaced with the address of any Grafana instance.
+* `websocket_addr`: Address where data is pushed to Grafana Live over WebSocket. If data is being streamed to a local Grafana instance,
+this will probably start with `ws://localhost:3000`, but this can be replaced with the address of any Grafana instance.
 The second part of the address should always be `/api/live/push/telemetry/`, unless you have a reason to change it.
+* `http_addr`: Address where data is pushed to Grafana Live over HTTP. Make sure the protocol is `http://` or `https://`.
+* `use_websocket`: Whether to use WebSocket for data streaming. If disabled, HTTP will be used. WebSocket is recommended for better performance.
+* `use_http`: Whether to use HTTP for data streaming. If `use_websocket` is also true, HTTP will be used as backup if the WebSocket fails.
