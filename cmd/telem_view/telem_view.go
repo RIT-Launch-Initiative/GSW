@@ -15,6 +15,13 @@ import (
 	"github.com/rivo/tview"
 )
 
+const valueColWidth = 12
+
+// padValue will left justify any string into a field of width valueColWidth
+func padValue(s string) string {
+	return fmt.Sprintf("%-*s", valueColWidth, s)
+}
+
 func main() {
 	configReader, err := ipc.CreateIpcShmReader("telemetry-config")
 	if err != nil {
@@ -39,21 +46,33 @@ func main() {
 	table := tview.NewTable().
 		SetBorders(false)
 
-	table.SetCell(0, 0, tview.NewTableCell("[::b]Name"))
-	table.SetCell(0, 1, tview.NewTableCell("[::b]Value"))
-	table.SetCell(0, 2, tview.NewTableCell("[::b]HEX"))
-	table.SetCell(0, 3, tview.NewTableCell("[::b]BIN"))
+	// Name column
+	table.SetCell(0, 0,
+		tview.NewTableCell("[::b]Name").
+			SetAlign(tview.AlignLeft))
+	// Value column, padded so it's exactly valueColWidth wide
+	table.SetCell(0, 1,
+		tview.NewTableCell("[::b]Value"+strings.Repeat(" ", valueColWidth-len("Value"))).
+			SetAlign(tview.AlignCenter))
+	// HEX and BIN as before, with a little left padding
+	table.SetCell(0, 2,
+		tview.NewTableCell("[::b]     HEX").
+			SetAlign(tview.AlignCenter))
+	table.SetCell(0, 3,
+		tview.NewTableCell("[::b]     BIN").
+			SetAlign(tview.AlignCenter))
 
 	row := 1
 	for _, packet := range proc.GswConfig.TelemetryPackets {
 		for _, name := range packet.Measurements {
+			// pad the initial “–” in the Value column
 			table.SetCell(row, 0, tview.NewTableCell(name))
-			table.SetCell(row, 1, tview.NewTableCell("–"))
-			table.SetCell(row, 2, tview.NewTableCell("")) // hex column
-			table.SetCell(row, 3, tview.NewTableCell("")) // binary column
+			table.SetCell(row, 1, tview.NewTableCell(padValue("–")))
+			table.SetCell(row, 2, tview.NewTableCell(""))
+			table.SetCell(row, 3, tview.NewTableCell(""))
 			row++
 		}
-		// Spacer row
+		// spacer row
 		table.SetCell(row, 0, tview.NewTableCell(" "))
 		row++
 	}
@@ -62,15 +81,14 @@ func main() {
 		SetDynamicColors(true).
 		SetTextAlign(tview.AlignCenter)
 	updateStatus := func() {
-		hexText := "OFF"
+		h, b := "OFF", "OFF"
 		if hexOn {
-			hexText = "ON"
+			h = "ON"
 		}
-		binText := "OFF"
 		if binOn {
-			binText = "ON"
+			b = "ON"
 		}
-		statusBar.SetText(fmt.Sprintf("(h) HEX %s  | (b) BINARY %s ", hexText, binText))
+		statusBar.SetText(fmt.Sprintf("(h) HEX %s  | (b) BINARY %s ", h, b))
 	}
 	updateStatus()
 
@@ -88,17 +106,22 @@ func main() {
 					if !ok || offset+meas.Size > len(data) {
 						continue
 					}
-
 					val, err := tlm.InterpretMeasurementValue(meas, data[offset:offset+meas.Size])
 					if err != nil {
 						val = "err"
 					}
 
+					// format & pad value
+					valStr := fmt.Sprintf("%v", val)
+					valStr = padValue(valStr)
+
+					// HEX
 					hexStr := ""
 					if hexOn {
 						hexStr = util.Base16String(data[offset:offset+meas.Size], 1)
 					}
 
+					// BIN
 					binStr := ""
 					if binOn {
 						var parts []string
@@ -109,13 +132,12 @@ func main() {
 						binStr = strings.Join(parts, " ")
 					}
 
-					// update
+					// update table
 					app.QueueUpdateDraw(func() {
-						table.GetCell(baseRow+i, 1).SetText(fmt.Sprintf("%v", val))
+						table.GetCell(baseRow+i, 1).SetText(valStr)
 						table.GetCell(baseRow+i, 2).SetText(hexStr)
 						table.GetCell(baseRow+i, 3).SetText(binStr)
 					})
-
 					offset += meas.Size
 				}
 			}
@@ -142,7 +164,6 @@ func main() {
 		AddItem(table, 0, 1, true).
 		AddItem(statusBar, 1, 1, false)
 
-	// sig handler
 	go func() {
 		sigChan := make(chan os.Signal, 1)
 		signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
@@ -150,7 +171,6 @@ func main() {
 		app.Stop()
 	}()
 
-	// Run
 	if err := app.SetRoot(flex, true).Run(); err != nil {
 		panic(err)
 	}
