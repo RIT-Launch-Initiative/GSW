@@ -5,7 +5,7 @@ import (
 	"testing"
 )
 
-const TEST_DATA_DIR = "../data/test/"
+const TestDataDir = "../data/test/"
 
 func resetState() {
 	ResetConfig()
@@ -53,17 +53,17 @@ func TestParseConfigBadFile(test *testing.T) {
 
 func TestBadYaml(test *testing.T) {
 	test.Cleanup(resetState)
-	_, err := ParseConfig(TEST_DATA_DIR + "no_name.yaml")
+	_, err := ParseConfig(TestDataDir + "no_name.yaml")
 	if err == nil {
 		test.Errorf("Expected error for no configuration name, got nil")
 	}
 
-	_, err = ParseConfig(TEST_DATA_DIR + "no_meas.yaml")
+	_, err = ParseConfig(TestDataDir + "no_meas.yaml")
 	if err == nil {
 		test.Errorf("Expected error for no measurements, got nil")
 	}
 
-	_, err = ParseConfig(TEST_DATA_DIR + "no_telem.yaml")
+	_, err = ParseConfig(TestDataDir + "no_telem.yaml")
 	if err == nil {
 		test.Errorf("Expected error for no telemetry pacckets, got nil")
 
@@ -72,7 +72,7 @@ func TestBadYaml(test *testing.T) {
 
 func TestParseConfig(test *testing.T) {
 	test.Cleanup(resetState)
-	config, err := ParseConfig(TEST_DATA_DIR + "good.yaml")
+	config, err := ParseConfig(TestDataDir + "good.yaml")
 	if err != nil {
 		test.Errorf("Expected nil, got %v", err)
 	}
@@ -101,7 +101,7 @@ func TestParseConfig(test *testing.T) {
 
 func TestParseConfigMissingMeasurement(test *testing.T) {
 	test.Cleanup(resetState)
-	_, err := ParseConfig(TEST_DATA_DIR + "missing_meas_name.yaml")
+	_, err := ParseConfig(TestDataDir + "missing_meas_name.yaml")
 	if err == nil {
 		test.Errorf("Expected error, got nil")
 	}
@@ -109,7 +109,7 @@ func TestParseConfigMissingMeasurement(test *testing.T) {
 
 func TestParseConfigBadEndianness(test *testing.T) {
 	test.Cleanup(resetState)
-	_, err := ParseConfig(TEST_DATA_DIR + "bad_endianness.yaml")
+	_, err := ParseConfig(TestDataDir + "bad_endianness.yaml")
 	if err == nil {
 		test.Errorf("Expected error, got nil")
 	}
@@ -117,7 +117,7 @@ func TestParseConfigBadEndianness(test *testing.T) {
 
 func TestFindMeasurementByName(test *testing.T) {
 	test.Cleanup(resetState)
-	config, _ := ParseConfig(TEST_DATA_DIR + "good.yaml")
+	config, _ := ParseConfig(TestDataDir + "good.yaml")
 
 	measurement, ok := config.Measurements["Default"]
 
@@ -150,7 +150,7 @@ func TestMeasurementToString(test *testing.T) {
 
 func TestGetPacketSize(test *testing.T) {
 	test.Cleanup(resetState)
-	config, _ := ParseConfig(TEST_DATA_DIR + "good.yaml")
+	config, _ := ParseConfig(TestDataDir + "good.yaml")
 	size := GetPacketSize(config.TelemetryPackets[0])
 	if size != 10 {
 		test.Errorf("Expected 10, got %d", size)
