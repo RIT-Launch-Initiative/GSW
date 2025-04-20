@@ -41,9 +41,9 @@ func printTelemetryPackets() {
 
 // vcmInitialize initializes the Vehicle Config Manager
 // It reads the telemetry config file and writes it into shared memory
-func vcmInitialize(config *viper.Viper) (*ipc.IpcShmHandler, error) {
+func vcmInitialize(config *viper.Viper) (*ipc.ShmHandler, error) {
 	if !config.IsSet("telemetry_config") {
-		err := errors.New("Error: Telemetry config filepath is not set in GSW config.")
+		err := errors.New("telemetry config filepath is not set in GSW config")
 		logger.Error(fmt.Sprint(err))
 		return nil, err
 	}
@@ -58,7 +58,7 @@ func vcmInitialize(config *viper.Viper) (*ipc.IpcShmHandler, error) {
 		logger.Error("Error parsing YAML:", zap.Error(err))
 		return nil, err
 	}
-	configWriter, err := ipc.CreateIpcShmHandler("telemetry-config", len(data), true)
+	configWriter, err := ipc.CreateShmHandler("telemetry-config", len(data), true)
 	if err != nil {
 		logger.Error("Error creating shared memory handler: ", zap.Error(err))
 		return nil, err
@@ -120,7 +120,7 @@ func readConfig() *viper.Viper {
 	err := config.ReadInConfig()
 
 	if err != nil {
-		logger.Panic("Error reading GSW config: %w", zap.Error(err))
+		logger.Fatal("Error reading GSW config: %w", zap.Error(err))
 	}
 	if !config.IsSet("database_host_name") {
 		logger.Panic("Error reading GSW config: database_host_name not set...")
@@ -133,6 +133,8 @@ func readConfig() *viper.Viper {
 }
 
 func main() {
+	logger.InitLogger()
+
 	// Read gsw_service config
 	config := readConfig()
 
@@ -145,19 +147,22 @@ func main() {
 
 	go func() {
 		sig := <-sigs
-		fmt.Printf("Received signal: %s\n", sig)
+		logger.Debug("Received signal: ", zap.String("signal", sig.String()))
 		cancel()
 	}()
 
 	configWriter, err := vcmInitialize(config)
 	if err != nil {
-		logger.Info("Exiting GSW...")
+		logger.Panic("Exiting GSW...")
 		return
 	}
 	defer configWriter.Cleanup()
 
 	channelMap := decomInitialize(ctx)
-	dbInitialize(ctx, channelMap, config.GetString("database_host_name"), config.GetInt("database_port_number"))
+	err = dbInitialize(ctx, channelMap, config.GetString("database_host_name"), config.GetInt("database_port_number"))
+	if err != nil {
+		logger.Warn("DB Initialization failed", zap.Error(err))
+	}
 
 	// Wait for context cancellation or signal handling
 	<-ctx.Done()
