@@ -16,6 +16,9 @@ import (
 	"github.com/AarC10/GSW-V2/proc"
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
+
+	"net/http"
+	_ "net/http/pprof"
 )
 
 // printTelemetryPackets prints the telemetry packets and their measurements it found in the configuration.
@@ -110,9 +113,10 @@ func dbInitialize(ctx context.Context, channelMap map[int]chan []byte, host stri
 	return nil
 }
 
-func readConfig() *viper.Viper {
+func readConfig() (*viper.Viper, int) {
 	config := viper.New()
 	configFilepath := flag.String("c", "gsw_service", "name of config file")
+	doPprof := flag.Int("p", 0, "Port to run pprof server on. Leave empty or set to 0 to disable pprof server")
 	flag.Parse()
 	config.SetConfigName(*configFilepath)
 	config.SetConfigType("yaml")
@@ -129,17 +133,24 @@ func readConfig() *viper.Viper {
 		logger.Panic("Error reading GSW config: database_port_number not set...")
 	}
 
-	return config
+	return config, *doPprof
 }
 
 func main() {
 	logger.InitLogger()
 
 	// Read gsw_service config
-	config := readConfig()
+	config, profilingPort := readConfig()
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
+
+	if profilingPort != 0 {
+		go func() {
+			logger.Info(fmt.Sprintf("Running pprof server at localhost:%d", profilingPort))
+			http.ListenAndServe(fmt.Sprintf("localhost:%d", profilingPort), nil)
+		}()
+	}
 
 	// Setup signal handling
 	sigs := make(chan os.Signal, 1)
