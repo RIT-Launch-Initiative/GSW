@@ -14,8 +14,7 @@ type Configuration struct {
 	TelemetryPackets []tlm.TelemetryPacket      `yaml:"telemetry_packets"` // List of telemetry packets
 }
 
-// TODO: Make global safer
-var GswConfig Configuration
+var GswConfig Configuration // TODO: Make global safer
 
 // ResetConfig resets the global configuration
 func ResetConfig() {
@@ -36,22 +35,22 @@ func ParseConfigBytes(data []byte) (*Configuration, error) {
 	// Unmarshalling doesn't seem to lead to errors with bad data. Better to check result config
 	_ = yaml.Unmarshal(data, &GswConfig)
 	if GswConfig.Name == "" {
-		return nil, fmt.Errorf("Error parsing YAML. No config name.")
+		return nil, fmt.Errorf("no configuration name provided")
 	}
 
 	if len(GswConfig.Measurements) == 0 {
-		return nil, fmt.Errorf("Error parsing YAML. No measurements.")
+		return nil, fmt.Errorf("no measurements found in configuration")
 	}
 
 	if len(GswConfig.TelemetryPackets) == 0 {
-		return nil, fmt.Errorf("Error parsing YAML. No telemetry packets.")
+		return nil, fmt.Errorf("no telemetry packets found in configuration")
 	}
 
 	// Set default values for measurements if not specified
 	for k := range GswConfig.Measurements {
 		// TODO: More strict checks of configuration and input handling
 		if GswConfig.Measurements[k].Name == "" {
-			return nil, fmt.Errorf("Measurement name missing")
+			return nil, fmt.Errorf("measurement name missing in configuration")
 		}
 
 		if GswConfig.Measurements[k].Endianness == "" {
@@ -59,7 +58,7 @@ func ParseConfigBytes(data []byte) (*Configuration, error) {
 			entry.Endianness = "big"           // Default to big endian
 			GswConfig.Measurements[k] = entry
 		} else if GswConfig.Measurements[k].Endianness != "little" && GswConfig.Measurements[k].Endianness != "big" {
-			return nil, fmt.Errorf("Endianess not specified as big or little got %s", GswConfig.Measurements[k].Endianness)
+			return nil, fmt.Errorf("endianness specified as %s, instead of big or little", GswConfig.Measurements[k].Endianness)
 		}
 	}
 
