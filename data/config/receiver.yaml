@@ -3,76 +3,76 @@ name: backplane
 measurements:
     CURR_BATT:
       name: CURR_BATT
-      size: 4
-      type: float
+      size: 2
+      type: int
       endianness: little
     VOLT_BATT:
       name: VOLT_BATT
-      size: 4
-      type: float
+      size: 2
+      type: int
       endianness: little
     PWER_BATT:
       name: PWER_BATT
-      size: 4
-      type: float
+      size: 2
+      type: int
       endianness: little
     CURR_3V3:
       name: CURR_3V3
-      size: 4
-      type: float
+      size: 2
+      type: int
       endianness: little
     VOLT_3V3:
       name: VOLT_3V3
-      size: 4
-      type: float
+      size: 2
+      type: int
       endianness: little
     PWER_3V3:
       name: PWER_3V3
-      size: 4
-      type: float
+      size: 2
+      type: int
       endianness: little
 
     ACCEL_X:
       name: ACCEL_X
-      size: 4
-      type: float
+      size: 2
+      type: int
       endianness: little
     ACCEL_Y:
       name: ACCEL_Y
-      size: 4
-      type: float
+      size: 2
+      type: int
       endianness: little
     ACCEL_Z:
       name: ACCEL_Z
-      size: 4
-      type: float
+      size: 2
+      type: int
       endianness: little
 
     PRESSURE:
       name: PRESSURE
-      size: 4
-      type: float
+      size: 2
+      type: int
       endianness: little
     TEMPERATURE:
       name: TEMPERATURE
-      size: 4
-      type: float
+      size: 2
+      type: int
       endianness: little
 
     GYRO_X:
       name: GYRO_X
-      size: 4
-      type: float
+      size: 2
+      type: int
       endianness: little
     GYRO_Y:
       name: GYRO_Y
-      size: 4
-      type: float
+      size: 2
+      type: int
       endianness: little
     GYRO_Z:
       name: GYRO_Z
-      size: 4
-      type: float
+      size: 2
+      type: int
       endianness: little
 
     LATITUDE:
@@ -116,8 +116,8 @@ measurements:
 
     SNR:
       name: RCV_SNR
-      size: 2
-      type: float
+      size: 1
+      type: int
       endianness: little
       unsigned: false
 
@@ -125,6 +125,12 @@ measurements:
       name: RCV_RSSI
       size: 2
       type: int
+      unsigned: false
+
+    CAM_GPIO:
+      name: CAM_GPIO
+      size: 1
+      type: int 
       unsigned: false
 
 telemetry_packets:
@@ -165,4 +171,7 @@ telemetry_packets:
     measurements:
       - RSSI
       - SNR
-
+  - name: CameraStatus
+    port: 12002 
+    measurements:
+      - CAM_GPIO
