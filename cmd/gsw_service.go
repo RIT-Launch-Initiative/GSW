@@ -13,9 +13,9 @@ import (
 	"github.com/AarC10/GSW-V2/lib/ipc"
 	"github.com/AarC10/GSW-V2/lib/logger"
 	"github.com/AarC10/GSW-V2/lib/tlm"
+	"github.com/AarC10/GSW-V2/proc"
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
-
 	"github.com/AarC10/GSW-V2/proc"
 
 	"net/http"
@@ -45,9 +45,9 @@ func printTelemetryPackets() {
 
 // vcmInitialize initializes the Vehicle Config Manager
 // It reads the telemetry config file and writes it into shared memory
-func vcmInitialize(config *viper.Viper) (*ipc.IpcShmHandler, error) {
+func vcmInitialize(config *viper.Viper) (*ipc.ShmHandler, error) {
 	if !config.IsSet("telemetry_config") {
-		err := errors.New("Error: Telemetry config filepath is not set in GSW config.")
+		err := errors.New("telemetry config filepath is not set in GSW config")
 		logger.Error(fmt.Sprint(err))
 		return nil, err
 	}
@@ -62,7 +62,7 @@ func vcmInitialize(config *viper.Viper) (*ipc.IpcShmHandler, error) {
 		logger.Error("Error parsing YAML:", zap.Error(err))
 		return nil, err
 	}
-	configWriter, err := ipc.CreateIpcShmHandler("telemetry-config", len(data), true)
+	configWriter, err := ipc.CreateShmHandler("telemetry-config", len(data), true)
 	if err != nil {
 		logger.Error("Error creating shared memory handler: ", zap.Error(err))
 		return nil, err
@@ -95,9 +95,9 @@ func decomInitialize(ctx context.Context) map[int]chan []byte {
 	return channelMap
 }
 
-func dbInitialize(ctx context.Context, channelMap map[int]chan []byte) error {
+func dbInitialize(ctx context.Context, channelMap map[int]chan []byte, host string, port int) error {
 	dbHandler := db.InfluxDBV1Handler{}
-	err := dbHandler.Initialize()
+	err := dbHandler.Initialize(host, port)
 	if err != nil {
 		logger.Warn("Warning. Telemetry packets will not be published to database")
 		return err
@@ -123,13 +123,23 @@ func readConfig() (*viper.Viper, int) {
 	config.SetConfigType("yaml")
 	config.AddConfigPath("data/config/")
 	err := config.ReadInConfig()
+
 	if err != nil {
-		logger.Panic("Error reading GSW config: %w", zap.Error(err))
+		logger.Fatal("Error reading GSW config: %w", zap.Error(err))
 	}
+	if !config.IsSet("database_host_name") {
+		logger.Panic("Error reading GSW config: database_host_name not set...")
+	}
+	if !config.IsSet("database_port_number") {
+		logger.Panic("Error reading GSW config: database_port_number not set...")
+	}
+
 	return config, *doPprof
 }
 
 func main() {
+	logger.InitLogger()
+
 	// Read gsw_service config
 	config, profilingPort := readConfig()
 
@@ -149,19 +159,22 @@ func main() {
 
 	go func() {
 		sig := <-sigs
-		logger.Info(fmt.Sprintf("Received signal: %v", sig))
+		logger.Debug("Received signal: ", zap.String("signal", sig.String()))
 		cancel()
 	}()
 
 	configWriter, err := vcmInitialize(config)
 	if err != nil {
-		logger.Info("Exiting GSW...")
+		logger.Panic("Exiting GSW...")
 		return
 	}
 	defer configWriter.Cleanup()
 
 	channelMap := decomInitialize(ctx)
-	dbInitialize(ctx, channelMap)
+	err = dbInitialize(ctx, channelMap, config.GetString("database_host_name"), config.GetInt("database_port_number"))
+	if err != nil {
+		logger.Warn("DB Initialization failed", zap.Error(err))
+	}
 
 	// Wait for context cancellation or signal handling
 	<-ctx.Done()
