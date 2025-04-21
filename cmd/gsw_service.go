@@ -16,7 +16,6 @@ import (
 	"github.com/AarC10/GSW-V2/proc"
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
-	"github.com/AarC10/GSW-V2/proc"
 
 	"net/http"
 	_ "net/http/pprof"
