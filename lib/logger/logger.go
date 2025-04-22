@@ -53,7 +53,7 @@ func InitLogger() {
 		EncoderConfig:    encoderConfig,
 	}
 
-	logger = zap.Must(loggerConfig.Build())
+	logger = zap.Must(loggerConfig.Build(zap.AddCaller(), zap.AddCallerSkip(1)))
 }
 
 // loadLoggerConfig loads the logger configuration from a YAML file
