@@ -89,10 +89,10 @@ func TestInterpretMeasurementValue(t *testing.T) {
 		data        []byte
 		expected    interface{}
 	}{
-		{"unsigned int", Measurement{Type: "int", Unsigned: true, Endianness: "little"}, []byte{0x12}, uint8(0x12)},
-		{"signed int", Measurement{Type: "int", Unsigned: false, Endianness: "little"}, []byte{0x82}, int8(-126)},
-		{"float", Measurement{Type: "float", Endianness: "little"}, []byte{0x00, 0x00, 0x80, 0x3F}, float32(1.0)},
-		{"unsupported type", Measurement{Type: "string", Endianness: "little"}, []byte{0x12}, nil},
+		{"unsigned int", Measurement{Type: "int", Unsigned: true, Endianness: "little", Scaling: 1.0}, []byte{0x12}, uint8(0x12)},
+		{"signed int", Measurement{Type: "int", Unsigned: false, Endianness: "little", Scaling: 1.0}, []byte{0x82}, int8(-126)},
+		{"float", Measurement{Type: "float", Endianness: "little", Scaling: 1.0}, []byte{0x00, 0x00, 0x80, 0x3F}, float32(1.0)},
+		{"unsupported type", Measurement{Type: "string", Endianness: "little", Scaling: 1.0}, []byte{0x12}, nil},
 	}
 
 	for _, tt := range tests {
