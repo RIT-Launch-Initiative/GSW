@@ -1,4 +1,4 @@
-name: backplane
+name: receiver
 
 measurements:
     CURR_BATT:
@@ -37,16 +37,19 @@ measurements:
       size: 2
       type: int
       endianness: little
+      scaling: 0.001
     ACCEL_Y:
       name: ACCEL_Y
       size: 2
       type: int
       endianness: little
+      scaling: 0.001
     ACCEL_Z:
       name: ACCEL_Z
       size: 2
       type: int
       endianness: little
+      scaling: 0.001
 
     PRESSURE:
       name: PRESSURE

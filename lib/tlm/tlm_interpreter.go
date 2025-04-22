@@ -9,11 +9,12 @@ import (
 
 // Measurement represents a single measurement in a telemetry packet.
 type Measurement struct {
-	Name       string `yaml:"name"`                 // Name of the measurement
-	Size       int    `yaml:"size"`                 // Size of the measurement in bytes
-	Type       string `yaml:"type,omitempty"`       // Type of the measurement (int, float)
-	Unsigned   bool   `yaml:"unsigned,omitempty"`   // Whether the measurement is unsigned
-	Endianness string `yaml:"endianness,omitempty"` // Endianness of the measurement (big, little)
+	Name       string  `yaml:"name"`                 // Name of the measurement
+	Size       int     `yaml:"size"`                 // Size of the measurement in bytes
+	Type       string  `yaml:"type,omitempty"`       // Type of the measurement (int, float)
+	Unsigned   bool    `yaml:"unsigned,omitempty"`   // Whether the measurement is unsigned
+	Endianness string  `yaml:"endianness,omitempty"` // Endianness of the measurement (big, little)
+	Scaling    float64 `yaml:"scaling,omitempty"`    // Scaling factor for the measurement (optional)
 }
 
 // TelemetryPacket represents information about a telemetry packet received over Ethernet.

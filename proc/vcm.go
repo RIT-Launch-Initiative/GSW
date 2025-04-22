@@ -60,6 +60,12 @@ func ParseConfigBytes(data []byte) (*Configuration, error) {
 		} else if GswConfig.Measurements[k].Endianness != "little" && GswConfig.Measurements[k].Endianness != "big" {
 			return nil, fmt.Errorf("endianness specified as %s, instead of big or little", GswConfig.Measurements[k].Endianness)
 		}
+
+		if GswConfig.Measurements[k].Scaling == 0 {
+			entry := GswConfig.Measurements[k] // Workaround to avoid UnaddressableFieldAssign
+			entry.Scaling = 1.0                // Default scaling factor
+			GswConfig.Measurements[k] = entry
+		}
 	}
 
 	return &GswConfig, nil
