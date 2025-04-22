@@ -1,4 +1,4 @@
-telemetry_config: data/config/receiver.yaml
+telemetry_config: data/config/backplane.yaml
 logging_config: data/config/logger.yaml
 database_host_name: localhost
 database_port_number: 8089
