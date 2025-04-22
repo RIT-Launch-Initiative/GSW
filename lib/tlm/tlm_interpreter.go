@@ -98,17 +98,52 @@ func InterpretFloat(data []byte, endianness string) (interface{}, error) {
 // The measurement parameter specifies the type and endianness of the data.
 // The function returns the interpreted value and an error if the interpretation fails.
 func InterpretMeasurementValue(measurement Measurement, data []byte) (interface{}, error) {
+	var result interface{}
+	var err error
 	switch measurement.Type {
 	case "int":
 		if measurement.Unsigned {
 			return InterpretUnsignedInteger(data, measurement.Endianness)
 		}
-		return InterpretSignedInteger(data, measurement.Endianness)
+		result, err = InterpretSignedInteger(data, measurement.Endianness)
 	case "float":
-		return InterpretFloat(data, measurement.Endianness)
+		result, err = InterpretFloat(data, measurement.Endianness)
 	default:
 		return nil, fmt.Errorf("unsupported type for measurement: %s", measurement.Type)
 	}
+
+	if measurement.Scaling != 1.0 {
+		switch v := result.(type) {
+		case int:
+			result = float64(v) * measurement.Scaling
+		case int8:
+			result = float64(v) * measurement.Scaling
+		case int16:
+			result = float64(v) * measurement.Scaling
+		case int32:
+			result = float64(v) * measurement.Scaling
+		case int64:
+			result = float64(v) * measurement.Scaling
+		case uint:
+			result = float64(v) * measurement.Scaling
+		case uint8:
+			result = float64(v) * measurement.Scaling
+		case uint16:
+			result = float64(v) * measurement.Scaling
+		case uint32:
+			result = float64(v) * measurement.Scaling
+		case uint64:
+			result = float64(v) * measurement.Scaling
+		case float32:
+			result = float64(v) * measurement.Scaling
+		case float64:
+			result = v * measurement.Scaling
+		default:
+			return nil, fmt.Errorf("unsupported type for scaling: %T", result)
+		}
+	}
+
+	return result, err
 }
 
 // InterpretMeasurementValueString interprets a byte slice as a value for a measurement and returns a string representation.
@@ -156,5 +191,10 @@ func (m Measurement) String() string {
 		sb.WriteString(", Signed")
 	}
 	sb.WriteString(fmt.Sprintf(", Endianness: %s", m.Endianness))
+
+	if m.Scaling != 1.0 {
+		sb.WriteString(fmt.Sprintf(", Scaling: %f", m.Scaling))
+	}
+
 	return sb.String()
 }

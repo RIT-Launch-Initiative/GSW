@@ -61,6 +61,7 @@ func ParseConfigBytes(data []byte) (*Configuration, error) {
 			return nil, fmt.Errorf("endianness specified as %s, instead of big or little", GswConfig.Measurements[k].Endianness)
 		}
 
+		// 0 is the default when parsed. If a user specifies 0, then it's probably a mistake.
 		if GswConfig.Measurements[k].Scaling == 0 {
 			entry := GswConfig.Measurements[k] // Workaround to avoid UnaddressableFieldAssign
 			entry.Scaling = 1.0                // Default scaling factor
