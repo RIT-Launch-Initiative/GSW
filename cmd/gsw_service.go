@@ -148,7 +148,13 @@ func main() {
 	if profilingPort != 0 {
 		go func() {
 			logger.Info(fmt.Sprintf("Running pprof server at localhost:%d", profilingPort))
-			http.ListenAndServe(fmt.Sprintf("localhost:%d", profilingPort), nil)
+			err := http.ListenAndServe(fmt.Sprintf("localhost:%d", profilingPort), nil)
+
+			if err != nil {
+				logger.Warn("Unable to listen and serve")	
+			}
+
+
 		}()
 	}
 
