@@ -151,9 +151,8 @@ func main() {
 			err := http.ListenAndServe(fmt.Sprintf("localhost:%d", profilingPort), nil)
 
 			if err != nil {
-				logger.Warn("Unable to listen and serve")	
+				logger.Warn("Unable to listen and serve")
 			}
-
 
 		}()
 	}
