@@ -131,12 +131,14 @@ measurements:
       name: RCV_RSSI
       size: 2
       type: int
+      endianness: little
       unsigned: false
 
     CAM_GPIO:
       name: CAM_GPIO
       size: 1
       type: int 
+      endianness: little
       unsigned: false
 
 telemetry_packets:
