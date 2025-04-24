@@ -13,10 +13,12 @@ import (
 	"github.com/AarC10/GSW-V2/lib/ipc"
 	"github.com/AarC10/GSW-V2/lib/logger"
 	"github.com/AarC10/GSW-V2/lib/tlm"
+	"github.com/AarC10/GSW-V2/proc"
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
 
-	"github.com/AarC10/GSW-V2/proc"
+	"net/http"
+	_ "net/http/pprof"
 )
 
 var shmDir = flag.String("shm", "/dev/shm", "directory to use for shared memory")
@@ -44,9 +46,9 @@ func printTelemetryPackets() {
 
 // vcmInitialize initializes the Vehicle Config Manager
 // It reads the telemetry config file and writes it into shared memory
-func vcmInitialize(config *viper.Viper) (*ipc.IpcShmHandler, error) {
+func vcmInitialize(config *viper.Viper) (*ipc.ShmHandler, error) {
 	if !config.IsSet("telemetry_config") {
-		err := errors.New("Error: Telemetry config filepath is not set in GSW config.")
+		err := errors.New("telemetry config filepath is not set in GSW config")
 		logger.Error(fmt.Sprint(err))
 		return nil, err
 	}
@@ -61,7 +63,8 @@ func vcmInitialize(config *viper.Viper) (*ipc.IpcShmHandler, error) {
 		logger.Error("Error parsing YAML:", zap.Error(err))
 		return nil, err
 	}
-	configWriter, err := ipc.CreateIpcShmHandler("telemetry-config", len(data), true, *shmDir)
+  
+	configWriter, err := ipc.CreateShmHandler("telemetry-config", len(data), true, *shmDir)
 	if err != nil {
 		logger.Error("Error creating shared memory handler: ", zap.Error(err))
 		return nil, err
@@ -94,9 +97,9 @@ func decomInitialize(ctx context.Context) map[int]chan []byte {
 	return channelMap
 }
 
-func dbInitialize(ctx context.Context, channelMap map[int]chan []byte) error {
+func dbInitialize(ctx context.Context, channelMap map[int]chan []byte, host string, port int) error {
 	dbHandler := db.InfluxDBV1Handler{}
-	err := dbHandler.Initialize()
+	err := dbHandler.Initialize(host, port)
 	if err != nil {
 		logger.Warn("Warning. Telemetry packets will not be published to database")
 		return err
@@ -113,27 +116,45 @@ func dbInitialize(ctx context.Context, channelMap map[int]chan []byte) error {
 	return nil
 }
 
-func readConfig() *viper.Viper {
+func readConfig() (*viper.Viper, int) {
 	config := viper.New()
 	configFilepath := flag.String("c", "gsw_service", "name of config file")
+	doPprof := flag.Int("p", 0, "Port to run pprof server on. Leave empty or set to 0 to disable pprof server")
 	flag.Parse()
 	config.SetConfigName(*configFilepath)
 	config.SetConfigType("yaml")
 	config.AddConfigPath("data/config/")
 	err := config.ReadInConfig()
+
 	if err != nil {
-		logger.Panic("Error reading GSW config: %w", zap.Error(err))
+		logger.Fatal("Error reading GSW config: %w", zap.Error(err))
 	}
-	return config
+	if !config.IsSet("database_host_name") {
+		logger.Panic("Error reading GSW config: database_host_name not set...")
+	}
+	if !config.IsSet("database_port_number") {
+		logger.Panic("Error reading GSW config: database_port_number not set...")
+	}
+
+	return config, *doPprof
 }
 
 func main() {
 	flag.Parse()
+	logger.InitLogger()
+
 	// Read gsw_service config
-	config := readConfig()
+	config, profilingPort := readConfig()
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
+
+	if profilingPort != 0 {
+		go func() {
+			logger.Info(fmt.Sprintf("Running pprof server at localhost:%d", profilingPort))
+			http.ListenAndServe(fmt.Sprintf("localhost:%d", profilingPort), nil)
+		}()
+	}
 
 	// Setup signal handling
 	sigs := make(chan os.Signal, 1)
@@ -141,19 +162,22 @@ func main() {
 
 	go func() {
 		sig := <-sigs
-		fmt.Printf("Received signal: %s\n", sig)
+		logger.Debug("Received signal: ", zap.String("signal", sig.String()))
 		cancel()
 	}()
 
 	configWriter, err := vcmInitialize(config)
 	if err != nil {
-		logger.Info("Exiting GSW...")
+		logger.Panic("Exiting GSW...")
 		return
 	}
 	defer configWriter.Cleanup()
 
 	channelMap := decomInitialize(ctx)
-	dbInitialize(ctx, channelMap)
+	err = dbInitialize(ctx, channelMap, config.GetString("database_host_name"), config.GetInt("database_port_number"))
+	if err != nil {
+		logger.Warn("DB Initialization failed", zap.Error(err))
+	}
 
 	// Wait for context cancellation or signal handling
 	<-ctx.Done()
