@@ -113,9 +113,7 @@ func main() {
 
 					// format & pad value
 					switch v := val.(type) {
-					case float32:
-						val = fmt.Sprintf("%.8f", v)
-					case float64:
+					case float32, float64:
 						val = fmt.Sprintf("%.8f", v)
 					}
 					valStr := fmt.Sprintf("%v", val)

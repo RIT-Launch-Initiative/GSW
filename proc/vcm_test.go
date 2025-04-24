@@ -12,8 +12,8 @@ func resetState() {
 }
 
 func compareMeasurements(expected tlm.Measurement, actual tlm.Measurement, test *testing.T) {
-	if expected.Scaling == 0 {
-		expected.Scaling = 1
+	if expected.ScalingFactor == 0 {
+		expected.ScalingFactor = 1
 	}
 
 	if expected != actual {
@@ -140,17 +140,17 @@ func TestFindMeasurementByName(test *testing.T) {
 func TestMeasurementToString(test *testing.T) {
 	test.Cleanup(resetState)
 	bigSigned := tlm.Measurement{Name: "Test", Size: 4, Type: "int", Unsigned: false, Endianness: "big"}
-	bigSigned.Scaling = 1
+	bigSigned.ScalingFactor = 1
 	expected := "Name: Test, Size: 4, Type: int, Signed, Endianness: big"
 	CompareMeasurementString(expected, bigSigned.String(), test)
 
 	littleUnsigned := tlm.Measurement{Name: "Test", Size: 4, Type: "int", Unsigned: true, Endianness: "little"}
-	littleUnsigned.Scaling = 1
+	littleUnsigned.ScalingFactor = 1
 	expected = "Name: Test, Size: 4, Type: int, Unsigned, Endianness: little"
 	CompareMeasurementString(expected, littleUnsigned.String(), test)
 
 	noType := tlm.Measurement{Name: "Test", Size: 4, Unsigned: true, Endianness: "little"}
-	noType.Scaling = 1
+	noType.ScalingFactor = 1
 	expected = "Name: Test, Size: 4, Unsigned, Endianness: little"
 	CompareMeasurementString(expected, noType.String(), test)
 }

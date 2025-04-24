@@ -9,12 +9,12 @@ import (
 
 // Measurement represents a single measurement in a telemetry packet.
 type Measurement struct {
-	Name       string  `yaml:"name"`                 // Name of the measurement
-	Size       int     `yaml:"size"`                 // Size of the measurement in bytes
-	Type       string  `yaml:"type,omitempty"`       // Type of the measurement (int, float)
-	Unsigned   bool    `yaml:"unsigned,omitempty"`   // Whether the measurement is unsigned
-	Endianness string  `yaml:"endianness,omitempty"` // Endianness of the measurement (big, little)
-	Scaling    float64 `yaml:"scaling,omitempty"`    // Scaling factor for the measurement (optional)
+	Name          string  `yaml:"name"`                 // Name of the measurement
+	Size          int     `yaml:"size"`                 // Size of the measurement in bytes
+	Type          string  `yaml:"type,omitempty"`       // Type of the measurement (int, float)
+	Unsigned      bool    `yaml:"unsigned,omitempty"`   // Whether the measurement is unsigned
+	Endianness    string  `yaml:"endianness,omitempty"` // Endianness of the measurement (big, little)
+	ScalingFactor float64 `yaml:"scaling,omitempty"`    // ScalingFactor factor to be multiplied to the measurement (optional)
 }
 
 // TelemetryPacket represents information about a telemetry packet received over Ethernet.
@@ -112,32 +112,32 @@ func InterpretMeasurementValue(measurement Measurement, data []byte) (interface{
 		return nil, fmt.Errorf("unsupported type for measurement: %s", measurement.Type)
 	}
 
-	if measurement.Scaling != 1.0 {
+	if measurement.ScalingFactor != 1.0 {
 		switch v := result.(type) {
 		case int:
-			result = float64(v) * measurement.Scaling
+			result = float64(v) * measurement.ScalingFactor
 		case int8:
-			result = float64(v) * measurement.Scaling
+			result = float64(v) * measurement.ScalingFactor
 		case int16:
-			result = float64(v) * measurement.Scaling
+			result = float64(v) * measurement.ScalingFactor
 		case int32:
-			result = float64(v) * measurement.Scaling
+			result = float64(v) * measurement.ScalingFactor
 		case int64:
-			result = float64(v) * measurement.Scaling
+			result = float64(v) * measurement.ScalingFactor
 		case uint:
-			result = float64(v) * measurement.Scaling
+			result = float64(v) * measurement.ScalingFactor
 		case uint8:
-			result = float64(v) * measurement.Scaling
+			result = float64(v) * measurement.ScalingFactor
 		case uint16:
-			result = float64(v) * measurement.Scaling
+			result = float64(v) * measurement.ScalingFactor
 		case uint32:
-			result = float64(v) * measurement.Scaling
+			result = float64(v) * measurement.ScalingFactor
 		case uint64:
-			result = float64(v) * measurement.Scaling
+			result = float64(v) * measurement.ScalingFactor
 		case float32:
-			result = float64(v) * measurement.Scaling
+			result = float64(v) * measurement.ScalingFactor
 		case float64:
-			result = v * measurement.Scaling
+			result = v * measurement.ScalingFactor
 		default:
 			return nil, fmt.Errorf("unsupported type for scaling: %T", result)
 		}
@@ -192,8 +192,8 @@ func (m Measurement) String() string {
 	}
 	sb.WriteString(fmt.Sprintf(", Endianness: %s", m.Endianness))
 
-	if m.Scaling != 1.0 {
-		sb.WriteString(fmt.Sprintf(", Scaling: %f", m.Scaling))
+	if m.ScalingFactor != 1.0 {
+		sb.WriteString(fmt.Sprintf(", ScalingFactor: %f", m.ScalingFactor))
 	}
 
 	return sb.String()

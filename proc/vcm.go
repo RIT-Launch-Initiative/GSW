@@ -62,9 +62,9 @@ func ParseConfigBytes(data []byte) (*Configuration, error) {
 		}
 
 		// 0 is the default when parsed. If a user specifies 0, then it's probably a mistake.
-		if GswConfig.Measurements[k].Scaling == 0 {
+		if GswConfig.Measurements[k].ScalingFactor == 0 {
 			entry := GswConfig.Measurements[k] // Workaround to avoid UnaddressableFieldAssign
-			entry.Scaling = 1.0                // Default scaling factor
+			entry.ScalingFactor = 1.0          // Default scaling factor
 			GswConfig.Measurements[k] = entry
 		}
 	}
