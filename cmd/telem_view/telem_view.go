@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"os"
 	"os/signal"
@@ -17,13 +18,16 @@ import (
 
 const valueColWidth = 12
 
+var shmDir = flag.String("shm", "/dev/shm", "directory to use for shared memory")
+
 // padValue will left justify any string into a field of width valueColWidth
 func padValue(s string) string {
 	return fmt.Sprintf("%-*s", valueColWidth, s)
 }
 
 func main() {
-	configReader, err := ipc.CreateShmReader("telemetry-config")
+	flag.Parse()
+	configReader, err := ipc.CreateShmReader("telemetry-config", *shmDir)
 	if err != nil {
 		fmt.Println("*** Error accessing config file. Make sure the GSW service is running. ***")
 		fmt.Printf("(%v)\n", err)
@@ -96,7 +100,7 @@ func main() {
 	rowIndex := 1
 	for _, packet := range proc.GswConfig.TelemetryPackets {
 		outChan := make(chan []byte)
-		go proc.TelemetryPacketReader(packet, outChan)
+		go proc.TelemetryPacketReader(packet, outChan, *shmDir)
 
 		go func(pkt tlm.TelemetryPacket, baseRow int) {
 			for data := range outChan {

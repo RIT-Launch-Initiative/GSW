@@ -75,10 +75,10 @@ func sendQuery(query string, liveAddr string, authToken string) error {
 	// Send the query data over HTTP to Grafana Live
 	body := bytes.NewReader(data)
 	request, err := http.NewRequest(http.MethodPost, liveAddr, body)
-	request.Header.Set("Authorization", "Bearer "+authToken)
 	if err != nil {
 		return fmt.Errorf("error forming HTTP request: %v", err)
 	}
+	request.Header.Set("Authorization", "Bearer "+authToken)
 
 	response, err := http.DefaultClient.Do(request)
 	if err != nil {
@@ -105,7 +105,7 @@ func sendQuery(query string, liveAddr string, authToken string) error {
 // readConfigFiles reads the configuration file for grafana_live.go as well as the
 // telemetry configuration from shared memory. It returns a Viper config object.
 func readConfigFiles() (*viper.Viper, error) {
-	configReader, err := ipc.CreateIpcShmReader("telemetry-config", *shmDir)
+	configReader, err := ipc.CreateShmReader("telemetry-config", *shmDir)
 	if err != nil {
 		fmt.Println("*** Error accessing config file. Make sure the GSW service is running. ***")
 		return nil, err
@@ -144,8 +144,7 @@ func setupWebSocket(config *viper.Viper, authToken string) (*websocket.Conn, err
 	header.Add("Authorization", "Bearer "+authToken)
 	conn, _, err := websocket.DefaultDialer.Dial(liveAddr, header)
 	if err != nil {
-		fmt.Errorf("WebSocket failed to dial: %v", err)
-		return nil, err
+		return nil, fmt.Errorf("WebSocket failed to dial: %v", err)
 	} else {
 		fmt.Println("WebSocket connected.")
 		go func() {

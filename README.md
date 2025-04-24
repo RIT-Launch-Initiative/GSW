@@ -40,7 +40,7 @@ If you want the service to run on startup:
 `sudo systemctl enable gsw`
 
 ## Grafana Live
-**To set up live data streaming to Grafana, the setup utility can be run from the root directory with `go run cmd/grafana_live/live_setup.go`**
+**To set up live data streaming to Grafana, the setup utility can be run from the root directory with `go run cmd/live_setup/live_setup.go`**
 
 Once set up, the grafana_live application can be run from the root directory (with `go run cmd/grafana_live/grafana_live.go`) to stream live data to Grafana.
 Make sure the GSW service is running before starting the application.
