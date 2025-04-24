@@ -1,4 +1,4 @@
- Apps
+# Apps
 APPS = gsw_service telem_view
 
 # Sources
