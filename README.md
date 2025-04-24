@@ -54,10 +54,10 @@ Copy the token to the clipboard. If you lose it, you will need to generate a new
 4. Set the environment variable `GRAFANA_LIVE_TOKEN` to the service account token from the previous step. This can be done by creating a file called `.env` in the root directory.
 The file contents should be `GRAFANA_LIVE_TOKEN="<token>"`, replacing `<token>` with the service account token.
 
-Live data is not currently set up for radio module.
-
 ### Configuration
 By default, the application is configured using the file `grafana_live.yaml` in the `data/config` directory. If the flag `-c (FILE_NAME)` is used, the application will instead parse the configuration file at `data/config/(FILE_NAME).yaml`.
+
+The Grafana Live dashboard is not currently set up for radio module.
 
 #### Keys (must be specified)
 * `channel_path`: Final portion of the Grafana Live channel string (e.g. "backplane" in `stream/telemetry/backplane`).

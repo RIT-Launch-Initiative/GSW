@@ -16,6 +16,8 @@ import (
 	"strings"
 )
 
+const DashboardJsonFile = "data/grafana/Backplane-Live.json"
+
 // Prompts the user for the Grafana username, password, and URL.
 // Returns a URL to Grafana containing the username and password info for basic auth.
 func getURL(scanner *bufio.Scanner) (*url.URL, error) {
@@ -241,7 +243,7 @@ func main() {
 
 	// create the Grafana Live dashboard from JSON
 	dashboardURL := grafanaURL.JoinPath("dashboards", "db")
-	err = createDashboard(dashboardURL, "data/grafana/Backplane-Live.json")
+	err = createDashboard(dashboardURL, DashboardJsonFile)
 	if err != nil {
 		fmt.Println("Error creating dashboard:", err)
 		return
