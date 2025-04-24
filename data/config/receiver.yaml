@@ -67,16 +67,19 @@ measurements:
       size: 2
       type: int
       endianness: little
+      scaling: 0.001
     GYRO_Y:
       name: GYRO_Y
       size: 2
       type: int
       endianness: little
+      scaling: 0.001
     GYRO_Z:
       name: GYRO_Z
       size: 2
       type: int
       endianness: little
+      scaling: 0.001
 
     LATITUDE:
       name: LATITUDE
