@@ -1,24 +1,22 @@
-all:
-	go build -o gsw_service ./cmd/gsw_service.go
-	go build -o telem_view ./cmd/telem_view.go
+ Apps
+APPS = gsw_service telem_view
+
+# Sources
+gsw_service_SRC = ./cmd/gsw_service.go
+telem_view_SRC = ./cmd/telem_view/telem_view.go
+
+all: $(APPS)
+
+$(APPS):
+	go build -o $@ $($@_SRC)
 
 arm: # Cross compile for arm64 (i.e. Raspberry Pi)
+	# TODO: Haven't had a clean way like the above without getting substitution errors
 	GOARCH=arm64 GOOS=linux go build -o arm64/gsw_service cmd/gsw_service.go
 	GOARCH=arm64 GOOS=linux go build -o arm64/telem_view cmd/telem_view.go
 
 clean:
-	rm -f gsw_service
-	rm -f telem_view
-	rm -f *.o
-	rm -f *.a
-	rm -f *.so
-	rm -f *.exe
-	rm -f *.test
-	rm -f *.prof
-	rm -f *.out
-	rm -rf testdata
-	rm -rf testresults
-	rm -rf testreports
-	rm -rf testcovs
-	rm -rf testcovhtmls
-
+	rm -f $(APPS)
+	rm -f arm64/$(APPS)
+	rm -f *.o *.a *.so *.exe *.test *.prof *.out
+	rm -rf testdata testresults testreports testcovs testcovhtmls
