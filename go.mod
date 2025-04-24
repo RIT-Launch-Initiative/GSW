@@ -5,6 +5,9 @@ go 1.23.0
 toolchain go1.24.1
 
 require (
+	github.com/gorilla/websocket v1.5.3
+	github.com/influxdata/influxdb-client-go/v2 v2.14.0
+	github.com/joho/godotenv v1.5.1
 	github.com/gdamore/tcell/v2 v2.7.1
 	github.com/rivo/tview v0.0.0-20250330220935-949945f8d922
 	github.com/spf13/viper v1.19.0

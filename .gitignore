@@ -29,3 +29,6 @@ gsw_service
 
 # log directory
 data/logs/
+
+# environment variables
+.env

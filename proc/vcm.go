@@ -33,7 +33,10 @@ func ParseConfig(filename string) (*Configuration, error) {
 // ParseConfigBytes parses a YAML formatted byte slice and returns a Configuration struct
 func ParseConfigBytes(data []byte) (*Configuration, error) {
 	// Unmarshalling doesn't seem to lead to errors with bad data. Better to check result config
-	_ = yaml.Unmarshal(data, &GswConfig)
+	err := yaml.Unmarshal(data, &GswConfig)
+	if err != nil {
+		return nil, fmt.Errorf("error unmarshaling YAML: %v", err)
+	}
 	if GswConfig.Name == "" {
 		return nil, fmt.Errorf("no configuration name provided")
 	}

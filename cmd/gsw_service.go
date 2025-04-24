@@ -21,6 +21,8 @@ import (
 	_ "net/http/pprof"
 )
 
+var shmDir = flag.String("shm", "/dev/shm", "directory to use for shared memory")
+
 // printTelemetryPackets prints the telemetry packets and their measurements it found in the configuration.
 func printTelemetryPackets() {
 	fmt.Println("Telemetry Packets:")
@@ -61,7 +63,8 @@ func vcmInitialize(config *viper.Viper) (*ipc.ShmHandler, error) {
 		logger.Error("Error parsing YAML:", zap.Error(err))
 		return nil, err
 	}
-	configWriter, err := ipc.CreateShmHandler("telemetry-config", len(data), true)
+
+	configWriter, err := ipc.CreateShmHandler("telemetry-config", len(data), true, *shmDir)
 	if err != nil {
 		logger.Error("Error creating shared memory handler: ", zap.Error(err))
 		return nil, err
@@ -85,7 +88,7 @@ func decomInitialize(ctx context.Context) map[int]chan []byte {
 		channelMap[packet.Port] = finalOutputChannel
 
 		go func(packet tlm.TelemetryPacket, ch chan []byte) {
-			proc.TelemetryPacketWriter(packet, ch)
+			proc.TelemetryPacketWriter(packet, finalOutputChannel, *shmDir)
 			<-ctx.Done()
 			close(ch)
 		}(packet, finalOutputChannel)
@@ -137,6 +140,7 @@ func readConfig() (*viper.Viper, int) {
 }
 
 func main() {
+	flag.Parse()
 	logger.InitLogger()
 
 	// Read gsw_service config

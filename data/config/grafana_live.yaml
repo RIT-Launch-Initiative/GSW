@@ -1,0 +1,5 @@
+channel_path: backplane # final part of the Grafana Live channel string
+websocket_addr: ws://localhost:3000/api/live/push/telemetry/ # address where data is sent over websocket
+http_addr: http://localhost:3000/api/live/push/telemetry/ # address where data is sent over HTTP or HTTPS
+use_websocket: true # whether to use websocket to stream data (recommended)
+use_http: true # whether to use http(s) to stream data (if websocket fails or is disabled)

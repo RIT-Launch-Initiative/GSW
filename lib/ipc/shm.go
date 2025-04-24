@@ -26,10 +26,8 @@ const (
 	shmFilePrefix = "gsw-service-"
 )
 
-var shmDir = flag.String("shm", "/dev/shm", "directory to use for shared memory")
-
 // CreateShmHandler creates a shared memory handler for inter-process communication
-func CreateShmHandler(identifier string, size int, isWriter bool) (*ShmHandler, error) {
+func CreateShmHandler(identifier string, size int, isWriter bool, shmDir string) (*ShmHandler, error) {
 	handler := &ShmHandler{
 		size:            size + timestampSize, // Add space for timestamp
 		mode:            modeReader,
@@ -37,7 +35,7 @@ func CreateShmHandler(identifier string, size int, isWriter bool) (*ShmHandler, 
 	}
 
 	flag.Parse()
-	filename := filepath.Join(*shmDir, fmt.Sprintf("%s%s", shmFilePrefix, identifier))
+	filename := filepath.Join(shmDir, fmt.Sprintf("%s%s", shmFilePrefix, identifier))
 
 	if isWriter {
 		handler.mode = modeWriter
@@ -77,14 +75,14 @@ func CreateShmHandler(identifier string, size int, isWriter bool) (*ShmHandler, 
 }
 
 // CreateShmReader creates a shared memory reader for inter-process communication
-func CreateShmReader(identifier string) (*ShmHandler, error) {
+func CreateShmReader(identifier string, shmDir string) (*ShmHandler, error) {
 	flag.Parse()
-	fileinfo, err := os.Stat(filepath.Join(*shmDir, fmt.Sprintf("%s%s", shmFilePrefix, identifier)))
+	fileinfo, err := os.Stat(filepath.Join(shmDir, fmt.Sprintf("%s%s", shmFilePrefix, identifier)))
 	if err != nil {
 		return nil, fmt.Errorf("error getting shm file info: %v", err)
 	}
 	filesize := int(fileinfo.Size()) // TODO fix unsafe int64 conversion
-	return CreateShmHandler(identifier, filesize, false)
+	return CreateShmHandler(identifier, filesize, false, shmDir)
 }
 
 // Cleanup cleans up the shared memory handler and removes the shared memory file
