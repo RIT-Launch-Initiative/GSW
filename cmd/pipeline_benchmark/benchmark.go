@@ -70,7 +70,7 @@ func main() {
 
 	for i, packet := range proc.GswConfig.TelemetryPackets {
 		outChan := make(chan []byte)
-		go proc.TelemetryPacketReader(packet, outChan)
+		go proc.TelemetryPacketReader(packet, outChan, "/dev/shm")
 		go calculateTimestamps(i*9, packet, outChan)
 	}
 

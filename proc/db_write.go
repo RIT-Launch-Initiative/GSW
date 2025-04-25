@@ -15,7 +15,7 @@ func DatabaseWriter(handler db.Handler, packet tlm.TelemetryPacket, channel chan
 
 	for {
 		data := <-channel
-		updateMeasurementGroup(packet, measGroup, data)
+		UpdateMeasurementGroup(packet, measGroup, data)
 
 		err := handler.Insert(measGroup)
 		if err != nil {
@@ -36,8 +36,8 @@ func initMeasurementGroup(packet tlm.TelemetryPacket) db.MeasurementGroup {
 	return measurementGroup
 }
 
-// updateMeasurementGroup updates the values of the measurements in the MeasurementGroup
-func updateMeasurementGroup(packet tlm.TelemetryPacket, measurements db.MeasurementGroup, data []byte) {
+// UpdateMeasurementGroup updates the values of the measurements in the MeasurementGroup
+func UpdateMeasurementGroup(packet tlm.TelemetryPacket, measurements db.MeasurementGroup, data []byte) {
 	offset := 0
 
 	measurements.Timestamp = time.Now().UnixNano()

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"os"
 	"os/signal"
@@ -12,6 +13,8 @@ import (
 	"github.com/AarC10/GSW-V2/lib/util"
 	"github.com/AarC10/GSW-V2/proc"
 )
+
+var shmDir = flag.String("shm", "/dev/shm", "directory to use for shared memory")
 
 // buildString creates a string representation of the telemetry packet data
 // Format: MeasurementName: Value (Base-10) [(Base-16)]
@@ -54,7 +57,9 @@ func printTelemetryPacket(startLine int, packet tlm.TelemetryPacket, rcvChan cha
 }
 
 func main() {
-	configReader, err := ipc.CreateShmReader("telemetry-config")
+	flag.Parse()
+
+	configReader, err := ipc.CreateShmReader("telemetry-config", *shmDir)
 	if err != nil {
 		fmt.Println("*** Error accessing config file. Make sure the GSW service is running. ***")
 		fmt.Printf("(%v)\n", err)
@@ -80,7 +85,7 @@ func main() {
 	startLine := 0
 	for _, packet := range proc.GswConfig.TelemetryPackets {
 		outChan := make(chan []byte)
-		go proc.TelemetryPacketReader(packet, outChan)
+		go proc.TelemetryPacketReader(packet, outChan, *shmDir)
 		go printTelemetryPacket(startLine, packet, outChan)
 		startLine += len(packet.Measurements) + 1
 	}

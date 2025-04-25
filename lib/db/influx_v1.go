@@ -32,11 +32,17 @@ func (h *InfluxDBV1Handler) Initialize(host string, port int) error {
 	}
 
 	h.conn = *conn
+
 	return nil
 }
 
-// CreateQuery Generates InfluxDB query for measurement group
+// CreateQuery generates InfluxDB query for measurement group
 func (h *InfluxDBV1Handler) CreateQuery(measurements MeasurementGroup) string {
+	return CreateQuery(measurements)
+}
+
+// CreateQuery generates InfluxDB query for measurement group
+func CreateQuery(measurements MeasurementGroup) string {
 	query := measurements.DatabaseName + " "
 
 	for _, measurement := range measurements.Measurements {
