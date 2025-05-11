@@ -17,6 +17,9 @@ func printHelpMessage() {
 	fmt.Println()
 	fmt.Println("Specify the bytes of the payload to send by entering a list of integers separated by spaces.")
 	fmt.Println("Integers can be in base 10, binary (start with 0b), or hex (start with 0x).")
+	fmt.Println("To toggle between ASCII and byte modes, type 'mode'.")
+	fmt.Println("In ASCII mode, text will be sent directly as bytes.")
+	fmt.Println("In ASCII mode, you can use escape sequences like \\x00 to include specific byte values.")
 	fmt.Println("To resend the most recent payload, press the up arrow followed by Enter.")
 	fmt.Println("To view the history of previously sent payloads, type 'h'.")
 	fmt.Println("h <#> - resends the payload with the given history item number.")
@@ -71,24 +74,33 @@ func promptConnInfo(scanner *bufio.Scanner) (string, int, error) {
 
 // Prompts for user input, either a payload or other command.
 // Returns the payload (if one was given) formatted as a byte array.
-func promptInput(scanner *bufio.Scanner, history [][]byte) ([]byte, error) {
+func promptInput(scanner *bufio.Scanner, history [][]byte, isAsciiMode bool) ([]byte, error) {
 	fmt.Print("Payload: ")
 	scanner.Scan()
 	if err := scanner.Err(); err != nil {
 		return nil, fmt.Errorf("error scanning input: %v", err)
 	}
-	inputTokens := strings.Fields(scanner.Text())
-	if len(inputTokens) == 0 {
+
+	input := scanner.Text()
+	inputTokens := strings.Fields(input)
+	if len(input) == 0 {
 		return nil, fmt.Errorf("no input")
 	}
 
 	// Print help message
-	if inputTokens[0] == "help" {
+	if input == "help" {
 		printHelpMessage()
 		return nil, nil
 	}
+
+	// Toggle mode command
+	if input == "mode" {
+		return []byte("__MODE_TOGGLE__"), nil
+	}
+
 	// Check for history commands
-	if inputTokens[0] == "h" {
+	if strings.HasPrefix(input, "h") && (len(input) == 1 || input[1] == ' ') {
+		inputTokens = strings.Fields(input)
 		if len(inputTokens) == 1 {
 			// print history
 			if len(history) == 0 {
@@ -121,7 +133,7 @@ func promptInput(scanner *bufio.Scanner, history [][]byte) ([]byte, error) {
 			// print usage info
 			return nil, fmt.Errorf("usage: h [item number]")
 		}
-	} else if inputTokens[0] == "\x1b[A" && len(inputTokens) == 1 { // read up arrow
+	} else if input == "\x1b[A" { // read up arrow
 		// resend most recent payload
 		if len(history) == 0 {
 			fmt.Println("History is empty.")
@@ -130,25 +142,73 @@ func promptInput(scanner *bufio.Scanner, history [][]byte) ([]byte, error) {
 		return history[len(history)-1], nil
 	}
 
-	// Loop adding byte from input line to payload
-	payload := make([]byte, 0, 10)
-	for _, str := range inputTokens {
-		parsedInt64, err := strconv.ParseUint(str, 0, 64)
-		if err != nil {
-			return nil, fmt.Errorf("error parsing payload: %v", err)
+	// Process payload based on current mode
+	if isAsciiMode {
+		// In ASCII mode, process escape sequences
+		result := []byte{}
+		for i := 0; i < len(input); i++ {
+			if input[i] == '\\' && i+1 < len(input) {
+				if i+3 < len(input) && input[i+1] == 'x' {
+					// Handle \xHH escape sequence
+					if hexByte, err := strconv.ParseUint(input[i+2:i+4], 16, 8); err == nil {
+						result = append(result, byte(hexByte))
+						i += 3 // Skip the next 3 characters (\xHH)
+						continue
+					}
+				}
+				// Handle other escape sequences
+				switch input[i+1] {
+				case 'n':
+					result = append(result, '\n')
+				case 'r':
+					result = append(result, '\r')
+				case 't':
+					result = append(result, '\t')
+				case '\\':
+					result = append(result, '\\')
+				case '0':
+					result = append(result, 0)
+				default:
+					// If not a recognized escape, just add the character
+					result = append(result, input[i+1])
+				}
+				i++ // Skip the next character (the one after \)
+			} else {
+				// Regular character
+				result = append(result, input[i])
+			}
 		}
-		byteBuffer := make([]byte, 8)
-		binary.BigEndian.PutUint64(byteBuffer, parsedInt64)
-		payload = append(payload, bytes.TrimLeft(byteBuffer, "\x00")...)
+		return result, nil
+	} else {
+		// Byte mode - original behavior
+		// Loop adding byte from input line to payload
+		payload := make([]byte, 0, 10)
+		for _, str := range inputTokens {
+			parsedInt64, err := strconv.ParseUint(str, 0, 64)
+			if err != nil {
+				return nil, fmt.Errorf("error parsing payload: %v", err)
+			}
+			byteBuffer := make([]byte, 8)
+			binary.BigEndian.PutUint64(byteBuffer, parsedInt64)
+			payload = append(payload, bytes.TrimLeft(byteBuffer, "\x00")...)
+		}
+		return payload, nil
 	}
-	return payload, nil
 }
 
 // Loop prompting for input.
 func mainInputLoop(scanner *bufio.Scanner, conn *net.UDPConn) {
 	history := make([][]byte, 0, 20)
+	isAsciiMode := false
 	for {
-		payload, err := promptInput(scanner, history)
+		// Show mode in prompt
+		if isAsciiMode {
+			fmt.Print("Mode: ASCII\n")
+		} else {
+			fmt.Print("Mode: Bytes\n")
+		}
+
+		payload, err := promptInput(scanner, history, isAsciiMode)
 		if err != nil {
 			fmt.Println("Error reading input:", err)
 			continue
@@ -156,12 +216,25 @@ func mainInputLoop(scanner *bufio.Scanner, conn *net.UDPConn) {
 		if payload == nil { // no payload given
 			continue
 		}
+
+		// Handle mode toggle command
+		if bytes.Equal(payload, []byte("__MODE_TOGGLE__")) {
+			isAsciiMode = !isAsciiMode
+			fmt.Printf("Switched to %s mode\n", map[bool]string{true: "ASCII", false: "Bytes"}[isAsciiMode])
+			continue
+		}
+
 		// Add payload to history (if not repeat of most recent payload)
 		if len(history) == 0 || !slices.Equal(payload, history[len(history)-1]) {
 			history = append(history, payload)
 		}
 		// Send payload over connection
-		fmt.Printf("\tSending payload %# x\n", payload)
+		if isAsciiMode {
+			fmt.Printf("\tSending ASCII: '%s'\n", payload)
+			fmt.Printf("\tAs bytes: %# x\n", payload)
+		} else {
+			fmt.Printf("\tSending payload %# x\n", payload)
+		}
 		if err := sendOverUDP(conn, payload); err != nil {
 			fmt.Println("\tError sending payload:", err)
 		}
