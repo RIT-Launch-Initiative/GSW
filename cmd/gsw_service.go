@@ -139,6 +139,16 @@ func readConfig() (*viper.Viper, int) {
 	return config, *doPprof
 }
 
+func initProfiling(pprofPort int) {
+	go func() {
+		logger.Info(fmt.Sprintf("Running pprof server at localhost:%d", pprofPort))
+		err := http.ListenAndServe(fmt.Sprintf("localhost:%d", pprofPort), nil)
+		if err != nil {
+			logger.Error("Error starting pprof server: ", zap.Error(err))
+		}
+	}()
+}
+
 func main() {
 	flag.Parse()
 	logger.InitLogger()
@@ -150,15 +160,7 @@ func main() {
 	defer cancel()
 
 	if profilingPort != 0 {
-		go func() {
-			logger.Info(fmt.Sprintf("Running pprof server at localhost:%d", profilingPort))
-			err := http.ListenAndServe(fmt.Sprintf("localhost:%d", profilingPort), nil)
-
-			if err != nil {
-				logger.Warn("Unable to listen and serve")
-			}
-
-		}()
+		initProfiling(profilingPort)
 	}
 
 	// Setup signal handling
