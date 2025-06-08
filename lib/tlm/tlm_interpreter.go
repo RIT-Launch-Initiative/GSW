@@ -9,11 +9,12 @@ import (
 
 // Measurement represents a single measurement in a telemetry packet.
 type Measurement struct {
-	Name       string `yaml:"name"`                 // Name of the measurement
-	Size       int    `yaml:"size"`                 // Size of the measurement in bytes
-	Type       string `yaml:"type,omitempty"`       // Type of the measurement (int, float)
-	Unsigned   bool   `yaml:"unsigned,omitempty"`   // Whether the measurement is unsigned
-	Endianness string `yaml:"endianness,omitempty"` // Endianness of the measurement (big, little)
+	Name          string  `yaml:"name"`                 // Name of the measurement
+	Size          int     `yaml:"size"`                 // Size of the measurement in bytes
+	Type          string  `yaml:"type,omitempty"`       // Type of the measurement (int, float)
+	Unsigned      bool    `yaml:"unsigned,omitempty"`   // Whether the measurement is unsigned
+	Endianness    string  `yaml:"endianness,omitempty"` // Endianness of the measurement (big, little)
+	ScalingFactor float64 `yaml:"scaling,omitempty"`    // ScalingFactor factor to be multiplied to the measurement (optional)
 }
 
 // TelemetryPacket represents information about a telemetry packet received over Ethernet.
@@ -97,17 +98,52 @@ func InterpretFloat(data []byte, endianness string) (interface{}, error) {
 // The measurement parameter specifies the type and endianness of the data.
 // The function returns the interpreted value and an error if the interpretation fails.
 func InterpretMeasurementValue(measurement Measurement, data []byte) (interface{}, error) {
+	var result interface{}
+	var err error
 	switch measurement.Type {
 	case "int":
 		if measurement.Unsigned {
 			return InterpretUnsignedInteger(data, measurement.Endianness)
 		}
-		return InterpretSignedInteger(data, measurement.Endianness)
+		result, err = InterpretSignedInteger(data, measurement.Endianness)
 	case "float":
-		return InterpretFloat(data, measurement.Endianness)
+		result, err = InterpretFloat(data, measurement.Endianness)
 	default:
 		return nil, fmt.Errorf("unsupported type for measurement: %s", measurement.Type)
 	}
+
+	if measurement.ScalingFactor != 1.0 {
+		switch v := result.(type) {
+		case int:
+			result = float64(v) * measurement.ScalingFactor
+		case int8:
+			result = float64(v) * measurement.ScalingFactor
+		case int16:
+			result = float64(v) * measurement.ScalingFactor
+		case int32:
+			result = float64(v) * measurement.ScalingFactor
+		case int64:
+			result = float64(v) * measurement.ScalingFactor
+		case uint:
+			result = float64(v) * measurement.ScalingFactor
+		case uint8:
+			result = float64(v) * measurement.ScalingFactor
+		case uint16:
+			result = float64(v) * measurement.ScalingFactor
+		case uint32:
+			result = float64(v) * measurement.ScalingFactor
+		case uint64:
+			result = float64(v) * measurement.ScalingFactor
+		case float32:
+			result = float64(v) * measurement.ScalingFactor
+		case float64:
+			result = v * measurement.ScalingFactor
+		default:
+			return nil, fmt.Errorf("unsupported type for scaling: %T", result)
+		}
+	}
+
+	return result, err
 }
 
 // InterpretMeasurementValueString interprets a byte slice as a value for a measurement and returns a string representation.
@@ -155,5 +191,10 @@ func (m Measurement) String() string {
 		sb.WriteString(", Signed")
 	}
 	sb.WriteString(fmt.Sprintf(", Endianness: %s", m.Endianness))
+
+	if m.ScalingFactor != 1.0 {
+		sb.WriteString(fmt.Sprintf(", ScalingFactor: %f", m.ScalingFactor))
+	}
+
 	return sb.String()
 }
