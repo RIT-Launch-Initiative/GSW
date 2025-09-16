@@ -46,7 +46,7 @@ Once set up, the grafana_live application can be run from the root directory (wi
 Make sure the GSW service is running before starting the application.
 
 In case the setup utility does not work, live data streaming can be set up manually as follows:
-1. Import a new dashboard into Grafana using the JSON file located at `data/grafana/Backplane-Live.json`. The dashboard can have any name and UID.
+1. Import a new dashboard into Grafana using the JSON file located at `data/grafana/dashboards/Backplane-Live.json`. The dashboard can have any name and UID.
 2. Create a service account at the following URL: [http://localhost:3000/org/serviceaccounts/create](http://localhost:3000/org/serviceaccounts/create) (replace `http://localhost:3000` if you are using a different host).
 The service account can have any display name but must be given the Admin role ([More information about creating service accounts](https://grafana.com/docs/grafana/latest/administration/service-accounts/)).
 3. Click "Add service account token" and then "Generate token". The token can have any display name. Don't set an expiration date unless you want the token to become invalid after that date. 

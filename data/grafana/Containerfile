@@ -1,0 +1,5 @@
+FROM grafana/grafana
+
+COPY dashboards /etc/grafana/provisioning/gsw-dashboards
+COPY provisioning/datasources /etc/grafana/provisioning/datasources
+COPY provisioning/gsw-dashboard-provider.yaml /etc/grafana/provisioning/dashboards/gsw-dashboard-provider.yaml

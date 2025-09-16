@@ -1,0 +1,12 @@
+apiVersion: 1
+
+providers:
+  - name: 'gsw-dashboard-provider'
+    folder: 'GSW Dashboards'
+    type: file
+    updateIntervalSeconds: 10
+    allowUiUpdates: true
+
+    options:
+      path: /etc/grafana/provisioning/gsw-dashboards
+      foldersFromFilesStructure: true

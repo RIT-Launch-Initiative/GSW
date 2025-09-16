@@ -1,0 +1,12 @@
+apiVersion: 1
+
+datasources:
+  - name: GSW InfluxDB
+    uid: gsw-influxdb
+    type: influxdb
+    access: proxy
+    
+    user: $GSW_GRAFANA_INFLUXDB_USER
+    url: $GSW_GRAFANA_INFLUXDB_URL
+    secureJsonData:
+      password: $GSW_GRAFANA_INFLUXDB_PASSWORD

@@ -16,7 +16,7 @@ import (
 	"strings"
 )
 
-const DashboardJsonFile = "data/grafana/Backplane-Live.json"
+const DashboardJsonFile = "data/grafana/dashboards/Backplane-Live.json"
 
 // Prompts the user for the Grafana username, password, and URL.
 // Returns a URL to Grafana containing the username and password info for basic auth.
