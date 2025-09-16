@@ -10,6 +10,9 @@ services:
         condition: service_started
       grafana:
         condition: service_started
+    environment:
+      - GSW_DATABASE_HOST_NAME=influxdb
+      - GSW_LOGGER_OUTPUT_PATHS=stdout
     ports:
       - 11020:11020/udp
       - 13020:13020/udp
