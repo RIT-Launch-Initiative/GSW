@@ -11,7 +11,7 @@ RUN for dashboard in *.json; do \
         jq 'walk(if type == "object" and .datasource.type == "influxdb" and (.datasource | has("uid")) then .datasource.uid = "gsw-influxdb" else . end)' "$dashboard" > "processed/$dashboard"; \
     done
 
-FROM grafana/grafana
+FROM grafana/grafana:12.1
 
 COPY --from=build-dashboards /dashboards/processed /etc/grafana/provisioning/gsw-dashboards
 COPY provisioning/datasources /etc/grafana/provisioning/datasources
