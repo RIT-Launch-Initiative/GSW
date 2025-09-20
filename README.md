@@ -31,21 +31,20 @@ $ docker run --name gsw-service \
     launch-gsw
 ```
 
+### `docker-compose`
+
 For simplicity, a `docker-compose` file is provided for building and running GSW, Grafana, and InfluxDB:
 ```shell
 $ docker compose up --build
 ```
 
-### Attaching to the container
+#### Accessing Grafana
 
-If you need to run any of the apps in `cmd/`, you can get a shell into the container using:
-```shell
-$ docker exec -it gsw-service sh
-```
+Grafana should be exposed at <http://localhost:3000>. 
+The default compose file has anonymous access enabled where the default user only has viewer permissions. 
+If you need to change dashboards or datasources, set `GF_AUTH_ANONYMOUS_ORG_ROLE=Admin` in `compose.yaml` before starting the container.
 
-All binaries are in PATH as the names of their folders in `cmd/`.
-
-### Exporting telemetry from docker-compose InfluxDB
+#### Accessing InfluxDB
 
 You can access the InfluxDB CLI using `docker compose exec -it influxdb influx`. 
 For example, to export all receiver telemetry as a CSV, run:
@@ -55,6 +54,17 @@ $ docker compose exec influxdb influx \
     -format csv \
     -execute "SELECT * FROM receiver"
 ```
+
+### Attaching to the container
+
+If you need to run any of the apps in `cmd/`, you can get a shell into the container using:
+```shell
+$ docker exec -it gsw-service sh
+```
+
+(if you're using docker compose this will be `docker compose exec -it gsw sh`)
+
+All binaries are in PATH as the names of their folders in `cmd/`.
 
 ## Unit Tests
 There are several unit tests that can be run. You can do a `go test ./...` from the root project directory to execute all tests. It is also recommended to run with the -cover

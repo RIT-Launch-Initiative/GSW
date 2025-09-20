@@ -31,7 +31,7 @@ services:
       - GSW_GRAFANA_INFLUXDB_USER=root
       - GSW_GRAFANA_INFLUXDB_PASSWORD=root
       - GF_AUTH_ANONYMOUS_ENABLED=true
-      - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Viewer
       - GF_AUTH_BASIC_ENABLED=false
     volumes:
       - grafana-data:/var/lib/grafana
