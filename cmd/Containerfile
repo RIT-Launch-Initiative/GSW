@@ -2,10 +2,6 @@ FROM golang:1.25-alpine AS build
 
 RUN apk add --update --no-cache build-base
 
-# TODO: document how to use delve
-RUN --mount=type=cache,target=/root/.cache/go-build \
-    CGO_ENABLED=0 go install -ldflags "-s -w -extldflags '-static'" github.com/go-delve/delve/cmd/dlv@latest
-
 WORKDIR /go/src/app
 
 COPY go.mod .
@@ -16,17 +12,12 @@ RUN --mount=type=cache,id=gsw_mod,target=/go/pkg/mod \
 
 COPY . .
 
-ARG DEBUG=
-ENV USE_DELVE_DEBUG_FLAGS=${DEBUG}
-
 RUN --mount=type=cache,id=gsw_mod,target=/go/pkg/mod \
     --mount=type=cache,id=gsw_build,target=/root/.cache/go-build \
     CGO_ENABLED=1 GOOS=linux go build \
     -trimpath \
-    -o out/gsw_service \
+    -o /build-output/bin/gsw_service \
     -v \
-    # delve
-    ${USE_DELVE_DEBUG_FLAGS:+-gcflags "all=-N -l"} \
     ./cmd/gsw_service.go
 
 RUN --mount=type=cache,id=gsw_mod,target=/go/pkg/mod \
@@ -34,10 +25,8 @@ RUN --mount=type=cache,id=gsw_mod,target=/go/pkg/mod \
     for binary in grafana_live live_setup mem_view pipeline_benchmark telem_view udp_command; do \
         CGO_ENABLED=1 GOOS=linux go build \
         -trimpath \
-        -o out/$binary \
+        -o /build-output/bin/$binary \
         -v \
-        # delve
-        ${USE_DELVE_DEBUG_FLAGS:+-gcflags "all=-N -l"} \
         ./cmd/$binary/; \
     done
 
@@ -46,13 +35,12 @@ FROM alpine
 RUN addgroup -S appgroup && adduser -S appuser -G appgroup
 
 COPY data /opt/app/data
-RUN mkdir -p /opt/app/data/logs && chown -R appuser:appgroup /opt/app/data/logs
-
-COPY --from=build /go/bin/dlv /usr/bin/dlv
-COPY --from=build /go/src/app/out/ /usr/bin/
+COPY --from=build /build-output/bin/ /usr/bin/
 
 WORKDIR /opt/app
 
 USER appuser
+
+ENV GSW_LOGGER_OUTPUT_PATHS=stdout
 
 ENTRYPOINT [ "gsw_service" ]

@@ -12,6 +12,39 @@ You can always run the GSW service by doing a `./gsw_service` after building. Fo
 ### Compatibility
 Some machines do not have a /dev/shm directory. The directory used for shared memory can be changed with the flag `-shm (DIRECTORY_NAME)`. For example, `go run cmd/mem_view/mem_view.go -shm /someDirectory/RAMDrive`.
 
+## Docker
+It may be easier to run the GSW in a docker container. This might be better for compatibility and easier for people on Windows hosts (as docker desktop will natively use a WLS 2 backend).
+
+A dockerfile for GSW is provided in `./cmd/Containerfile` and can be built and run with:
+```shell
+$ docker build -t launch-gsw -f ./cmd/Containerfile .
+```
+
+And the container could be started with:
+```shell
+$ docker run --name gsw-service \
+    -p 11020:11020/udp \
+    -p 13020:13020/udp \
+    -p 12005:12005/udp \
+    -p 12006:12006/udp \
+    -p 12002:12002/udp \
+    launch-gsw
+```
+
+For simplicity, a `docker-compose` file is provided for building and running GSW, Grafana, and InfluxDB:
+```shell
+$ docker compose up --build
+```
+
+### Attaching to the container
+
+If you need to run any of the apps in `cmd/`, you can get a shell into the container using:
+```shell
+$ docker exec -it gsw-service sh
+```
+
+All binaries are in PATH as the names of their folders in `cmd/`.
+
 ## Unit Tests
 There are several unit tests that can be run. You can do a `go test ./...` from the root project directory to execute all tests. It is also recommended to run with the -cover
 flag to get coverage statements.
