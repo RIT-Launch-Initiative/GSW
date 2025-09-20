@@ -45,6 +45,17 @@ $ docker exec -it gsw-service sh
 
 All binaries are in PATH as the names of their folders in `cmd/`.
 
+### Exporting telemetry from docker-compose InfluxDB
+
+You can access the InfluxDB CLI using `docker compose exec -it influxdb influx`. 
+For example, to export all receiver telemetry as a CSV, run:
+```shell
+$ docker compose exec influxdb influx \
+    -database "udp" \
+    -format csv \
+    -execute "SELECT * FROM receiver"
+```
+
 ## Unit Tests
 There are several unit tests that can be run. You can do a `go test ./...` from the root project directory to execute all tests. It is also recommended to run with the -cover
 flag to get coverage statements.
