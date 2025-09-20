@@ -51,7 +51,7 @@ You can access the InfluxDB CLI using `docker compose exec -it influxdb influx`.
 For example, to export all receiver telemetry as a CSV, run:
 ```shell
 $ docker compose exec influxdb influx \
-    -database "udp" \
+    -database "gsw" \
     -format csv \
     -execute "SELECT * FROM receiver"
 ```

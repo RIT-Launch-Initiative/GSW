@@ -22,7 +22,7 @@ services:
       context: data/grafana
       dockerfile: Containerfile
     ports:
-      - "127.0.0.1:3000:3000"
+      - "127.0.0.1:3000:3000/tcp"
     depends_on:
       influxdb:
         condition: service_started
@@ -41,6 +41,7 @@ services:
       - influxdb-data:/var/lib/influxdb
     environment:
       - INFLUXDB_UDP_ENABLED=true
+      - INFLUXDB_UDP_DATABASE=gsw
 
 volumes:
   grafana-data:

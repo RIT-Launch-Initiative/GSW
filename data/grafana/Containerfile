@@ -1,5 +1,18 @@
+FROM alpine AS build-dashboards
+
+RUN apk add --update --no-cache jq
+
+WORKDIR /dashboards
+
+COPY dashboards/ .
+RUN mkdir processed
+
+RUN for dashboard in *.json; do \
+        jq 'walk(if type == "object" and .datasource.type == "influxdb" and (.datasource | has("uid")) then .datasource.uid = "gsw-influxdb" else . end)' "$dashboard" > "processed/$dashboard"; \
+    done
+
 FROM grafana/grafana
 
-COPY dashboards /etc/grafana/provisioning/gsw-dashboards
+COPY --from=build-dashboards /dashboards/processed /etc/grafana/provisioning/gsw-dashboards
 COPY provisioning/datasources /etc/grafana/provisioning/datasources
 COPY provisioning/gsw-dashboard-provider.yaml /etc/grafana/provisioning/dashboards/gsw-dashboard-provider.yaml
