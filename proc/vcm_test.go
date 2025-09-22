@@ -1,8 +1,9 @@
 package proc
 
 import (
-	"github.com/AarC10/GSW-V2/lib/tlm"
 	"testing"
+
+	"github.com/AarC10/GSW-V2/lib/tlm"
 )
 
 const TestDataDir = "../data/test/"
@@ -131,7 +132,7 @@ func TestFindMeasurementByName(test *testing.T) {
 
 	compareMeasurements(tlm.Measurement{Name: "Default", Size: 4, Type: "int", Unsigned: false, Endianness: "big"}, measurement, test)
 
-	measurement, ok = config.Measurements["Missing"]
+	_, ok = config.Measurements["Missing"]
 	if ok {
 		test.Errorf("Expected false, got %v", ok)
 	}
