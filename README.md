@@ -12,6 +12,60 @@ You can always run the GSW service by doing a `./gsw_service` after building. Fo
 ### Compatibility
 Some machines do not have a /dev/shm directory. The directory used for shared memory can be changed with the flag `-shm (DIRECTORY_NAME)`. For example, `go run cmd/mem_view/mem_view.go -shm /someDirectory/RAMDrive`.
 
+## Docker
+It may be easier to run the GSW in a docker container. This might be better for compatibility and easier for people on Windows hosts (as docker desktop will natively use a WLS 2 backend).
+
+A dockerfile for GSW is provided in `./cmd/Containerfile` and can be built and run with:
+```shell
+$ docker build -t launch-gsw -f ./cmd/Containerfile .
+```
+
+And the container could be started with:
+```shell
+$ docker run --name gsw-service \
+    -p 11020:11020/udp \
+    -p 13020:13020/udp \
+    -p 12005:12005/udp \
+    -p 12006:12006/udp \
+    -p 12002:12002/udp \
+    launch-gsw
+```
+
+### `docker-compose`
+
+For simplicity, a `docker-compose` file is provided for building and running GSW, Grafana, and InfluxDB:
+```shell
+$ docker compose up --build
+```
+
+#### Accessing Grafana
+
+Grafana should be exposed at <http://localhost:3000>. 
+The default compose file has anonymous access enabled where the default user only has viewer permissions. 
+If you need to change dashboards or datasources, set `GF_AUTH_ANONYMOUS_ORG_ROLE=Admin` in `compose.yaml` before starting the container.
+
+#### Accessing InfluxDB
+
+You can access the InfluxDB CLI using `docker compose exec -it influxdb influx`. 
+For example, to export all receiver telemetry as a CSV, run:
+```shell
+$ docker compose exec influxdb influx \
+    -database "gsw" \
+    -format csv \
+    -execute "SELECT * FROM receiver"
+```
+
+### Attaching to the container
+
+If you need to run any of the apps in `cmd/`, you can get a shell into the container using:
+```shell
+$ docker exec -it gsw-service sh
+```
+
+(if you're using docker compose this will be `docker compose exec -it gsw sh`)
+
+All binaries are in PATH as the names of their folders in `cmd/`.
+
 ## Unit Tests
 There are several unit tests that can be run. You can do a `go test ./...` from the root project directory to execute all tests. It is also recommended to run with the -cover
 flag to get coverage statements.
@@ -46,7 +100,7 @@ Once set up, the grafana_live application can be run from the root directory (wi
 Make sure the GSW service is running before starting the application.
 
 In case the setup utility does not work, live data streaming can be set up manually as follows:
-1. Import a new dashboard into Grafana using the JSON file located at `data/grafana/Backplane-Live.json`. The dashboard can have any name and UID.
+1. Import a new dashboard into Grafana using the JSON file located at `data/grafana/dashboards/Backplane-Live.json`. The dashboard can have any name and UID.
 2. Create a service account at the following URL: [http://localhost:3000/org/serviceaccounts/create](http://localhost:3000/org/serviceaccounts/create) (replace `http://localhost:3000` if you are using a different host).
 The service account can have any display name but must be given the Admin role ([More information about creating service accounts](https://grafana.com/docs/grafana/latest/administration/service-accounts/)).
 3. Click "Add service account token" and then "Generate token". The token can have any display name. Don't set an expiration date unless you want the token to become invalid after that date. 

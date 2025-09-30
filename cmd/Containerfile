@@ -1,0 +1,46 @@
+FROM golang:1.25-alpine AS build
+
+RUN apk add --update --no-cache build-base
+
+WORKDIR /go/src/app
+
+COPY go.mod .
+COPY go.sum .
+
+RUN --mount=type=cache,id=gsw_mod,target=/go/pkg/mod \
+    go mod download
+
+COPY . .
+
+RUN --mount=type=cache,id=gsw_mod,target=/go/pkg/mod \
+    --mount=type=cache,id=gsw_build,target=/root/.cache/go-build \
+    CGO_ENABLED=1 GOOS=linux go build \
+    -trimpath \
+    -o /build-output/bin/gsw_service \
+    -v \
+    ./cmd/gsw_service.go
+
+RUN --mount=type=cache,id=gsw_mod,target=/go/pkg/mod \
+    --mount=type=cache,id=gsw_build,target=/root/.cache/go-build \
+    for binary in grafana_live live_setup mem_view pipeline_benchmark telem_view udp_command; do \
+        CGO_ENABLED=1 GOOS=linux go build \
+        -trimpath \
+        -o /build-output/bin/$binary \
+        -v \
+        ./cmd/$binary/; \
+    done
+
+FROM alpine
+
+RUN addgroup -S appgroup && adduser -S appuser -G appgroup
+
+COPY data /opt/app/data
+COPY --from=build /build-output/bin/ /usr/bin/
+
+WORKDIR /opt/app
+
+USER appuser
+
+ENV GSW_LOGGER_OUTPUT_PATHS=stdout
+
+ENTRYPOINT [ "gsw_service" ]
