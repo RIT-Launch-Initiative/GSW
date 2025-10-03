@@ -1,40 +1,42 @@
 package ipc
 
 import (
-	"encoding/binary"
-	"flag"
 	"fmt"
 	"os"
 	"path/filepath"
 	"syscall"
 	"time"
+	"unsafe"
 )
+
+type ShmHeader struct {
+	Futex     uint32
+	Timestamp uint64
+}
 
 // ShmHandler is a shared memory handler for inter-process communication
 type ShmHandler struct {
-	file            *os.File // File descriptor for shared memory
-	data            []byte   // Pointer to shared memory data
-	size            int      // Size of shared memory
-	mode            int      // 0 for reader, 1 for writer
-	timestampOffset int      // Offset for the timestamp in shared memory
+	file   *os.File   // File descriptor for shared memory
+	data   []byte     // Pointer to shared memory data
+	header *ShmHeader // Pointer to header in shared memory
+	size   int        // Size of shared memory
+	mode   int        // 0 for reader, 1 for writer
 }
 
 const (
 	modeReader = iota
 	modeWriter
-	timestampSize = 8 // Size of timestamp in bytes (8 bytes for int64)
+	headerSize    = 16
 	shmFilePrefix = "gsw-service-"
 )
 
 // CreateShmHandler creates a shared memory handler for inter-process communication
-func CreateShmHandler(identifier string, size int, isWriter bool, shmDir string) (*ShmHandler, error) {
+func CreateShmHandler(identifier string, usableSize int, isWriter bool, shmDir string) (*ShmHandler, error) {
 	handler := &ShmHandler{
-		size:            size + timestampSize, // Add space for timestamp
-		mode:            modeReader,
-		timestampOffset: size, // Timestamp is stored at the end
+		size: usableSize + headerSize, // Add space for header
+		mode: modeReader,
 	}
 
-	flag.Parse()
 	filename := filepath.Join(shmDir, fmt.Sprintf("%s%s", shmFilePrefix, identifier))
 
 	if isWriter {
@@ -71,12 +73,13 @@ func CreateShmHandler(identifier string, size int, isWriter bool, shmDir string)
 		handler.data = data
 	}
 
+	handler.header = (*ShmHeader)(unsafe.Pointer(&handler.data[0]))
+
 	return handler, nil
 }
 
 // CreateShmReader creates a shared memory reader for inter-process communication
 func CreateShmReader(identifier string, shmDir string) (*ShmHandler, error) {
-	flag.Parse()
 	fileinfo, err := os.Stat(filepath.Join(shmDir, fmt.Sprintf("%s%s", shmFilePrefix, identifier)))
 	if err != nil {
 		return nil, fmt.Errorf("error getting shm file info: %v", err)
@@ -113,12 +116,16 @@ func (handler *ShmHandler) Write(data []byte) error {
 	if handler.mode != modeWriter {
 		return fmt.Errorf("handler is in reader mode")
 	}
-	if len(data) > handler.size-timestampSize {
+	if len(data) > handler.size-headerSize {
 		return fmt.Errorf("data size exceeds shared memory size")
 	}
 
-	copy(handler.data[:len(data)], data)
-	binary.BigEndian.PutUint64(handler.data[handler.timestampOffset:], uint64(time.Now().UnixNano()))
+	copy(handler.data[headerSize:len(data)+headerSize], data)
+	handler.header.Timestamp = uint64(time.Now().UnixNano())
+
+	if err := futexWake(unsafe.Pointer(&handler.header.Futex)); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -127,9 +134,14 @@ func (handler *ShmHandler) Read() ([]byte, error) {
 	if handler.mode != modeReader {
 		return nil, fmt.Errorf("handler is in writer mode")
 	}
-	data := make([]byte, handler.size-timestampSize)
-	copy(data, handler.data[:len(data)])
+	data := make([]byte, handler.size)
+	copy(data, handler.data[:])
 	return data, nil
+}
+
+// Wait sleeps the thread until an update to SHM
+func (handler *ShmHandler) Wait() error {
+	return futexWait(unsafe.Pointer(&handler.header.Futex))
 }
 
 // ReadNoTimestamp reads data from shared memory without the timestamp
@@ -137,13 +149,12 @@ func (handler *ShmHandler) ReadNoTimestamp() ([]byte, error) {
 	if handler.mode != modeReader {
 		return nil, fmt.Errorf("handler is in writer mode")
 	}
-	data := make([]byte, handler.size-2*timestampSize)
-	copy(data, handler.data[:len(data)])
+	data := make([]byte, handler.size-headerSize)
+	copy(data, handler.data[headerSize:len(data)])
 	return data, nil
 }
 
-// LastUpdate returns the last update time of the shared memory
-func (handler *ShmHandler) LastUpdate() time.Time {
-	timestamp := binary.BigEndian.Uint64(handler.data[handler.timestampOffset:])
-	return time.Unix(0, int64(timestamp))
+// ReadLastUpdate returns the last update time of the shared memory
+func (handler *ShmHandler) ReadLastUpdate() uint64 {
+	return handler.header.Timestamp
 }

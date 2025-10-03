@@ -2,10 +2,11 @@ package proc
 
 import (
 	"fmt"
-	"github.com/AarC10/GSW-V2/lib/ipc"
-	"github.com/AarC10/GSW-V2/lib/tlm"
 	"net"
 	"strconv"
+
+	"github.com/AarC10/GSW-V2/lib/ipc"
+	"github.com/AarC10/GSW-V2/lib/tlm"
 )
 
 // getIpcShmHandler creates a shared memory IPC handler for a telemetry packet
@@ -61,9 +62,6 @@ func TelemetryPacketWriter(packet tlm.TelemetryPacket, outChannel chan []byte, s
 			continue
 		}
 
-		// TODO: Make this a config
-		// binary.BigEndian.PutUint64(buffer[8:], uint64(time.Now().UnixNano()))
-
 		if n == packetSize {
 			err := shmWriter.Write(buffer)
 			if err != nil {
@@ -91,9 +89,14 @@ func TelemetryPacketReader(packet tlm.TelemetryPacket, outChannel chan []byte, s
 	}
 	defer procReader.Cleanup()
 
-	lastUpdate := procReader.LastUpdate()
+	lastUpdate := procReader.ReadLastUpdate()
 	for {
-		latestUpdate := procReader.LastUpdate()
+		err := procReader.Wait()
+		if err != nil {
+			fmt.Printf("error waiting for wake: %v\n", err)
+			continue
+		}
+		latestUpdate := procReader.ReadLastUpdate()
 		if lastUpdate != latestUpdate {
 			data, err := procReader.Read()
 			if err != nil {

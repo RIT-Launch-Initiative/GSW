@@ -21,7 +21,11 @@ import (
 	_ "net/http/pprof"
 )
 
-var shmDir = flag.String("shm", "/dev/shm", "directory to use for shared memory")
+var (
+	shmDir         = flag.String("shm", "/dev/shm", "directory to use for shared memory")
+	configFilepath = flag.String("c", "gsw_service", "name of config file")
+	doPprof        = flag.Int("p", 0, "Port to run pprof server on. Leave empty or set to 0 to disable pprof server")
+)
 
 // printTelemetryPackets prints the telemetry packets and their measurements it found in the configuration.
 func printTelemetryPackets() {
@@ -118,9 +122,6 @@ func dbInitialize(ctx context.Context, channelMap map[int]chan []byte, host stri
 
 func readConfig() (*viper.Viper, int) {
 	config := viper.New()
-	configFilepath := flag.String("c", "gsw_service", "name of config file")
-	doPprof := flag.Int("p", 0, "Port to run pprof server on. Leave empty or set to 0 to disable pprof server")
-	flag.Parse()
 	config.SetConfigName(*configFilepath)
 	config.SetConfigType("yaml")
 	config.AddConfigPath("data/config/")
