@@ -72,6 +72,45 @@ func promptConnInfo(scanner *bufio.Scanner) (string, int, error) {
 	return host, int(parsedPort), nil
 }
 
+// Parses ASCII escape sequences in the input string and returns the corresponding byte array
+func parseAsciiEscapeSequences(input string) ([]byte, error) {
+	// In ASCII mode, process escape sequences
+	result := []byte{}
+	for i := 0; i < len(input); i++ {
+		if input[i] == '\\' && i+1 < len(input) {
+			if i+3 < len(input) && input[i+1] == 'x' {
+				// Handle \xHH escape sequence
+				if hexByte, err := strconv.ParseUint(input[i+2:i+4], 16, 8); err == nil {
+					result = append(result, byte(hexByte))
+					i += 3 // Skip the next 3 characters (\xHH)
+					continue
+				}
+			}
+			// Handle other escape sequences
+			switch input[i+1] {
+			case 'n':
+				result = append(result, '\n')
+			case 'r':
+				result = append(result, '\r')
+			case 't':
+				result = append(result, '\t')
+			case '\\':
+				result = append(result, '\\')
+			case '0':
+				result = append(result, 0)
+			default:
+				// If not a recognized escape, just add the character
+				result = append(result, input[i+1])
+			}
+			i++ // Skip the next character (the one after \)
+		} else {
+			// Regular character
+			result = append(result, input[i])
+		}
+	}
+	return result, nil
+}
+
 // Prompts for user input, either a payload or other command.
 // Returns the payload (if one was given) formatted as a byte array.
 func promptInput(scanner *bufio.Scanner, history [][]byte, isAsciiMode bool) ([]byte, error) {
@@ -144,41 +183,7 @@ func promptInput(scanner *bufio.Scanner, history [][]byte, isAsciiMode bool) ([]
 
 	// Process payload based on current mode
 	if isAsciiMode {
-		// In ASCII mode, process escape sequences
-		result := []byte{}
-		for i := 0; i < len(input); i++ {
-			if input[i] == '\\' && i+1 < len(input) {
-				if i+3 < len(input) && input[i+1] == 'x' {
-					// Handle \xHH escape sequence
-					if hexByte, err := strconv.ParseUint(input[i+2:i+4], 16, 8); err == nil {
-						result = append(result, byte(hexByte))
-						i += 3 // Skip the next 3 characters (\xHH)
-						continue
-					}
-				}
-				// Handle other escape sequences
-				switch input[i+1] {
-				case 'n':
-					result = append(result, '\n')
-				case 'r':
-					result = append(result, '\r')
-				case 't':
-					result = append(result, '\t')
-				case '\\':
-					result = append(result, '\\')
-				case '0':
-					result = append(result, 0)
-				default:
-					// If not a recognized escape, just add the character
-					result = append(result, input[i+1])
-				}
-				i++ // Skip the next character (the one after \)
-			} else {
-				// Regular character
-				result = append(result, input[i])
-			}
-		}
-		return result, nil
+		return parseAsciiEscapeSequences(input)
 	} else {
 		// Byte mode - original behavior
 		// Loop adding byte from input line to payload
