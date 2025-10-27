@@ -33,7 +33,7 @@ func main() {
 		fmt.Printf("(%v)\n", err)
 		return
 	}
-	data, err := configReader.ReadNoTimestamp()
+	data, err := configReader.ReadNoHeader()
 	if err != nil {
 		fmt.Printf("Error reading shared memory: %v\n", err)
 		return

@@ -144,8 +144,8 @@ func (handler *ShmHandler) Wait() error {
 	return futexWait(unsafe.Pointer(&handler.header.Futex))
 }
 
-// ReadNoTimestamp reads data from shared memory without the timestamp
-func (handler *ShmHandler) ReadNoTimestamp() ([]byte, error) {
+// ReadNoHeader reads data from shared memory without the header
+func (handler *ShmHandler) ReadNoHeader() ([]byte, error) {
 	if handler.mode != modeReader {
 		return nil, fmt.Errorf("handler is in writer mode")
 	}

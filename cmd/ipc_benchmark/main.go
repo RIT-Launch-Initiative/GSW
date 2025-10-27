@@ -12,13 +12,28 @@ import (
 	"sync"
 	"syscall"
 	"time"
+	"unsafe"
 
 	"net/http"
 	_ "net/http/pprof"
 
+	"github.com/AarC10/GSW-V2/lib/ipc"
 	"github.com/AarC10/GSW-V2/lib/tlm"
 	"github.com/AarC10/GSW-V2/proc"
 )
+
+const (
+	PRINT_INTERVAL = 3
+)
+
+var TELEMETRY_PACKETS = []TelemetryPacket{
+	{"TimestampsOnly", 10000, 16},
+	{"17Bytes", 10001, 17},
+	{"26Bytes", 10002, 26},
+	{"30Bytes", 10003, 30},
+	{"38Bytes", 10004, 38},
+	{"OneKbyte", 10005, 1024},
+}
 
 func initProfiling(pprofPort int) {
 	go func() {
@@ -40,6 +55,7 @@ func main() {
 
 	isReader := flag.Bool("reader", false, "run a gsw reader")
 	isWriter := flag.Bool("writer", false, "run a gsw writer")
+	profilePort := flag.Int("pprof", 0, "run pprof at a port")
 	serverAddress := flag.String("writer_host", "localhost", "the gsw host that the writer will attempt to write to")
 
 	flag.Parse()
@@ -48,8 +64,11 @@ func main() {
 		log.Fatal("use -reader and/or -writer to start the process as a reader or writer")
 	}
 
+	if *profilePort != 0 {
+		initProfiling(*profilePort)
+	}
+
 	if *isReader {
-		initProfiling(6060)
 		log.Println("running reader")
 		go reader()
 	}
@@ -68,16 +87,14 @@ var averageDiff uint64
 var averageUdpShmDiff uint64
 var averageBenchShmDiff uint64
 
-func packetReader(startLine int, packet tlm.TelemetryPacket, rcvChan chan []byte) {
-	for {
-		data := <-rcvChan
-
+func packetReader(packet tlm.TelemetryPacket, rcvChan chan []byte) {
+	for data := range rcvChan {
 		timestamp := uint64(time.Now().UnixNano())
-		shmTimestamp := binary.LittleEndian.Uint64(data[8:16])
+		header := (*ipc.ShmHeader)(unsafe.Pointer(&data[0]))
 		udpTimestamp := binary.LittleEndian.Uint64(data[16:24])
 
-		udpShmDiff := shmTimestamp - udpTimestamp
-		benchShmDiff := timestamp - shmTimestamp
+		udpShmDiff := header.Timestamp - udpTimestamp
+		benchShmDiff := timestamp - header.Timestamp
 		totalDiff := timestamp - udpTimestamp
 		if averageDiff == 0 {
 			averageDiff = totalDiff
@@ -90,10 +107,6 @@ func packetReader(startLine int, packet tlm.TelemetryPacket, rcvChan chan []byte
 		packetsReceived++
 	}
 }
-
-const (
-	PRINT_INTERVAL = 3
-)
 
 func reader() {
 	var lastPacketsReceived = 0
@@ -112,10 +125,10 @@ func reader() {
 		}
 	}()
 
-	for i, packet := range proc.GswConfig.TelemetryPackets {
+	for _, packet := range proc.GswConfig.TelemetryPackets {
 		outChan := make(chan []byte)
 		go proc.TelemetryPacketReader(packet, outChan, "/dev/shm")
-		go packetReader(i*9, packet, outChan)
+		go packetReader(packet, outChan)
 	}
 }
 
@@ -123,15 +136,6 @@ type TelemetryPacket struct {
 	Name string
 	Port int
 	Size int
-}
-
-var TELEMETRY_PACKETS = []TelemetryPacket{
-	{"TimestampsOnly", 10000, 16},
-	{"17Bytes", 10001, 17},
-	{"26Bytes", 10002, 26},
-	{"30Bytes", 10003, 30},
-	{"38Bytes", 10004, 38},
-	{"OneKbyte", 10005, 1024},
 }
 
 func createPacket(size int) []byte {
@@ -144,9 +148,7 @@ func createPacket(size int) []byte {
 	return packet
 }
 
-func packetWriter(serverAddress string, port, size int, wg *sync.WaitGroup) error {
-	defer wg.Done()
-
+func packetWriter(serverAddress string, port, size int) error {
 	serverAddr, err := net.ResolveUDPAddr("udp", fmt.Sprintf("%s:%d", serverAddress, port))
 	if err != nil {
 		return fmt.Errorf("resolving address: %w", err)
@@ -172,6 +174,10 @@ func writer(serverAddress string) {
 
 	for _, packet := range TELEMETRY_PACKETS {
 		wg.Add(1)
-		go packetWriter(serverAddress, packet.Port, packet.Size, &wg)
+		go func(serverAddress string, port, size int) {
+			defer wg.Done()
+			packetWriter(serverAddress, port, size)
+		}(serverAddress, packet.Port, packet.Size)
 	}
+	wg.Wait()
 }

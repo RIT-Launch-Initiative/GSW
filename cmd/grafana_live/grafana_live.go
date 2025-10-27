@@ -4,13 +4,14 @@ import (
 	"bytes"
 	"flag"
 	"fmt"
-	"github.com/AarC10/GSW-V2/lib/db"
-	"github.com/gorilla/websocket"
 	"io"
 	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
+
+	"github.com/AarC10/GSW-V2/lib/db"
+	"github.com/gorilla/websocket"
 
 	"github.com/AarC10/GSW-V2/lib/ipc"
 	"github.com/AarC10/GSW-V2/lib/tlm"
@@ -110,7 +111,7 @@ func readConfigFiles() (*viper.Viper, error) {
 		fmt.Println("*** Error accessing config file. Make sure the GSW service is running. ***")
 		return nil, err
 	}
-	data, err := configReader.ReadNoTimestamp()
+	data, err := configReader.ReadNoHeader()
 	if err != nil {
 		return nil, fmt.Errorf("error reading shared memory: %v", err)
 	}
