@@ -157,7 +157,12 @@ func packetWriter(serverAddress string, port, size int) error {
 	if err != nil {
 		return fmt.Errorf("dialing udp (%s): %w", serverAddr.String(), err)
 	}
-	defer conn.Close()
+	defer func() {
+		err := conn.Close()
+		if err != nil {
+			log.Println("couldn't close connection", err)
+		}
+	}()
 
 	for {
 		packet := createPacket(size)
@@ -175,7 +180,10 @@ func writer(serverAddress string) {
 		wg.Add(1)
 		go func(serverAddress string, port, size int) {
 			defer wg.Done()
-			packetWriter(serverAddress, port, size)
+			err := packetWriter(serverAddress, port, size)
+			if err != nil {
+				log.Fatal("error running packet writer:", err)
+			}
 		}(serverAddress, packet.Port, packet.Size)
 	}
 	wg.Wait()
