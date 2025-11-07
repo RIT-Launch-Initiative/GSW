@@ -14,6 +14,10 @@ type ShmHeader struct {
 	Timestamp uint64
 }
 
+const (
+	ShmHeaderSize = 16
+)
+
 // ShmHandler is a shared memory handler for inter-process communication
 type ShmHandler struct {
 	file   *os.File   // File descriptor for shared memory
@@ -26,14 +30,13 @@ type ShmHandler struct {
 const (
 	modeReader = iota
 	modeWriter
-	headerSize    = 16
 	shmFilePrefix = "gsw-service-"
 )
 
 // CreateShmHandler creates a shared memory handler for inter-process communication
 func CreateShmHandler(identifier string, usableSize int, isWriter bool, shmDir string) (*ShmHandler, error) {
 	handler := &ShmHandler{
-		size: usableSize + headerSize, // Add space for header
+		size: usableSize + ShmHeaderSize, // Add space for header
 		mode: modeReader,
 	}
 
@@ -85,7 +88,7 @@ func CreateShmReader(identifier string, shmDir string) (*ShmHandler, error) {
 		return nil, fmt.Errorf("error getting shm file info: %v", err)
 	}
 	filesize := int(fileinfo.Size()) // TODO fix unsafe int64 conversion
-	return CreateShmHandler(identifier, filesize, false, shmDir)
+	return CreateShmHandler(identifier, filesize-ShmHeaderSize, false, shmDir)
 }
 
 // Cleanup cleans up the shared memory handler and removes the shared memory file
@@ -116,11 +119,11 @@ func (handler *ShmHandler) Write(data []byte) error {
 	if handler.mode != modeWriter {
 		return fmt.Errorf("handler is in reader mode")
 	}
-	if len(data) > handler.size-headerSize {
+	if len(data) > handler.size-ShmHeaderSize {
 		return fmt.Errorf("data size exceeds shared memory size")
 	}
 
-	copy(handler.data[headerSize:len(data)+headerSize], data)
+	copy(handler.data[ShmHeaderSize:len(data)+ShmHeaderSize], data)
 	handler.header.Timestamp = uint64(time.Now().UnixNano())
 
 	if err := futexWake(unsafe.Pointer(&handler.header.Futex)); err != nil {
@@ -149,8 +152,8 @@ func (handler *ShmHandler) ReadNoHeader() ([]byte, error) {
 	if handler.mode != modeReader {
 		return nil, fmt.Errorf("handler is in writer mode")
 	}
-	data := make([]byte, handler.size-headerSize)
-	copy(data, handler.data[headerSize:len(data)])
+	data := make([]byte, handler.size-ShmHeaderSize)
+	copy(data, handler.data[ShmHeaderSize:handler.size])
 	return data, nil
 }
 

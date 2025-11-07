@@ -12,12 +12,10 @@ import (
 	"sync"
 	"syscall"
 	"time"
-	"unsafe"
 
 	"net/http"
 	_ "net/http/pprof"
 
-	"github.com/AarC10/GSW-V2/lib/ipc"
 	"github.com/AarC10/GSW-V2/lib/tlm"
 	"github.com/AarC10/GSW-V2/proc"
 )
@@ -27,11 +25,11 @@ const (
 )
 
 var TELEMETRY_PACKETS = []TelemetryPacket{
-	{"TimestampsOnly", 10000, 16},
-	{"17Bytes", 10001, 17},
-	{"26Bytes", 10002, 26},
-	{"30Bytes", 10003, 30},
-	{"38Bytes", 10004, 38},
+	{"TimestampsOnly", 10000, 8},
+	{"9Bytes", 10001, 9},
+	{"11Bytes", 10002, 11},
+	{"15Bytes", 10003, 15},
+	{"23Bytes", 10004, 23},
 	{"OneKbyte", 10005, 1024},
 }
 
@@ -84,25 +82,26 @@ func main() {
 }
 
 var averageDiff uint64
-var averageUdpShmDiff uint64
-var averageBenchShmDiff uint64
+
+// var averageUdpShmDiff uint64
+// var averageBenchShmDiff uint64
 
 func packetReader(packet tlm.TelemetryPacket, rcvChan chan []byte) {
 	for data := range rcvChan {
 		timestamp := uint64(time.Now().UnixNano())
-		header := (*ipc.ShmHeader)(unsafe.Pointer(&data[0]))
-		udpTimestamp := binary.LittleEndian.Uint64(data[16:24])
+		// header := (*ipc.ShmHeader)(unsafe.Pointer(&data[0]))
+		udpTimestamp := binary.BigEndian.Uint64(data[0:8])
 
-		udpShmDiff := header.Timestamp - udpTimestamp
-		benchShmDiff := timestamp - header.Timestamp
+		// udpShmDiff := header.Timestamp - udpTimestamp
+		// benchShmDiff := timestamp - header.Timestamp
 		totalDiff := timestamp - udpTimestamp
 		if averageDiff == 0 {
 			averageDiff = totalDiff
 		}
 
 		averageDiff = (averageDiff + totalDiff) / 2
-		averageUdpShmDiff = (udpShmDiff + totalDiff) / 2
-		averageBenchShmDiff = (benchShmDiff + totalDiff) / 2
+		// averageUdpShmDiff = (udpShmDiff + totalDiff) / 2
+		// averageBenchShmDiff = (benchShmDiff + totalDiff) / 2
 
 		packetsReceived++
 	}
@@ -116,8 +115,8 @@ func reader() {
 			var sb strings.Builder
 			sb.WriteString(fmt.Sprintf("%d packets/second\n", (packetsReceived-lastPacketsReceived)/PRINT_INTERVAL))
 			sb.WriteString(fmt.Sprintf("Average Diff: %d\n", averageDiff))
-			sb.WriteString(fmt.Sprintf("Average UDP SHM Diff: %d\n", averageUdpShmDiff))
-			sb.WriteString(fmt.Sprintf("Average Bench SHM Diff: %d\n", averageBenchShmDiff))
+			// sb.WriteString(fmt.Sprintf("Average UDP SHM Diff: %d\n", averageUdpShmDiff))
+			// sb.WriteString(fmt.Sprintf("Average Bench SHM Diff: %d\n", averageBenchShmDiff))
 
 			fmt.Print(sb.String())
 
@@ -127,7 +126,7 @@ func reader() {
 
 	for _, packet := range proc.GswConfig.TelemetryPackets {
 		outChan := make(chan []byte)
-		go proc.TelemetryPacketReader(packet, outChan, "/dev/shm")
+		go proc.TelemetryPacketReader(packet, outChan, "/dev/shm") // TODO: somehow include an api for reading the header
 		go packetReader(packet, outChan)
 	}
 }
@@ -143,7 +142,7 @@ func createPacket(size int) []byte {
 
 	packet := make([]byte, size)
 
-	binary.LittleEndian.PutUint64(packet[0:8], uint64(timestamp))
+	binary.BigEndian.PutUint64(packet[0:8], uint64(timestamp))
 
 	return packet
 }

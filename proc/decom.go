@@ -104,7 +104,7 @@ func TelemetryPacketReader(packet tlm.TelemetryPacket, outChannel chan []byte, s
 				continue
 			}
 			lastUpdate = latestUpdate
-			outChannel <- data
+			outChannel <- data[ipc.ShmHeaderSize:]
 		}
 	}
 }
