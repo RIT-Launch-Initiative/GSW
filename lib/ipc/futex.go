@@ -2,6 +2,7 @@ package ipc
 
 import (
 	"fmt"
+	"math"
 	"syscall"
 	"unsafe"
 )
@@ -26,9 +27,9 @@ func futexWait(addr unsafe.Pointer) error {
 	return nil
 }
 
-// futexWake wake an address
+// futexWake wake all threads sleeping an address
 func futexWake(addr unsafe.Pointer) error {
-	_, errno := futex(addr, _FUTEX_WAKE, 0, nil, nil, 0)
+	_, errno := futex(addr, _FUTEX_WAKE, math.MaxInt32, nil, nil, 0)
 	if errno != 0 {
 		return fmt.Errorf("FUTEX_WAKE: %v", errno)
 	}
