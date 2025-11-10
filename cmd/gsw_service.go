@@ -68,7 +68,7 @@ func vcmInitialize(config *viper.Viper) (*ipc.ShmHandler, error) {
 		return nil, err
 	}
 
-	configWriter, err := ipc.CreateShmHandler("telemetry-config", len(data), true, *shmDir)
+	configWriter, err := ipc.NewShmHandler("telemetry-config", len(data), true, *shmDir)
 	if err != nil {
 		logger.Error("Error creating shared memory handler: ", zap.Error(err))
 		return nil, err

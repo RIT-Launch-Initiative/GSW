@@ -21,7 +21,7 @@ func futex(addr unsafe.Pointer, op int, val uint32, timeout unsafe.Pointer, addr
 func futexWait(addr unsafe.Pointer) error {
 	_, errno := futex(addr, _FUTEX_WAIT, 0, nil, nil, 0)
 	if errno != 0 {
-		return fmt.Errorf("waiting on futex: %v", errno)
+		return fmt.Errorf("FUTEX_WAIT: %v", errno)
 	}
 	return nil
 }
@@ -30,7 +30,7 @@ func futexWait(addr unsafe.Pointer) error {
 func futexWake(addr unsafe.Pointer) error {
 	_, errno := futex(addr, _FUTEX_WAKE, 0, nil, nil, 0)
 	if errno != 0 {
-		return fmt.Errorf("waking futex: %v", errno)
+		return fmt.Errorf("FUTEX_WAKE: %v", errno)
 	}
 	return nil
 }

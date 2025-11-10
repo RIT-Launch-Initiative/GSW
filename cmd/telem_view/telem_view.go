@@ -33,12 +33,12 @@ func main() {
 		fmt.Printf("(%v)\n", err)
 		return
 	}
-	data, err := configReader.ReadNoHeader()
+	packet, err := configReader.Read()
 	if err != nil {
 		fmt.Printf("Error reading shared memory: %v\n", err)
 		return
 	}
-	if _, err = proc.ParseConfigBytes(data); err != nil {
+	if _, err = proc.ParseConfigBytes(packet.Data()); err != nil {
 		fmt.Printf("Error parsing YAML: %v\n", err)
 		return
 	}
@@ -99,11 +99,22 @@ func main() {
 	// live telem readers
 	rowIndex := 1
 	for _, packet := range proc.GswConfig.TelemetryPackets {
-		outChan := make(chan []byte)
-		go proc.TelemetryPacketReader(packet, outChan, *shmDir)
-
 		go func(pkt tlm.TelemetryPacket, baseRow int) {
-			for data := range outChan {
+			reader, err := proc.NewIpcShmReaderForPacket(pkt, *shmDir)
+			if err != nil {
+				fmt.Printf("Error creating reader: %v\n", err)
+				return
+			}
+			defer reader.Cleanup()
+
+			for {
+				p, err := reader.Read()
+				if err != nil {
+					fmt.Printf("Error reading packet: %v\n", err)
+					continue
+				}
+				data := p.Data()
+
 				offset := 0
 				for i, name := range pkt.Measurements {
 					meas, ok := proc.GswConfig.Measurements[name]

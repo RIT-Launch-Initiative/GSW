@@ -6,8 +6,13 @@ type Writer interface {
 	Cleanup()
 }
 
-// Reader is an interface for receiving data across processes
+type ReaderPacket interface {
+	Data() []byte
+}
+
+// Reader implements a blocking interface for reading from an IPC.
+// This is not thread safe.
 type Reader interface {
-	Read() ([]byte, error)
+	Read() (ReaderPacket, error)
 	Cleanup()
 }

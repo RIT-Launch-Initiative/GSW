@@ -20,11 +20,12 @@ const (
 
 // ShmHandler is a shared memory handler for inter-process communication
 type ShmHandler struct {
-	file   *os.File   // File descriptor for shared memory
-	data   []byte     // Pointer to shared memory data
-	header *ShmHeader // Pointer to header in shared memory
-	size   int        // Size of shared memory
-	mode   int        // 0 for reader, 1 for writer
+	file                *os.File   // File descriptor for shared memory
+	data                []byte     // Pointer to shared memory data
+	header              *ShmHeader // Pointer to header in shared memory
+	size                int        // Size of shared memory
+	mode                int        // 0 for reader, 1 for writer
+	readerLastTimestamp uint64     // Timestamp of last received packet
 }
 
 const (
@@ -33,8 +34,8 @@ const (
 	shmFilePrefix = "gsw-service-"
 )
 
-// CreateShmHandler creates a shared memory handler for inter-process communication
-func CreateShmHandler(identifier string, usableSize int, isWriter bool, shmDir string) (*ShmHandler, error) {
+// NewShmHandler creates a shared memory handler for inter-process communication
+func NewShmHandler(identifier string, usableSize int, isWriter bool, shmDir string) (*ShmHandler, error) {
 	handler := &ShmHandler{
 		size: usableSize + ShmHeaderSize, // Add space for header
 		mode: modeReader,
@@ -73,6 +74,7 @@ func CreateShmHandler(identifier string, usableSize int, isWriter bool, shmDir s
 			return nil, fmt.Errorf("failed to memory map file: %v", err)
 		}
 
+		handler.readerLastTimestamp = uint64(time.Now().UnixNano()) // stream packets after reader start
 		handler.data = data
 	}
 
@@ -88,7 +90,7 @@ func CreateShmReader(identifier string, shmDir string) (*ShmHandler, error) {
 		return nil, fmt.Errorf("error getting shm file info: %v", err)
 	}
 	filesize := int(fileinfo.Size()) // TODO fix unsafe int64 conversion
-	return CreateShmHandler(identifier, filesize-ShmHeaderSize, false, shmDir)
+	return NewShmHandler(identifier, filesize-ShmHeaderSize, false, shmDir)
 }
 
 // Cleanup cleans up the shared memory handler and removes the shared memory file
@@ -132,32 +134,49 @@ func (handler *ShmHandler) Write(data []byte) error {
 	return nil
 }
 
-// Read reads data from shared memory
-func (handler *ShmHandler) Read() ([]byte, error) {
-	if handler.mode != modeReader {
-		return nil, fmt.Errorf("handler is in writer mode")
-	}
-	data := make([]byte, handler.size)
-	copy(data, handler.data[:])
-	return data, nil
+type ShmReaderPacket struct {
+	header ShmHeader
+	data   []byte
 }
 
-// Wait sleeps the thread until an update to SHM
-func (handler *ShmHandler) Wait() error {
+// ReceiveTimestamp returns the unix timestamp when the packet was received
+// (nanoseconds since epoch).
+func (p *ShmReaderPacket) ReceiveTimestamp() uint64 {
+	return p.header.Timestamp
+}
+
+func (p *ShmReaderPacket) Data() []byte {
+	return p.data
+}
+
+// wait sleeps the thread until an update to SHM
+func (handler *ShmHandler) wait() error {
 	return futexWait(unsafe.Pointer(&handler.header.Futex))
 }
 
-// ReadNoHeader reads data from shared memory without the header
-func (handler *ShmHandler) ReadNoHeader() ([]byte, error) {
+// Read the current packet in shared memory.
+func (handler *ShmHandler) Read() (ReaderPacket, error) {
 	if handler.mode != modeReader {
 		return nil, fmt.Errorf("handler is in writer mode")
 	}
-	data := make([]byte, handler.size-ShmHeaderSize)
-	copy(data, handler.data[ShmHeaderSize:handler.size])
-	return data, nil
-}
 
-// ReadLastUpdate returns the last update time of the shared memory
-func (handler *ShmHandler) ReadLastUpdate() uint64 {
-	return handler.header.Timestamp
+	for {
+		err := handler.wait()
+		if err != nil {
+			return nil, fmt.Errorf("waiting for packet: %w", err)
+		}
+		packet := ShmReaderPacket{
+			header: *handler.header,
+			data:   make([]byte, handler.size-ShmHeaderSize),
+		}
+		copy(packet.data, handler.data[ShmHeaderSize:handler.size])
+
+		if packet.header.Timestamp <= handler.readerLastTimestamp {
+			continue
+		}
+
+		handler.readerLastTimestamp = packet.header.Timestamp
+
+		return &packet, nil
+	}
 }

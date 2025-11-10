@@ -46,12 +46,24 @@ func buildString(packet tlm.TelemetryPacket, data []byte, startLine int) string 
 
 // printTelemetryPacket prints the telemetry packet data to the console
 // Written to the console at the specified start line and updated as new data is received
-func printTelemetryPacket(startLine int, packet tlm.TelemetryPacket, rcvChan chan []byte) {
+func printTelemetryPacket(startLine int, packet tlm.TelemetryPacket) {
+	reader, err := proc.NewIpcShmReaderForPacket(packet, *shmDir)
+	if err != nil {
+		fmt.Printf("Error creating reader: %v\n", err)
+		return
+	}
+	defer reader.Cleanup()
+
 	fmt.Print(buildString(packet, make([]byte, proc.GetPacketSize(packet)), startLine))
 
 	for {
-		data := <-rcvChan
-		buildString(packet, data, startLine)
+		p, err := reader.Read()
+		if err != nil {
+			fmt.Printf("Error reading packet: %v\n", err)
+			continue
+		}
+		data := p.Data()
+
 		fmt.Print(buildString(packet, data, startLine))
 	}
 }
@@ -65,12 +77,12 @@ func main() {
 		fmt.Printf("(%v)\n", err)
 		return
 	}
-	data, err := configReader.ReadNoHeader()
+	packet, err := configReader.Read()
 	if err != nil {
 		fmt.Printf("Error reading shared memory: %v\n", err)
 		return
 	}
-	_, err = proc.ParseConfigBytes(data)
+	_, err = proc.ParseConfigBytes(packet.Data())
 	if err != nil {
 		fmt.Printf("Error parsing YAML: %v\n", err)
 		return
@@ -84,9 +96,7 @@ func main() {
 
 	startLine := 0
 	for _, packet := range proc.GswConfig.TelemetryPackets {
-		outChan := make(chan []byte)
-		go proc.TelemetryPacketReader(packet, outChan, *shmDir)
-		go printTelemetryPacket(startLine, packet, outChan)
+		go printTelemetryPacket(startLine, packet)
 		startLine += len(packet.Measurements) + 1
 	}
 

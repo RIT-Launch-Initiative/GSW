@@ -24,7 +24,14 @@ var shmDir = flag.String("shm", "/dev/shm", "directory to use for shared memory"
 var configFilepath = flag.String("c", "grafana_live", "name of config file")
 
 // streamTelemetryPacket streams telemetry packet data to Grafana Live as it is received on the channel.
-func streamTelemetryPacket(packet tlm.TelemetryPacket, packetChan chan []byte, config *viper.Viper, authToken string, websocketConn *websocket.Conn) {
+func streamTelemetryPacket(packet tlm.TelemetryPacket, config *viper.Viper, authToken string, websocketConn *websocket.Conn) {
+	reader, err := proc.NewIpcShmReaderForPacket(packet, *shmDir)
+	if err != nil {
+		fmt.Printf("Error creating reader: %v\n", err)
+		return
+	}
+	defer reader.Cleanup()
+
 	// read config values
 	grafanaChannelPath := config.GetString("channel_path")
 
@@ -37,10 +44,17 @@ func streamTelemetryPacket(packet tlm.TelemetryPacket, packetChan chan []byte, c
 
 	// stream data over WebSocket
 	if websocketConn != nil {
-		for packetData := range packetChan {
+		for {
+			p, err := reader.Read()
+			if err != nil {
+				fmt.Printf("Error reading packet: %v\n", err)
+				continue
+			}
+			packetData := p.Data()
+
 			proc.UpdateMeasurementGroup(packet, measurementGroup, packetData)
 			query := []byte(db.CreateQuery(measurementGroup))
-			err := websocketConn.WriteMessage(websocket.BinaryMessage, query)
+			err = websocketConn.WriteMessage(websocket.BinaryMessage, query)
 			if err != nil {
 				fmt.Println("WebSocket failed to send data for packet "+packet.Name+": ", err)
 				if config.GetBool("use_http") {
@@ -56,7 +70,14 @@ func streamTelemetryPacket(packet tlm.TelemetryPacket, packetChan chan []byte, c
 	// stream data over HTTP (if WebSocket fails / is disabled)
 	if config.GetBool("use_http") {
 		liveAddr := config.GetString("http_addr")
-		for packetData := range packetChan {
+		for {
+			p, err := reader.Read()
+			if err != nil {
+				fmt.Printf("Error reading packet: %v\n", err)
+				continue
+			}
+			packetData := p.Data()
+
 			proc.UpdateMeasurementGroup(packet, measurementGroup, packetData)
 			query := db.CreateQuery(measurementGroup)
 			if err := sendQuery(query, liveAddr, authToken); err != nil {
@@ -111,11 +132,11 @@ func readConfigFiles() (*viper.Viper, error) {
 		fmt.Println("*** Error accessing config file. Make sure the GSW service is running. ***")
 		return nil, err
 	}
-	data, err := configReader.ReadNoHeader()
+	packet, err := configReader.Read()
 	if err != nil {
 		return nil, fmt.Errorf("error reading shared memory: %v", err)
 	}
-	_, err = proc.ParseConfigBytes(data)
+	_, err = proc.ParseConfigBytes(packet.Data())
 	if err != nil {
 		return nil, fmt.Errorf("error parsing telemetry YAML: %v", err)
 	}
@@ -189,9 +210,7 @@ func main() {
 
 	for _, packet := range proc.GswConfig.TelemetryPackets {
 		fmt.Println("Starting streaming for packet " + packet.Name)
-		packetChan := make(chan []byte)
-		go proc.TelemetryPacketReader(packet, packetChan, *shmDir)
-		go streamTelemetryPacket(packet, packetChan, liveConfig, authToken, websocketConn)
+		go streamTelemetryPacket(packet, liveConfig, authToken, websocketConn)
 	}
 
 	// Catch interrupt signals
