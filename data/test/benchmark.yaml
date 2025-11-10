@@ -29,7 +29,7 @@ measurements:
 
   OneKilobyte:
     name: OneKilobyte
-    size: 960 # Not actually 1KB, but when we add the 16 total bytes from the timestamp, it will be
+    size: 1016 # Not actually 1KB, but when we add the 8 bytes from the send timestamp, it will be
     type: int
 
 telemetry_packets:
