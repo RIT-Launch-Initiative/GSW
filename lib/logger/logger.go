@@ -62,6 +62,12 @@ func loadLoggerConfig() (*viper.Viper, error) {
 	cfg.SetConfigType("yaml")
 	cfg.SetConfigName("logger")
 	cfg.AddConfigPath("data/config")
+	cfg.SetEnvPrefix("GSW_LOGGER")
+	cfg.AutomaticEnv()
+	if err := cfg.BindEnv("OutputPaths", "GSW_LOGGER_OUTPUT_PATHS"); err != nil {
+		return nil, err
+	}
+
 	if err := cfg.ReadInConfig(); err != nil {
 		return nil, err
 	}

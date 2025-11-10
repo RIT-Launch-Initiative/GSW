@@ -1,0 +1,214 @@
+name: receiver
+
+measurements:
+    CURR_BATT:
+      name: CURR_BATT
+      size: 4
+      type: float
+      endianness: little
+    VOLT_BATT:
+      name: VOLT_BATT
+      size: 4
+      type: float
+      endianness: little
+      scaling: 0.001
+    PWER_BATT:
+      name: PWER_BATT
+      size: 4
+      type: float
+      endianness: little
+    CURR_3V3:
+      name: CURR_3V3
+      size: 4
+      type: float
+      endianness: little
+    VOLT_3V3:
+      name: VOLT_3V3
+      size: 4
+      type: float
+      endianness: little
+      scaling: 0.001
+    PWER_3V3:
+      name: PWER_3V3
+      size: 4
+      type: float
+      endianness: little
+    CURR_5V0:
+      name: CURR_5V0
+      size: 4
+      type: float
+      endianness: little
+    VOLT_5V0:
+      name: VOLT_5V0
+      size: 4
+      type: float
+      endianness: little
+      scaling: 0.001
+    PWER_5V0:
+      name: PWER_5V0
+      size: 4
+      type: float
+      endianness: little
+
+    ACCEL_X:
+      name: ACCEL_X
+      size: 2
+      type: int
+      endianness: little
+      scaling: 0.001
+    ACCEL_Y:
+      name: ACCEL_Y
+      size: 2
+      type: int
+      endianness: little
+      scaling: 0.001
+    ACCEL_Z:
+      name: ACCEL_Z
+      size: 2
+      type: int
+      endianness: little
+      scaling: 0.001
+
+    PRESSURE:
+      name: PRESSURE
+      size: 2
+      type: int
+      endianness: little
+    TEMPERATURE:
+      name: TEMPERATURE
+      size: 2
+      type: int
+      endianness: little
+
+    GYRO_X:
+      name: GYRO_X
+      size: 2
+      type: int
+      endianness: little
+      scaling: 0.001
+    GYRO_Y:
+      name: GYRO_Y
+      size: 2
+      type: int
+      endianness: little
+      scaling: 0.001
+    GYRO_Z:
+      name: GYRO_Z
+      size: 2
+      type: int
+      endianness: little
+      scaling: 0.001
+
+    LATITUDE:
+      name: LATITUDE
+      size: 4
+      type: float
+      endianness: little
+  
+    LONGITUDE:
+      name: LONGITUDE
+      size: 4
+      type: float
+      endianness: little
+
+    ALTITUDE:
+      name: ALTITUDE
+      size: 4
+      type: float
+      endianness: little
+
+    SAT_COUNT:
+      name: SAT_COUNT
+      size: 2
+      type: int
+      endianness: little
+      unsigned: true
+
+    FIX_STATUS:
+      name: FIX_STATUS
+      size: 1
+      type: int
+      endianness: little
+      unsigned: false
+
+    FIX_QUALITY:
+      name: FIX_QUALITY
+      size: 1
+      type: int
+      endianness: little
+      unsigned: false
+
+    SNR:
+      name: RCV_SNR
+      size: 1
+      type: int
+      endianness: little
+      unsigned: false
+
+    RSSI:
+      name: RCV_RSSI
+      size: 2
+      type: int
+      endianness: little
+      unsigned: false
+
+    BOOT_COUNT:
+      name: BOOT_COUNT
+      size: 1
+      type: int 
+      endianness: little
+      unsigned: true
+
+    PHASE_STATUS:
+      name: PHASE_STATUS
+      size: 1
+      type: int
+      endianness: little
+      unsigned: true
+
+
+
+telemetry_packets:
+  - name: PowerModule
+    port: 11015
+    measurements:
+      - VOLT_BATT
+      - CURR_BATT
+      - PWER_BATT
+      - VOLT_3V3
+      - CURR_3V3
+      - PWER_3V3
+      - VOLT_5V0
+      - CURR_5V0
+      - PWER_5V0
+
+
+  - name: SensorModule
+    port: 13020
+    measurements:
+      - PRESSURE
+      - TEMPERATURE
+      - ACCEL_X
+      - ACCEL_Y
+      - ACCEL_Z
+      - GYRO_X
+      - GYRO_Y
+      - GYRO_Z
+      - BOOT_COUNT
+      - PHASE_STATUS
+
+  - name: GNSSCoordinates
+    port: 12005
+    measurements:
+      - LATITUDE
+      - LONGITUDE
+      - ALTITUDE
+      - SAT_COUNT
+      - FIX_STATUS
+      - FIX_QUALITY
+
+  - name: ReceiverStats
+    port: 12006
+    measurements:
+      - RSSI
+      - SNR

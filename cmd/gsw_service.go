@@ -124,6 +124,8 @@ func readConfig() (*viper.Viper, int) {
 	config := viper.New()
 	config.SetConfigName(*configFilepath)
 	config.SetConfigType("yaml")
+	config.SetEnvPrefix("GSW")
+	config.AutomaticEnv()
 	config.AddConfigPath("data/config/")
 	err := config.ReadInConfig()
 
