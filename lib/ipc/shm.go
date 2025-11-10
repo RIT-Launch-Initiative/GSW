@@ -9,20 +9,16 @@ import (
 	"unsafe"
 )
 
-type ShmHeader struct {
+type shmHeader struct {
 	Futex     uint32
 	Timestamp uint64
 }
-
-const (
-	ShmHeaderSize = 16
-)
 
 // ShmHandler is a shared memory handler for inter-process communication
 type ShmHandler struct {
 	file                *os.File   // File descriptor for shared memory
 	data                []byte     // Pointer to shared memory data
-	header              *ShmHeader // Pointer to header in shared memory
+	header              *shmHeader // Pointer to header in shared memory
 	size                int        // Size of shared memory
 	mode                int        // 0 for reader, 1 for writer
 	readerLastTimestamp uint64     // Timestamp of last received packet
@@ -32,12 +28,13 @@ const (
 	modeReader = iota
 	modeWriter
 	shmFilePrefix = "gsw-service-"
+	shmHeaderSize = int(unsafe.Sizeof(shmHeader{}))
 )
 
 // NewShmHandler creates a shared memory handler for inter-process communication
 func NewShmHandler(identifier string, usableSize int, isWriter bool, shmDir string) (*ShmHandler, error) {
 	handler := &ShmHandler{
-		size: usableSize + ShmHeaderSize, // Add space for header
+		size: usableSize + shmHeaderSize, // Add space for header
 		mode: modeReader,
 	}
 
@@ -78,7 +75,7 @@ func NewShmHandler(identifier string, usableSize int, isWriter bool, shmDir stri
 		handler.data = data
 	}
 
-	handler.header = (*ShmHeader)(unsafe.Pointer(&handler.data[0]))
+	handler.header = (*shmHeader)(unsafe.Pointer(&handler.data[0]))
 
 	return handler, nil
 }
@@ -90,7 +87,7 @@ func CreateShmReader(identifier string, shmDir string) (*ShmHandler, error) {
 		return nil, fmt.Errorf("error getting shm file info: %v", err)
 	}
 	filesize := int(fileinfo.Size()) // TODO fix unsafe int64 conversion
-	return NewShmHandler(identifier, filesize-ShmHeaderSize, false, shmDir)
+	return NewShmHandler(identifier, filesize-shmHeaderSize, false, shmDir)
 }
 
 // Cleanup cleans up the shared memory handler and removes the shared memory file
@@ -121,11 +118,11 @@ func (handler *ShmHandler) Write(data []byte) error {
 	if handler.mode != modeWriter {
 		return fmt.Errorf("handler is in reader mode")
 	}
-	if len(data) > handler.size-ShmHeaderSize {
+	if len(data) > handler.size-shmHeaderSize {
 		return fmt.Errorf("data size exceeds shared memory size")
 	}
 
-	copy(handler.data[ShmHeaderSize:len(data)+ShmHeaderSize], data)
+	copy(handler.data[shmHeaderSize:len(data)+shmHeaderSize], data)
 	handler.header.Timestamp = uint64(time.Now().UnixNano())
 
 	if err := futexWake(unsafe.Pointer(&handler.header.Futex)); err != nil {
@@ -135,7 +132,7 @@ func (handler *ShmHandler) Write(data []byte) error {
 }
 
 type ShmReaderPacket struct {
-	header ShmHeader
+	header shmHeader
 	data   []byte
 }
 
@@ -167,9 +164,9 @@ func (handler *ShmHandler) Read() (ReaderPacket, error) {
 		}
 		packet := ShmReaderPacket{
 			header: *handler.header,
-			data:   make([]byte, handler.size-ShmHeaderSize),
+			data:   make([]byte, handler.size-shmHeaderSize),
 		}
-		copy(packet.data, handler.data[ShmHeaderSize:handler.size])
+		copy(packet.data, handler.data[shmHeaderSize:handler.size])
 
 		if packet.header.Timestamp <= handler.readerLastTimestamp {
 			continue
