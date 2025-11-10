@@ -118,8 +118,8 @@ func packetReader(packet tlm.TelemetryPacket) {
 		}
 
 		averageDiff = (averageDiff + totalDiff) / 2
-		averageUdpShmDiff = (udpShmDiff + totalDiff) / 2
-		averageBenchShmDiff = (benchShmDiff + totalDiff) / 2
+		averageUdpShmDiff = (averageUdpShmDiff + udpShmDiff) / 2
+		averageBenchShmDiff = (averageBenchShmDiff + benchShmDiff) / 2
 
 		packetsReceived++
 	}
