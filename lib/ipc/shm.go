@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sync/atomic"
 	"syscall"
 	"time"
 	"unsafe"
@@ -71,11 +72,11 @@ func NewShmHandler(identifier string, usableSize int, isWriter bool, shmDir stri
 			return nil, fmt.Errorf("failed to memory map file: %v", err)
 		}
 
-		handler.readerLastTimestamp = uint64(time.Now().UnixNano()) // stream packets after reader start
 		handler.data = data
 	}
 
 	handler.header = (*shmHeader)(unsafe.Pointer(&handler.data[0]))
+	handler.readerLastTimestamp = atomic.LoadUint64(&handler.header.Timestamp) // stream packets after reader start
 
 	return handler, nil
 }
@@ -132,14 +133,14 @@ func (handler *ShmHandler) Write(data []byte) error {
 }
 
 type ShmReaderPacket struct {
-	header shmHeader
-	data   []byte
+	timestamp uint64
+	data      []byte
 }
 
 // ReceiveTimestamp returns the unix timestamp when the packet was received
 // (nanoseconds since epoch).
 func (p *ShmReaderPacket) ReceiveTimestamp() uint64 {
-	return p.header.Timestamp
+	return p.timestamp
 }
 
 func (p *ShmReaderPacket) Data() []byte {
@@ -162,17 +163,21 @@ func (handler *ShmHandler) Read() (ReaderPacket, error) {
 		if err != nil {
 			return nil, fmt.Errorf("waiting for packet: %w", err)
 		}
-		packet := ShmReaderPacket{
-			header: *handler.header,
-			data:   make([]byte, handler.size-shmHeaderSize),
-		}
-		copy(packet.data, handler.data[shmHeaderSize:handler.size])
 
-		if packet.header.Timestamp <= handler.readerLastTimestamp {
+		shmData := make([]byte, handler.size)
+		copy(shmData, handler.data[:])
+
+		header := (*shmHeader)(unsafe.Pointer(&handler.data[0]))
+		packet := ShmReaderPacket{
+			timestamp: header.Timestamp,
+			data:      shmData[shmHeaderSize:handler.size],
+		}
+
+		if packet.timestamp <= handler.readerLastTimestamp {
 			continue
 		}
 
-		handler.readerLastTimestamp = packet.header.Timestamp
+		handler.readerLastTimestamp = packet.timestamp
 
 		return &packet, nil
 	}
