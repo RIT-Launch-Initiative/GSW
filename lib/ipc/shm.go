@@ -182,3 +182,15 @@ func (handler *ShmHandler) Read() (ReaderPacket, error) {
 		return &packet, nil
 	}
 }
+
+// ReadRaw returns a copy of the current data in SHM.
+func (handler *ShmHandler) ReadRaw() ([]byte, error) {
+	if handler.mode != modeReader {
+		return nil, fmt.Errorf("handler is in writer mode")
+	}
+
+	shmData := make([]byte, handler.size-shmHeaderSize)
+	copy(shmData, handler.data[shmHeaderSize:])
+
+	return shmData, nil
+}

@@ -13,7 +13,6 @@ import (
 	"github.com/AarC10/GSW-V2/lib/db"
 	"github.com/gorilla/websocket"
 
-	"github.com/AarC10/GSW-V2/lib/ipc"
 	"github.com/AarC10/GSW-V2/lib/tlm"
 	"github.com/AarC10/GSW-V2/proc"
 	"github.com/joho/godotenv"
@@ -127,16 +126,12 @@ func sendQuery(query string, liveAddr string, authToken string) error {
 // readConfigFiles reads the configuration file for grafana_live.go as well as the
 // telemetry configuration from shared memory. It returns a Viper config object.
 func readConfigFiles() (*viper.Viper, error) {
-	configReader, err := ipc.CreateShmReader("telemetry-config", *shmDir)
+	configData, err := proc.ReadTelemetryConfigFromShm(*shmDir)
 	if err != nil {
 		fmt.Println("*** Error accessing config file. Make sure the GSW service is running. ***")
 		return nil, err
 	}
-	packet, err := configReader.Read()
-	if err != nil {
-		return nil, fmt.Errorf("error reading shared memory: %v", err)
-	}
-	_, err = proc.ParseConfigBytes(packet.Data())
+	_, err = proc.ParseConfigBytes(configData)
 	if err != nil {
 		return nil, fmt.Errorf("error parsing telemetry YAML: %v", err)
 	}

@@ -8,7 +8,6 @@ import (
 	"strings"
 	"syscall"
 
-	"github.com/AarC10/GSW-V2/lib/ipc"
 	"github.com/AarC10/GSW-V2/lib/tlm"
 	"github.com/AarC10/GSW-V2/lib/util"
 	"github.com/AarC10/GSW-V2/proc"
@@ -27,18 +26,13 @@ func padValue(s string) string {
 
 func main() {
 	flag.Parse()
-	configReader, err := ipc.CreateShmReader("telemetry-config", *shmDir)
+	configData, err := proc.ReadTelemetryConfigFromShm(*shmDir)
 	if err != nil {
 		fmt.Println("*** Error accessing config file. Make sure the GSW service is running. ***")
 		fmt.Printf("(%v)\n", err)
 		return
 	}
-	packet, err := configReader.Read()
-	if err != nil {
-		fmt.Printf("Error reading shared memory: %v\n", err)
-		return
-	}
-	if _, err = proc.ParseConfigBytes(packet.Data()); err != nil {
+	if _, err = proc.ParseConfigBytes(configData); err != nil {
 		fmt.Printf("Error parsing YAML: %v\n", err)
 		return
 	}
