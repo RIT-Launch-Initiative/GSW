@@ -18,7 +18,7 @@ func futex(addr unsafe.Pointer, op int, val uint32, timeout unsafe.Pointer, addr
 	return int(r1), errno
 }
 
-// futexWait wait for a futex at an address
+// futexWait waits for a futex at an address
 func futexWait(addr unsafe.Pointer) error {
 	_, errno := futex(addr, _FUTEX_WAIT, 0, nil, nil, 0)
 	if errno != 0 {
