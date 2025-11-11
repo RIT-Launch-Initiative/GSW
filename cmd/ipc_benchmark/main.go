@@ -102,7 +102,7 @@ func packetReader(packet tlm.TelemetryPacket) {
 		}
 		shmPacket, ok := p.(*ipc.ShmReaderPacket)
 		if !ok {
-			log.Fatal(fmt.Errorf("packet is not from shm IPC reader: %w", err))
+			log.Fatal(fmt.Errorf("packet is not from shm IPC reader"))
 		}
 
 		data := shmPacket.Data()
