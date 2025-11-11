@@ -15,7 +15,7 @@ func WriteTelemetryConfigToShm(shmDir string, data []byte) (cleanup func(), err 
 	if err != nil {
 		return nil, fmt.Errorf("creating shm handler: %w", err)
 	}
-	if configWriter.Write(data) != nil {
+	if err := configWriter.Write(data); err != nil {
 		configWriter.Cleanup()
 		return nil, fmt.Errorf("writing to shm handler: %w", err)
 	}
@@ -31,7 +31,6 @@ func ReadTelemetryConfigFromShm(shmDir string) ([]byte, error) {
 	data, err := configReader.ReadRaw()
 	if err != nil {
 		return nil, fmt.Errorf("reading from shm handler: %w", err)
-
 	}
 	return data, nil
 }
