@@ -27,7 +27,7 @@ func futexWait(addr unsafe.Pointer) error {
 	return nil
 }
 
-// futexWake wake all threads sleeping an address
+// futexWake wakes all threads sleeping at an address
 func futexWake(addr unsafe.Pointer) error {
 	_, errno := futex(addr, _FUTEX_WAKE, math.MaxInt32, nil, nil, 0)
 	if errno != 0 {

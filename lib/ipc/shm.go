@@ -132,6 +132,7 @@ func (handler *ShmHandler) Write(data []byte) error {
 	return nil
 }
 
+// ShmReaderPacket is the packet read by an ShmHandler
 type ShmReaderPacket struct {
 	timestamp uint64
 	data      []byte
@@ -143,6 +144,7 @@ func (p *ShmReaderPacket) ReceiveTimestamp() uint64 {
 	return p.timestamp
 }
 
+// Data returns the packet data.
 func (p *ShmReaderPacket) Data() []byte {
 	return p.data
 }

@@ -6,11 +6,12 @@ type Writer interface {
 	Cleanup()
 }
 
+// ReaderPacket represents data read from IPC.
 type ReaderPacket interface {
 	Data() []byte
 }
 
-// Reader implements a blocking interface for reading from an IPC.
+// Reader implements a blocking interface for reading from IPC.
 // This is not thread safe.
 type Reader interface {
 	Read() (ReaderPacket, error)

@@ -80,6 +80,7 @@ func TelemetryPacketWriter(packet tlm.TelemetryPacket, outChannel chan []byte, s
 	}
 }
 
+// NewIpcShmReaderForPacket creates a shared memory IPC reader for a telemetry packet.
 func NewIpcShmReaderForPacket(packet tlm.TelemetryPacket, shmDir string) (ipc.Reader, error) {
 	return newIpcShmHandlerForPacket(packet, false, shmDir)
 }
