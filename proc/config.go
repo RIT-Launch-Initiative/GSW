@@ -8,6 +8,8 @@ import (
 
 const telemetryConfigKey = "telemetry-config"
 
+// WriteTelemetryConfigToShm writes to the config in SHM,
+// returning a cleanup function to remove it.
 func WriteTelemetryConfigToShm(shmDir string, data []byte) (cleanup func(), err error) {
 	configWriter, err := ipc.NewShmHandler(telemetryConfigKey, len(data), true, shmDir)
 	if err != nil {
@@ -20,6 +22,7 @@ func WriteTelemetryConfigToShm(shmDir string, data []byte) (cleanup func(), err 
 	return configWriter.Cleanup, nil
 }
 
+// ReadTelemetryConfigFromShm reads the config from SHM and returns it.
 func ReadTelemetryConfigFromShm(shmDir string) ([]byte, error) {
 	configReader, err := ipc.CreateShmReader(telemetryConfigKey, shmDir)
 	if err != nil {
