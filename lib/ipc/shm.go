@@ -124,7 +124,7 @@ func (handler *ShmHandler) Write(data []byte) error {
 	}
 
 	copy(handler.data[shmHeaderSize:len(data)+shmHeaderSize], data)
-	handler.header.Timestamp = uint64(time.Now().UnixNano())
+	atomic.StoreUint64(&handler.header.Timestamp, uint64(time.Now().UnixNano()))
 
 	if err := futexWake(unsafe.Pointer(&handler.header.Futex)); err != nil {
 		return err
