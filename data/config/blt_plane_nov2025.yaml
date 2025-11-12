@@ -3,51 +3,35 @@ name: receiver
 measurements:
     CURR_BATT:
       name: CURR_BATT
-      size: 4
-      type: float
+      size: 2
+      type: int
       endianness: little
     VOLT_BATT:
       name: VOLT_BATT
-      size: 4
-      type: float
+      size: 2
+      type: int
       endianness: little
       scaling: 0.001
     PWER_BATT:
       name: PWER_BATT
-      size: 4
-      type: float
+      size: 2
+      type: int
       endianness: little
     CURR_3V3:
       name: CURR_3V3
-      size: 4
-      type: float
+      size: 2
+      type: int
       endianness: little
     VOLT_3V3:
       name: VOLT_3V3
-      size: 4
-      type: float
+      size: 2
+      type: int
       endianness: little
       scaling: 0.001
     PWER_3V3:
       name: PWER_3V3
-      size: 4
-      type: float
-      endianness: little
-    CURR_5V0:
-      name: CURR_5V0
-      size: 4
-      type: float
-      endianness: little
-    VOLT_5V0:
-      name: VOLT_5V0
-      size: 4
-      type: float
-      endianness: little
-      scaling: 0.001
-    PWER_5V0:
-      name: PWER_5V0
-      size: 4
-      type: float
+      size: 2
+      type: int
       endianness: little
 
     ACCEL_X:
@@ -170,7 +154,7 @@ measurements:
 
 telemetry_packets:
   - name: PowerModule
-    port: 11015
+    port: 11020
     measurements:
       - VOLT_BATT
       - CURR_BATT
@@ -178,9 +162,6 @@ telemetry_packets:
       - VOLT_3V3
       - CURR_3V3
       - PWER_3V3
-      - VOLT_5V0
-      - CURR_5V0
-      - PWER_5V0
 
 
   - name: SensorModule
