@@ -10,7 +10,6 @@ import (
 	"syscall"
 
 	"github.com/AarC10/GSW-V2/lib/db"
-	"github.com/AarC10/GSW-V2/lib/ipc"
 	"github.com/AarC10/GSW-V2/lib/logger"
 	"github.com/AarC10/GSW-V2/lib/tlm"
 	"github.com/AarC10/GSW-V2/proc"
@@ -21,7 +20,11 @@ import (
 	_ "net/http/pprof"
 )
 
-var shmDir = flag.String("shm", "/dev/shm", "directory to use for shared memory")
+var (
+	shmDir         = flag.String("shm", "/dev/shm", "directory to use for shared memory")
+	configFilepath = flag.String("c", "gsw_service", "name of config file")
+	doPprof        = flag.Int("p", 0, "Port to run pprof server on. Leave empty or set to 0 to disable pprof server")
+)
 
 // printTelemetryPackets prints the telemetry packets and their measurements it found in the configuration.
 func printTelemetryPackets() {
@@ -44,9 +47,9 @@ func printTelemetryPackets() {
 	}
 }
 
-// vcmInitialize initializes the Vehicle Config Manager
-// It reads the telemetry config file and writes it into shared memory
-func vcmInitialize(config *viper.Viper) (*ipc.ShmHandler, error) {
+// telemetryConfigInitialize reads the telemetry config file and writes
+// it into shared memory. Returns the cleanup function.
+func telemetryConfigInitialize(config *viper.Viper) (func(), error) {
 	if !config.IsSet("telemetry_config") {
 		err := errors.New("telemetry config filepath is not set in GSW config")
 		logger.Error(fmt.Sprint(err))
@@ -59,24 +62,18 @@ func vcmInitialize(config *viper.Viper) (*ipc.ShmHandler, error) {
 	}
 	_, err = proc.ParseConfigBytes(data)
 	if err != nil {
-
 		logger.Error("Error parsing YAML:", zap.Error(err))
 		return nil, err
 	}
 
-	configWriter, err := ipc.CreateShmHandler("telemetry-config", len(data), true, *shmDir)
+	cleanup, err := proc.WriteTelemetryConfigToShm(*shmDir, data)
 	if err != nil {
-		logger.Error("Error creating shared memory handler: ", zap.Error(err))
-		return nil, err
-	}
-	if configWriter.Write(data) != nil {
-		configWriter.Cleanup()
 		logger.Error("Error writing telemetry config to shared memory: ", zap.Error(err))
 		return nil, err
 	}
 
 	printTelemetryPackets()
-	return configWriter, nil
+	return cleanup, nil
 }
 
 // decomInitialize starts decommutation goroutines for each telemetry packet
@@ -118,9 +115,6 @@ func dbInitialize(ctx context.Context, channelMap map[int]chan []byte, host stri
 
 func readConfig() (*viper.Viper, int) {
 	config := viper.New()
-	configFilepath := flag.String("c", "gsw_service", "name of config file")
-	doPprof := flag.Int("p", 0, "Port to run pprof server on. Leave empty or set to 0 to disable pprof server")
-	flag.Parse()
 	config.SetConfigName(*configFilepath)
 	config.SetConfigType("yaml")
 	config.SetEnvPrefix("GSW")
@@ -175,12 +169,12 @@ func main() {
 		cancel()
 	}()
 
-	configWriter, err := vcmInitialize(config)
+	telemetryConfigCleanup, err := telemetryConfigInitialize(config)
 	if err != nil {
 		logger.Panic("Exiting GSW...")
 		return
 	}
-	defer configWriter.Cleanup()
+	defer telemetryConfigCleanup()
 
 	channelMap := decomInitialize(ctx)
 	err = dbInitialize(ctx, channelMap, config.GetString("database_host_name"), config.GetInt("database_port_number"))

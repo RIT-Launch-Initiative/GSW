@@ -8,7 +8,6 @@ import (
 	"strings"
 	"syscall"
 
-	"github.com/AarC10/GSW-V2/lib/ipc"
 	"github.com/AarC10/GSW-V2/lib/tlm"
 	"github.com/AarC10/GSW-V2/lib/util"
 	"github.com/AarC10/GSW-V2/proc"
@@ -27,18 +26,13 @@ func padValue(s string) string {
 
 func main() {
 	flag.Parse()
-	configReader, err := ipc.CreateShmReader("telemetry-config", *shmDir)
+	configData, err := proc.ReadTelemetryConfigFromShm(*shmDir)
 	if err != nil {
 		fmt.Println("*** Error accessing config file. Make sure the GSW service is running. ***")
 		fmt.Printf("(%v)\n", err)
 		return
 	}
-	data, err := configReader.ReadNoTimestamp()
-	if err != nil {
-		fmt.Printf("Error reading shared memory: %v\n", err)
-		return
-	}
-	if _, err = proc.ParseConfigBytes(data); err != nil {
+	if _, err = proc.ParseConfigBytes(configData); err != nil {
 		fmt.Printf("Error parsing YAML: %v\n", err)
 		return
 	}
@@ -99,11 +93,22 @@ func main() {
 	// live telem readers
 	rowIndex := 1
 	for _, packet := range proc.GswConfig.TelemetryPackets {
-		outChan := make(chan []byte)
-		go proc.TelemetryPacketReader(packet, outChan, *shmDir)
-
 		go func(pkt tlm.TelemetryPacket, baseRow int) {
-			for data := range outChan {
+			reader, err := proc.NewIpcShmReaderForPacket(pkt, *shmDir)
+			if err != nil {
+				fmt.Printf("Error creating reader: %v\n", err)
+				return
+			}
+			defer reader.Cleanup()
+
+			for {
+				p, err := reader.Read()
+				if err != nil {
+					fmt.Printf("Error reading packet: %v\n", err)
+					continue
+				}
+				data := p.Data()
+
 				offset := 0
 				for i, name := range pkt.Measurements {
 					meas, ok := proc.GswConfig.Measurements[name]
