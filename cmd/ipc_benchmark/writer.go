@@ -47,11 +47,10 @@ func packetWriter(ctx context.Context, serverAddress string, port, size int, wri
 		defer ticker.Stop()
 
 		for {
-			select {
-			case <-ticker.C:
-			case <-ctx.Done():
+			if err := ctx.Err(); err != nil {
 				return nil
 			}
+			<-ticker.C
 
 			packet := createPacket(size, sequence)
 			_, err := conn.Write(packet)
