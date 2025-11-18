@@ -87,8 +87,22 @@ func InterpretSignedInteger(data []byte, endianness string) (interface{}, error)
 	case uint16:
 		return int16(v), nil
 	case uint32:
+		if len(data) < 4 {
+			bitLen := uint(8 * len(data))
+			if v&(1<<(bitLen-1)) != 0 {
+				v |= ^uint32(0) << bitLen
+			}
+		}
+
 		return int32(v), nil
 	case uint64:
+		if len(data) < 8 {
+			bitLen := uint(8 * len(data))
+			if v&(1<<(bitLen-1)) != 0 {
+				v |= ^uint64(0) << bitLen
+			}
+		}
+
 		return int64(v), nil
 	default:
 		return nil, fmt.Errorf("unsupported integer type for signed conversion: %T", v)
@@ -123,9 +137,10 @@ func InterpretMeasurementValue(measurement Measurement, data []byte) (interface{
 	switch measurement.Type {
 	case "int":
 		if measurement.Unsigned {
-			return InterpretUnsignedInteger(data, measurement.Endianness)
+			result, err = InterpretUnsignedInteger(data, measurement.Endianness)
+		} else {
+			result, err = InterpretSignedInteger(data, measurement.Endianness)
 		}
-		result, err = InterpretSignedInteger(data, measurement.Endianness)
 	case "float":
 		result, err = InterpretFloat(data, measurement.Endianness)
 	default:
