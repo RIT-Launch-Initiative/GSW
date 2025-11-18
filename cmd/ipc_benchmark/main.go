@@ -26,15 +26,6 @@ const (
 	PRINT_INTERVAL = 3
 )
 
-var TELEMETRY_PACKETS = []TelemetryPacket{
-	{"TimestampsOnly", 10000, 16},
-	{"17Bytes", 10001, 17},
-	{"11Bytes", 10002, 19},
-	{"15Bytes", 10003, 23},
-	{"31Bytes", 10004, 31},
-	{"OneKbyte", 10005, 1024},
-}
-
 func initProfiling(pprofPort int) {
 	go func() {
 		log.Printf("Running pprof server at localhost:%d", pprofPort)
@@ -53,8 +44,9 @@ func main() {
 
 	isReader := flag.Bool("reader", false, "run a gsw reader")
 	isWriter := flag.Bool("writer", false, "run a gsw writer")
-	profilePort := flag.Int("pprof", 0, "run pprof at a port")
+	writerSleep := flag.Duration("writer_sleep", 0, "approximately how long the writer will sleep between packets")
 	serverAddress := flag.String("writer_host", "localhost", "the gsw host that the writer will attempt to write to")
+	profilePort := flag.Int("pprof", 0, "run pprof at a port")
 
 	flag.Parse()
 
@@ -72,7 +64,7 @@ func main() {
 	}
 	if *isWriter {
 		log.Println("running writer")
-		go writer(*serverAddress)
+		go writer(*serverAddress, *writerSleep)
 	}
 
 	sigChan := make(chan os.Signal, 1)
@@ -153,7 +145,7 @@ func packetReader(packet tlm.TelemetryPacket) {
 
 		// the latter condition is a simplification that could mean that some
 		// lost packets are not accounted for during an overflow.
-		if !(lastPacketSequence == 0 || lastPacketSequence > packetSequence) {
+		if lastPacketSequence != 0 && lastPacketSequence <= packetSequence {
 			packetsLost += uint64(packetSequence-lastPacketSequence) - 1
 		}
 		lastPacketSequence = packetSequence
@@ -197,7 +189,7 @@ func createPacket(size int, seq uint64) []byte {
 	return packet
 }
 
-func packetWriter(serverAddress string, port, size int) error {
+func packetWriter(serverAddress string, port, size int, writerSleep time.Duration) error {
 	serverAddr, err := net.ResolveUDPAddr("udp", fmt.Sprintf("%s:%d", serverAddress, port))
 	if err != nil {
 		return fmt.Errorf("resolving address: %w", err)
@@ -215,30 +207,46 @@ func packetWriter(serverAddress string, port, size int) error {
 	}()
 
 	var sequence uint64
+	if writerSleep != 0 {
+		ticker := time.NewTicker(writerSleep)
+		defer ticker.Stop()
 
-	for {
-		packet := createPacket(size, sequence)
-		_, err := conn.Write(packet)
-		if err != nil {
-			fmt.Printf("error writing packet (%s): %v\n", serverAddr.String(), err)
+		for {
+			<-ticker.C
+			packet := createPacket(size, sequence)
+			_, err := conn.Write(packet)
+			if err != nil {
+				fmt.Printf("error writing packet (%s): %v\n", serverAddr.String(), err)
+			}
+			sequence += 1
 		}
-		sequence += 1
-		time.Sleep(time.Millisecond)
+	} else {
+		for {
+			packet := createPacket(size, sequence)
+			_, err := conn.Write(packet)
+			if err != nil {
+				fmt.Printf("error writing packet (%s): %v\n", serverAddr.String(), err)
+			}
+			sequence += 1
+		}
+
 	}
+
 }
 
-func writer(serverAddress string) {
+func writer(serverAddress string, writerSleep time.Duration) {
 	var wg sync.WaitGroup
 
-	for _, packet := range TELEMETRY_PACKETS {
+	for _, packet := range proc.GswConfig.TelemetryPackets {
+		size := proc.GetPacketSize(packet)
 		wg.Add(1)
-		go func(serverAddress string, port, size int) {
+		go func(serverAddress string, port, size int, writerSleep time.Duration) {
 			defer wg.Done()
-			err := packetWriter(serverAddress, port, size)
+			err := packetWriter(serverAddress, port, size, writerSleep)
 			if err != nil {
 				log.Fatal("error running packet writer:", err)
 			}
-		}(serverAddress, packet.Port, packet.Size)
+		}(serverAddress, packet.Port, size, writerSleep)
 	}
 	wg.Wait()
 }
