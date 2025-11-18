@@ -1,13 +1,12 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"log"
-	"os"
-	"os/signal"
 	"strings"
-	"syscall"
+	"sync"
 
 	"net/http"
 	_ "net/http/pprof"
@@ -80,11 +79,17 @@ func main() {
 		log.Fatal(fmt.Errorf("couldn't parse shm config: %w", err))
 	}
 
+	timeout := flag.Duration("duration", 0, "the test duration")
 	isReader := flag.Bool("reader", false, "run a gsw reader")
+	var readerOutputFormat outputFormatFlagValue
+	flag.Var(&readerOutputFormat, "output", "output format (options: json or a go template, defaults to pretty printing)")
+
 	isWriter := flag.Bool("writer", false, "run a gsw writer")
 	writerSleep := flag.Duration("writer_sleep", 0, "approximately how long the writer will sleep between packets")
 	serverAddress := flag.String("writer_host", "localhost", "the gsw host that the writer will attempt to write to")
+
 	profilePort := flag.Int("pprof", 0, "run pprof at a port")
+
 	packets := make(packetsMapFlagValue)
 	flag.Var(&packets, "packet", "only this packet will be written or read")
 
@@ -98,19 +103,36 @@ func main() {
 		initProfiling(*profilePort)
 	}
 
+	ctx, cancel := context.WithCancel(context.Background())
+	if *timeout != 0 {
+		ctx, cancel = context.WithTimeout(ctx, *timeout)
+	}
+	defer cancel()
+
 	packetsSlice := packets.Packets()
 
+	var wg sync.WaitGroup
 	if *isReader {
 		log.Println("running reader")
-		go reader(packetsSlice)
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			output := reader(ctx, packetsSlice)
+			outputString, err := readerOutputFormat.GenerateReaderOutput(*output)
+			if err != nil {
+				log.Fatal(fmt.Errorf("couldn't generate output: %w", err))
+			}
+			fmt.Print(outputString)
+		}()
 	}
 	if *isWriter {
 		log.Println("running writer")
-		go writer(*serverAddress, packetsSlice, *writerSleep)
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			writer(ctx, *serverAddress, packetsSlice, *writerSleep)
+		}()
 	}
 
-	sigChan := make(chan os.Signal, 1)
-	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
-
-	<-sigChan
+	wg.Wait()
 }

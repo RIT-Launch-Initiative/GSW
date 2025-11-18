@@ -26,13 +26,15 @@ type ShmHandler struct {
 	header          *shmFileHeader // Pointer to header in shared memory
 	messageSize     int            // size of an individual message, including the header
 	size            int            // Size of shared memory
-	mode            int            // 0 for reader, 1 for writer
+	mode            handlerMode    // handler mode: reader or writer
 	readerLastFutex uint32         // Last futex word value
 }
 
+type handlerMode int
+
 const (
-	modeReader = iota
-	modeWriter
+	handlerModeReader handlerMode = iota
+	handlerModeWriter
 	shmFilePrefix        = "gsw-service-"
 	shmFileHeaderSize    = int(unsafe.Sizeof(shmFileHeader{}))
 	shmMessageHeaderSize = int(unsafe.Sizeof(shmMessageHeader{}))
@@ -45,13 +47,13 @@ func NewShmHandler(identifier string, telemetryPacketSize int, isWriter bool, sh
 	handler := &ShmHandler{
 		messageSize: messageSize,
 		size:        (messageSize * ringSize) + shmFileHeaderSize,
-		mode:        modeReader,
+		mode:        handlerModeReader,
 	}
 
 	filename := filepath.Join(shmDir, fmt.Sprintf("%s%s", shmFilePrefix, identifier))
 
 	if isWriter {
-		handler.mode = modeWriter
+		handler.mode = handlerModeWriter
 		file, err := os.Create(filename)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create file: %v", err)
@@ -116,10 +118,12 @@ func (handler *ShmHandler) Cleanup() {
 			fmt.Printf("failed to close file: %v\n", err)
 		}
 
-		if err := os.Remove(handler.file.Name()); err != nil {
-			fmt.Printf("failed to remove file: %v\n", err)
-		} else {
-			fmt.Printf("Removed file: %s\n", handler.file.Name())
+		if handler.mode == handlerModeWriter {
+			if err := os.Remove(handler.file.Name()); err != nil {
+				fmt.Printf("failed to remove file: %v\n", err)
+			} else {
+				fmt.Printf("Removed file: %s\n", handler.file.Name())
+			}
 		}
 
 		handler.file = nil
@@ -128,7 +132,7 @@ func (handler *ShmHandler) Cleanup() {
 
 // Write sends a message to shared memory
 func (handler *ShmHandler) Write(data []byte) error {
-	if handler.mode != modeWriter {
+	if handler.mode != handlerModeWriter {
 		return fmt.Errorf("handler is in reader mode")
 	}
 	if len(data) > (handler.messageSize - shmMessageHeaderSize) {
@@ -192,7 +196,7 @@ func (handler *ShmHandler) wait() error {
 
 // Read the current message in shared memory.
 func (handler *ShmHandler) Read() (ReaderMessage, error) {
-	if handler.mode != modeReader {
+	if handler.mode != handlerModeReader {
 		return nil, fmt.Errorf("handler is in writer mode")
 	}
 
@@ -237,7 +241,7 @@ func (handler *ShmHandler) Read() (ReaderMessage, error) {
 
 // ReadRaw returns a copy of the current packet in SHM.
 func (handler *ShmHandler) ReadRaw() ([]byte, error) {
-	if handler.mode != modeReader {
+	if handler.mode != handlerModeReader {
 		return nil, fmt.Errorf("handler is in writer mode")
 	}
 

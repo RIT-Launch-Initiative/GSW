@@ -1,10 +1,13 @@
 package main
 
 import (
+	"context"
 	"encoding/binary"
 	"fmt"
 	"log"
+	"os"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"time"
 
@@ -18,8 +21,9 @@ const (
 )
 
 var totalPacketsReceived atomic.Uint64
+var totalPacketsLost atomic.Uint64
 
-func packetReader(packet tlm.TelemetryPacket) {
+func packetReader(ctx context.Context, packet tlm.TelemetryPacket) *OutputPacket {
 	reader, err := proc.NewIpcShmReaderForPacket(packet, "/dev/shm")
 	if err != nil {
 		log.Fatal(fmt.Errorf("couldn't create reader for packet: %w", err))
@@ -38,7 +42,11 @@ func packetReader(packet tlm.TelemetryPacket) {
 		var lastPacketsReceived uint64
 		var lastPacketsLost uint64
 		for {
-			time.Sleep(time.Second * PRINT_INTERVAL)
+			select {
+			case <-time.After(time.Second * PRINT_INTERVAL):
+			case <-ctx.Done():
+				return
+			}
 			var sb strings.Builder
 
 			packetsInterval := totalPacketsReader - lastPacketsReceived
@@ -53,13 +61,16 @@ func packetReader(packet tlm.TelemetryPacket) {
 			lastPacketsReceived = totalPacketsReader
 			lastPacketsLost = packetsLost
 
-			fmt.Print(sb.String())
+			fmt.Fprint(os.Stderr, sb.String())
 		}
 	}()
 
 	var lastPacketSequence uint64
 
 	for {
+		if err := ctx.Err(); err != nil {
+			break
+		}
 		p, err := reader.Read()
 		if err != nil {
 			log.Fatal(fmt.Errorf("couldn't read packet: %w", err))
@@ -90,28 +101,66 @@ func packetReader(packet tlm.TelemetryPacket) {
 		// the latter condition is a simplification that could mean that some
 		// lost packets are not accounted for during an overflow.
 		if lastPacketSequence != 0 && lastPacketSequence <= packetSequence {
-			packetsLost += packetSequence - lastPacketSequence - 1
+			lost := packetSequence - lastPacketSequence - 1
+			packetsLost += lost
+			totalPacketsLost.Add(lost)
 		}
 		lastPacketSequence = packetSequence
 
 		totalPacketsReader += 1
 		totalPacketsReceived.Add(1)
 	}
+
+	return &OutputPacket{
+		Lost:     packetsLost,
+		Received: totalPacketsReader,
+		Size:     uint64(proc.GetPacketSize(packet)),
+		Name:     packet.Name,
+	}
 }
 
-func reader(packets []*tlm.TelemetryPacket) {
+func reader(ctx context.Context, packets []*tlm.TelemetryPacket) *ReaderOutput {
 	go func() {
 		var lastPacketsReceived uint64
 		for {
-			time.Sleep(time.Second * PRINT_INTERVAL)
+			select {
+			case <-time.After(time.Second * PRINT_INTERVAL):
+			case <-ctx.Done():
+				return
+			}
 			totalLoaded := totalPacketsReceived.Load()
-			fmt.Printf("Total: %d packets/second\n", (totalLoaded-lastPacketsReceived)/PRINT_INTERVAL)
+			fmt.Fprintf(os.Stderr, "Total: %d packets/second\n", (totalLoaded-lastPacketsReceived)/PRINT_INTERVAL)
 
 			lastPacketsReceived = totalLoaded
 		}
 	}()
 
-	for _, packet := range packets {
-		go packetReader(*packet)
+	start := time.Now()
+
+	output := ReaderOutput{
+		Packets: []OutputPacket{},
 	}
+
+	var outputMu sync.Mutex
+
+	var wg sync.WaitGroup
+
+	for _, packet := range packets {
+		wg.Add(1)
+		go func(packet *tlm.TelemetryPacket) {
+			defer wg.Done()
+			o := packetReader(ctx, *packet)
+			outputMu.Lock()
+			output.Packets = append(output.Packets, *o)
+			outputMu.Unlock()
+		}(packet)
+	}
+
+	wg.Wait()
+
+	output.Runtime = time.Since(start)
+	output.TotalPacketsLost = totalPacketsLost.Load()
+	output.TotalPacketsReceived = totalPacketsReceived.Load()
+
+	return &output
 }

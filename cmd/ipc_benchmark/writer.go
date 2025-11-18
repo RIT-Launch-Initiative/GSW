@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/binary"
 	"fmt"
 	"log"
@@ -23,7 +24,7 @@ func createPacket(size int, seq uint64) []byte {
 	return packet
 }
 
-func packetWriter(serverAddress string, port, size int, writerSleep time.Duration) error {
+func packetWriter(ctx context.Context, serverAddress string, port, size int, writerSleep time.Duration) error {
 	serverAddr, err := net.ResolveUDPAddr("udp", fmt.Sprintf("%s:%d", serverAddress, port))
 	if err != nil {
 		return fmt.Errorf("resolving address: %w", err)
@@ -46,7 +47,12 @@ func packetWriter(serverAddress string, port, size int, writerSleep time.Duratio
 		defer ticker.Stop()
 
 		for {
-			<-ticker.C
+			select {
+			case <-ticker.C:
+			case <-ctx.Done():
+				return nil
+			}
+
 			packet := createPacket(size, sequence)
 			_, err := conn.Write(packet)
 			if err != nil {
@@ -56,6 +62,9 @@ func packetWriter(serverAddress string, port, size int, writerSleep time.Duratio
 		}
 	} else {
 		for {
+			if err := ctx.Err(); err != nil {
+				return nil
+			}
 			packet := createPacket(size, sequence)
 			_, err := conn.Write(packet)
 			if err != nil {
@@ -63,12 +72,10 @@ func packetWriter(serverAddress string, port, size int, writerSleep time.Duratio
 			}
 			sequence += 1
 		}
-
 	}
-
 }
 
-func writer(serverAddress string, packets []*tlm.TelemetryPacket, writerSleep time.Duration) {
+func writer(ctx context.Context, serverAddress string, packets []*tlm.TelemetryPacket, writerSleep time.Duration) {
 	var wg sync.WaitGroup
 
 	for _, packet := range packets {
@@ -76,7 +83,7 @@ func writer(serverAddress string, packets []*tlm.TelemetryPacket, writerSleep ti
 		wg.Add(1)
 		go func(serverAddress string, port, size int, writerSleep time.Duration) {
 			defer wg.Done()
-			err := packetWriter(serverAddress, port, size, writerSleep)
+			err := packetWriter(ctx, serverAddress, port, size, writerSleep)
 			if err != nil {
 				log.Fatal("error running packet writer:", err)
 			}
