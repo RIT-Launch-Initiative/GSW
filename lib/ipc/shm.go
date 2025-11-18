@@ -245,8 +245,8 @@ func (handler *ShmHandler) ReadRaw() ([]byte, error) {
 
 	messagePosition := shmFileHeaderSize + int(messageFutex%ringSize)*handler.messageSize
 
-	shmData := make([]byte, handler.messageSize-shmFileHeaderSize)
-	copy(shmData, handler.data[messagePosition:])
+	shmData := make([]byte, handler.messageSize-shmMessageHeaderSize)
+	copy(shmData, handler.data[messagePosition+shmMessageHeaderSize:])
 
 	return shmData, nil
 }

@@ -71,9 +71,13 @@ func initProfiling(pprofPort int) {
 }
 
 func main() {
-	_, err := proc.ParseConfig("data/test/benchmark.yaml")
+	configData, err := proc.ReadTelemetryConfigFromShm("/dev/shm")
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal(fmt.Errorf("couldn't read config from shm: %w", err))
+	}
+	_, err = proc.ParseConfigBytes(configData)
+	if err != nil {
+		log.Fatal(fmt.Errorf("couldn't parse shm config: %w", err))
 	}
 
 	isReader := flag.Bool("reader", false, "run a gsw reader")
@@ -82,7 +86,7 @@ func main() {
 	serverAddress := flag.String("writer_host", "localhost", "the gsw host that the writer will attempt to write to")
 	profilePort := flag.Int("pprof", 0, "run pprof at a port")
 	packets := make(packetsMapFlagValue)
-	flag.Var(&packets, "packet", "only these packets will be written or read")
+	flag.Var(&packets, "packet", "only this packet will be written or read")
 
 	flag.Parse()
 
