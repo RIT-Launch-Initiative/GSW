@@ -7,6 +7,12 @@ measurements:
     type: int
     unsigned: true
 
+  Sequence:
+    name: Sequence
+    size: 8
+    type: int
+    unsigned: true
+
   EightBit:
     name: EightBit
     size: 1
@@ -29,7 +35,7 @@ measurements:
 
   OneKilobyte:
     name: OneKilobyte
-    size: 1016 # Not actually 1KB, but when we add the 8 bytes from the send timestamp, it will be
+    size: 1008 # Not actually 1KB, but when we add the 16 bytes from the send timestamp and seq, it will be
     type: int
 
 telemetry_packets:
@@ -37,21 +43,25 @@ telemetry_packets:
     port: 10000
     measurements:
       - UdpSendTimestamp
+      - Sequence
   - name: 9Bytes
     port: 10001
     measurements:
       - UdpSendTimestamp
+      - Sequence
       - EightBit
   - name: 11Bytes
     port: 10002
     measurements:
       - UdpSendTimestamp
+      - Sequence
       - EightBit
       - SixteenBit
   - name: 15Bytes
     port: 10003
     measurements:
       - UdpSendTimestamp
+      - Sequence
       - EightBit
       - SixteenBit
       - ThirtyTwoBit
@@ -59,6 +69,7 @@ telemetry_packets:
     port: 10004
     measurements:
       - UdpSendTimestamp
+      - Sequence
       - EightBit
       - SixteenBit
       - ThirtyTwoBit
@@ -67,4 +78,5 @@ telemetry_packets:
     port: 10005
     measurements:
       - UdpSendTimestamp
+      - Sequence
       - OneKilobyte
