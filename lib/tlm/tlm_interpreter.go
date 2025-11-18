@@ -47,9 +47,29 @@ func InterpretUnsignedInteger(data []byte, endianness string) (interface{}, erro
 		}
 		return binary.BigEndian.Uint64(data), nil
 	default:
-		return nil, fmt.Errorf("unsupported data length: %d", len(data))
+		// I will crash out if we ever need to support integer sizes larger than 8 bytes - Aaron
+		if len(data) < 1 || len(data) > 8 {
+			return nil, fmt.Errorf("unsupported size for unsigned integer: %d bytes", len(data))
+		}
+
+		var val uint64
+
+		if endianness == "little" {
+			for i := 0; i < len(data); i++ {
+				val |= uint64(data[i]) << (8 * i)
+			}
+		} else {
+			for i := 0; i < len(data); i++ {
+				val |= uint64(data[i]) << (8 * (len(data) - 1 - i))
+			}
+		}
+
+		if len(data) <= 4 {
+			return uint32(val), nil
+		}
+
+		return val, nil
 	}
-	// TODO: Support non-aligned bytes less than 8?
 }
 
 // InterpretSignedInteger interprets a byte slice as a signed integer.
