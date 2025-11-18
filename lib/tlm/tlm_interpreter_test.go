@@ -113,7 +113,8 @@ func TestInterpretUnalignedMeasurementValue(t *testing.T) {
 		expected    interface{}
 	}{
 		{"unsigned 3 byte", Measurement{Type: "int", Unsigned: true, Endianness: "big", ScalingFactor: 1.0}, []byte{0x01, 0x02, 0x03}, uint32(0x010203)},
-		{"signed 3 byte", Measurement{Type: "int", Unsigned: false, Endianness: "big", ScalingFactor: 1.0}, []byte{0xDE, 0xAD, 0xFF}, int32(0xDEADFF)},
+		// Note the hard-coded decimal value is validated. int32ing the 3-byte value 0xDEADFF results in 14593535 and doing 0xFFDEADFF will overflow the int32 :P
+		{"signed 3 byte", Measurement{Type: "int", Unsigned: false, Endianness: "big", ScalingFactor: 1.0}, []byte{0xDE, 0xAD, 0xFF}, int32(-2183681)},
 
 		{"unsigned 5 byte", Measurement{Type: "int", Unsigned: false, Endianness: "little", ScalingFactor: 1.0}, []byte{0x01, 0x02, 0x03, 0x04, 0x05}, int64(0x0504030201)},
 		{"signed 5 byte", Measurement{Type: "int", Unsigned: true, Endianness: "little", ScalingFactor: 1.0}, []byte{0xDE, 0xAD, 0xBE, 0xEF, 0xFF}, uint64(0xFFEFBEADDE)},
