@@ -2,6 +2,7 @@ package ipc
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"path/filepath"
 	"sync/atomic"
@@ -109,20 +110,20 @@ func CreateShmReader(identifier string, shmDir string) (*ShmHandler, error) {
 func (handler *ShmHandler) Cleanup() {
 	if handler.data != nil {
 		if err := syscall.Munmap(handler.data); err != nil {
-			fmt.Printf("failed to unmap memory: %v\n", err)
+			log.Printf("failed to unmap memory: %v\n", err)
 		}
 		handler.data = nil
 	}
 	if handler.file != nil {
 		if err := handler.file.Close(); err != nil {
-			fmt.Printf("failed to close file: %v\n", err)
+			log.Printf("failed to close file: %v\n", err)
 		}
 
 		if handler.mode == handlerModeWriter {
 			if err := os.Remove(handler.file.Name()); err != nil {
-				fmt.Printf("failed to remove file: %v\n", err)
+				log.Printf("failed to remove shm file: %v\n", err)
 			} else {
-				fmt.Printf("Removed file: %s\n", handler.file.Name())
+				log.Printf("removed shm file: %s\n", handler.file.Name())
 			}
 		}
 
