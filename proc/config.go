@@ -28,6 +28,8 @@ func ReadTelemetryConfigFromShm(shmDir string) ([]byte, error) {
 	if err != nil {
 		return nil, fmt.Errorf("creating shm handler: %w", err)
 	}
+	defer configReader.Cleanup()
+
 	data, err := configReader.ReadRaw()
 	if err != nil {
 		return nil, fmt.Errorf("reading from shm handler: %w", err)
