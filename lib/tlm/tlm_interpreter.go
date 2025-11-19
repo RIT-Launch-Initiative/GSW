@@ -26,7 +26,7 @@ type TelemetryPacket struct {
 
 // InterpretUnsignedInteger interprets a byte slice as an unsigned integer.
 // The endianness parameter specifies the byte order of the data.
-// Size of the data must be 1, 2, 4, or 8 bytes.
+// Size of the data must be 1-8 bytes.
 func InterpretUnsignedInteger(data []byte, endianness string) (interface{}, error) {
 	switch len(data) {
 	case 1:
@@ -74,7 +74,7 @@ func InterpretUnsignedInteger(data []byte, endianness string) (interface{}, erro
 
 // InterpretSignedInteger interprets a byte slice as a signed integer.
 // The endianness parameter specifies the byte order of the data.
-// Size of the data must be 1, 2, 4, or 8 bytes.
+// Size of the data must be 1-8 bytes.
 func InterpretSignedInteger(data []byte, endianness string) (interface{}, error) {
 	unsigned, err := InterpretUnsignedInteger(data, endianness)
 	if err != nil {
@@ -111,7 +111,7 @@ func InterpretSignedInteger(data []byte, endianness string) (interface{}, error)
 
 // InterpretFloat interprets a byte slice as a floating point number.
 // The endianness parameter specifies the byte order of the data.
-// Size of the data must be 4 or 8 bytes.
+// Size of the data must be 1-8 bytes.
 func InterpretFloat(data []byte, endianness string) (interface{}, error) {
 	unsigned, err := InterpretUnsignedInteger(data, endianness)
 	if err != nil {
