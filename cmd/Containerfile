@@ -22,7 +22,7 @@ RUN --mount=type=cache,id=gsw_mod,target=/go/pkg/mod \
 
 RUN --mount=type=cache,id=gsw_mod,target=/go/pkg/mod \
     --mount=type=cache,id=gsw_build,target=/root/.cache/go-build \
-    for binary in grafana_live live_setup mem_view pipeline_benchmark telem_view udp_command; do \
+    for binary in grafana_live live_setup mem_view ipc_benchmark telem_view udp_command; do \
         CGO_ENABLED=1 GOOS=linux go build \
         -trimpath \
         -o /build-output/bin/$binary \

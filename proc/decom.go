@@ -2,17 +2,18 @@ package proc
 
 import (
 	"fmt"
-	"github.com/AarC10/GSW-V2/lib/ipc"
-	"github.com/AarC10/GSW-V2/lib/tlm"
 	"net"
 	"strconv"
+
+	"github.com/AarC10/GSW-V2/lib/ipc"
+	"github.com/AarC10/GSW-V2/lib/tlm"
 )
 
-// getIpcShmHandler creates a shared memory IPC handler for a telemetry packet
+// newIpcShmHandlerForPacket creates a shared memory IPC handler for a telemetry packet
 // If write is true, the handler will be created for writing to shared memory
 // If write is false, the handler will be created for reading from shared memory
-func getIpcShmHandler(packet tlm.TelemetryPacket, write bool, shmDir string) (*ipc.ShmHandler, error) {
-	handler, err := ipc.CreateShmHandler(strconv.Itoa(packet.Port), GetPacketSize(packet), write, shmDir)
+func newIpcShmHandlerForPacket(packet tlm.TelemetryPacket, write bool, shmDir string) (*ipc.ShmHandler, error) {
+	handler, err := ipc.NewShmHandler(strconv.Itoa(packet.Port), GetPacketSize(packet), write, shmDir)
 	if err != nil {
 		return nil, fmt.Errorf("error creating shared memory handler: %v", err)
 	}
@@ -23,7 +24,7 @@ func getIpcShmHandler(packet tlm.TelemetryPacket, write bool, shmDir string) (*i
 // TelemetryPacketWriter is a goroutine that listens for telemetry data on a UDP port and writes it to shared memory
 func TelemetryPacketWriter(packet tlm.TelemetryPacket, outChannel chan []byte, shmDir string) {
 	packetSize := GetPacketSize(packet)
-	shmWriter, _ := getIpcShmHandler(packet, true, shmDir)
+	shmWriter, _ := newIpcShmHandlerForPacket(packet, true, shmDir)
 	if shmWriter == nil {
 		fmt.Printf("Failed to create shared memory writer\n")
 		return
@@ -61,9 +62,6 @@ func TelemetryPacketWriter(packet tlm.TelemetryPacket, outChannel chan []byte, s
 			continue
 		}
 
-		// TODO: Make this a config
-		// binary.BigEndian.PutUint64(buffer[8:], uint64(time.Now().UnixNano()))
-
 		if n == packetSize {
 			err := shmWriter.Write(buffer)
 			if err != nil {
@@ -82,26 +80,7 @@ func TelemetryPacketWriter(packet tlm.TelemetryPacket, outChannel chan []byte, s
 	}
 }
 
-// TelemetryPacketReader is a goroutine that reads telemetry data from shared memory and sends it to an output channel
-func TelemetryPacketReader(packet tlm.TelemetryPacket, outChannel chan []byte, shmDir string) {
-	procReader, err := getIpcShmHandler(packet, false, shmDir)
-	if err != nil {
-		fmt.Printf("Error creating proc handler: %v\n", err)
-		return
-	}
-	defer procReader.Cleanup()
-
-	lastUpdate := procReader.LastUpdate()
-	for {
-		latestUpdate := procReader.LastUpdate()
-		if lastUpdate != latestUpdate {
-			data, err := procReader.Read()
-			if err != nil {
-				fmt.Printf("Error reading from shared memory: %v\n", err)
-				continue
-			}
-			lastUpdate = latestUpdate
-			outChannel <- data
-		}
-	}
+// NewIpcShmReaderForPacket creates a shared memory IPC reader for a telemetry packet.
+func NewIpcShmReaderForPacket(packet tlm.TelemetryPacket, shmDir string) (ipc.Reader, error) {
+	return newIpcShmHandlerForPacket(packet, false, shmDir)
 }

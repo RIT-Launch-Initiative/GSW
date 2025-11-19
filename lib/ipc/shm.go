@@ -1,44 +1,60 @@
 package ipc
 
 import (
-	"encoding/binary"
-	"flag"
 	"fmt"
+	"log"
 	"os"
 	"path/filepath"
+	"sync/atomic"
 	"syscall"
 	"time"
+	"unsafe"
 )
+
+type shmFileHeader struct {
+	futex uint32
+}
+
+type shmMessageHeader struct {
+	timestamp   uint64
+	targetFutex uint32
+}
 
 // ShmHandler is a shared memory handler for inter-process communication
 type ShmHandler struct {
-	file            *os.File // File descriptor for shared memory
-	data            []byte   // Pointer to shared memory data
-	size            int      // Size of shared memory
-	mode            int      // 0 for reader, 1 for writer
-	timestampOffset int      // Offset for the timestamp in shared memory
+	file            *os.File       // File descriptor for shared memory
+	data            []byte         // Pointer to shared memory data
+	header          *shmFileHeader // Pointer to header in shared memory
+	messageSize     int            // size of an individual message, including the header
+	size            int            // Size of shared memory
+	mode            handlerMode    // handler mode: reader or writer
+	readerLastFutex uint32         // Last futex word value
 }
 
+type handlerMode int
+
 const (
-	modeReader = iota
-	modeWriter
-	timestampSize = 8 // Size of timestamp in bytes (8 bytes for int64)
-	shmFilePrefix = "gsw-service-"
+	handlerModeReader handlerMode = iota
+	handlerModeWriter
+	shmFilePrefix        = "gsw-service-"
+	shmFileHeaderSize    = int(unsafe.Sizeof(shmFileHeader{}))
+	shmMessageHeaderSize = int(unsafe.Sizeof(shmMessageHeader{}))
+	ringSize             = 256
 )
 
-// CreateShmHandler creates a shared memory handler for inter-process communication
-func CreateShmHandler(identifier string, size int, isWriter bool, shmDir string) (*ShmHandler, error) {
+// NewShmHandler creates a shared memory handler for inter-process communication
+func NewShmHandler(identifier string, telemetryPacketSize int, isWriter bool, shmDir string) (*ShmHandler, error) {
+	messageSize := telemetryPacketSize + shmMessageHeaderSize
 	handler := &ShmHandler{
-		size:            size + timestampSize, // Add space for timestamp
-		mode:            modeReader,
-		timestampOffset: size, // Timestamp is stored at the end
+		messageSize: messageSize,
+		size:        (messageSize * ringSize) + shmFileHeaderSize,
+		mode:        handlerModeReader,
 	}
 
-	flag.Parse()
 	filename := filepath.Join(shmDir, fmt.Sprintf("%s%s", shmFilePrefix, identifier))
 
 	if isWriter {
-		handler.mode = modeWriter
+		handler.mode = handlerModeWriter
 		file, err := os.Create(filename)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create file: %v", err)
@@ -71,79 +87,171 @@ func CreateShmHandler(identifier string, size int, isWriter bool, shmDir string)
 		handler.data = data
 	}
 
+	handler.header = (*shmFileHeader)(unsafe.Pointer(&handler.data[0]))
+	handler.readerLastFutex = atomic.LoadUint32(&handler.header.futex)
+
 	return handler, nil
 }
 
 // CreateShmReader creates a shared memory reader for inter-process communication
 func CreateShmReader(identifier string, shmDir string) (*ShmHandler, error) {
-	flag.Parse()
 	fileinfo, err := os.Stat(filepath.Join(shmDir, fmt.Sprintf("%s%s", shmFilePrefix, identifier)))
 	if err != nil {
 		return nil, fmt.Errorf("error getting shm file info: %v", err)
 	}
-	filesize := int(fileinfo.Size()) // TODO fix unsafe int64 conversion
-	return CreateShmHandler(identifier, filesize, false, shmDir)
+	filesize := int(fileinfo.Size()) // TODO: fix unsafe int64 conversion
+
+	// TODO(mia): guessing packet sizes here is a little suboptimal
+	packetSize := ((filesize - shmFileHeaderSize) / ringSize) - shmMessageHeaderSize
+	return NewShmHandler(identifier, packetSize, false, shmDir)
 }
 
 // Cleanup cleans up the shared memory handler and removes the shared memory file
 func (handler *ShmHandler) Cleanup() {
 	if handler.data != nil {
 		if err := syscall.Munmap(handler.data); err != nil {
-			fmt.Printf("failed to unmap memory: %v\n", err)
+			log.Printf("failed to unmap memory: %v\n", err)
 		}
 		handler.data = nil
 	}
 	if handler.file != nil {
 		if err := handler.file.Close(); err != nil {
-			fmt.Printf("failed to close file: %v\n", err)
+			log.Printf("failed to close file: %v\n", err)
 		}
 
-		if err := os.Remove(handler.file.Name()); err != nil {
-			fmt.Printf("failed to remove file: %v\n", err)
-		} else {
-			fmt.Printf("Removed file: %s\n", handler.file.Name())
+		if handler.mode == handlerModeWriter {
+			if err := os.Remove(handler.file.Name()); err != nil {
+				log.Printf("failed to remove shm file: %v\n", err)
+			} else {
+				log.Printf("removed shm file: %s\n", handler.file.Name())
+			}
 		}
 
 		handler.file = nil
 	}
 }
 
-// Write writes data to shared memory
+// Write sends a message to shared memory
 func (handler *ShmHandler) Write(data []byte) error {
-	if handler.mode != modeWriter {
+	if handler.mode != handlerModeWriter {
 		return fmt.Errorf("handler is in reader mode")
 	}
-	if len(data) > handler.size-timestampSize {
-		return fmt.Errorf("data size exceeds shared memory size")
+	if len(data) > (handler.messageSize - shmMessageHeaderSize) {
+		return fmt.Errorf("data size exceeds allocated message size")
 	}
 
-	copy(handler.data[:len(data)], data)
-	binary.BigEndian.PutUint64(handler.data[handler.timestampOffset:], uint64(time.Now().UnixNano()))
+	targetFutex := atomic.LoadUint32(&handler.header.futex) + 1
+	messagePosition := shmFileHeaderSize + int(targetFutex%ringSize)*handler.messageSize
+
+	messageHeader := (*shmMessageHeader)(unsafe.Pointer(&handler.data[messagePosition]))
+
+	dataPosition := messagePosition + shmMessageHeaderSize
+	copy(handler.data[dataPosition:], data)
+
+	*messageHeader = shmMessageHeader{
+		timestamp:   uint64(time.Now().UnixNano()),
+		targetFutex: targetFutex,
+	}
+
+	atomic.StoreUint32(&handler.header.futex, targetFutex)
+	if err := futexWake(unsafe.Pointer(&handler.header.futex)); err != nil {
+		return err
+	}
 	return nil
 }
 
-// Read reads data from shared memory
-func (handler *ShmHandler) Read() ([]byte, error) {
-	if handler.mode != modeReader {
-		return nil, fmt.Errorf("handler is in writer mode")
-	}
-	data := make([]byte, handler.size-timestampSize)
-	copy(data, handler.data[:len(data)])
-	return data, nil
+// ShmReaderMessage is a message read by an ShmHandler
+type ShmReaderMessage struct {
+	timestamp uint64
+	futex     uint32
+	data      []byte
 }
 
-// ReadNoTimestamp reads data from shared memory without the timestamp
-func (handler *ShmHandler) ReadNoTimestamp() ([]byte, error) {
-	if handler.mode != modeReader {
-		return nil, fmt.Errorf("handler is in writer mode")
-	}
-	data := make([]byte, handler.size-2*timestampSize)
-	copy(data, handler.data[:len(data)])
-	return data, nil
+// ReceiveTimestamp returns the unix timestamp when the message was received
+// (nanoseconds since epoch).
+func (m *ShmReaderMessage) ReceiveTimestamp() uint64 {
+	return m.timestamp
 }
 
-// LastUpdate returns the last update time of the shared memory
-func (handler *ShmHandler) LastUpdate() time.Time {
-	timestamp := binary.BigEndian.Uint64(handler.data[handler.timestampOffset:])
-	return time.Unix(0, int64(timestamp))
+// ReceiveTimestamp returns the message futex value (an incrementing counter).
+// This could be used to estimate message loss.
+func (m *ShmReaderMessage) Futex() uint32 {
+	return m.futex
+}
+
+// Data returns the message data.
+func (m *ShmReaderMessage) Data() []byte {
+	return m.data
+}
+
+// wait sleeps the thread until an update to SHM.
+// Only waits if the futex value is not outdated.
+func (handler *ShmHandler) wait() error {
+	currentFutex := atomic.LoadUint32(&handler.header.futex)
+	if handler.readerLastFutex != currentFutex {
+		return nil
+	}
+
+	return futexWait(unsafe.Pointer(&handler.header.futex), handler.readerLastFutex)
+}
+
+// Read the current message in shared memory.
+func (handler *ShmHandler) Read() (ReaderMessage, error) {
+	if handler.mode != handlerModeReader {
+		return nil, fmt.Errorf("handler is in writer mode")
+	}
+
+	for {
+		err := handler.wait()
+		if err != nil {
+			return nil, fmt.Errorf("waiting for message: %w", err)
+		}
+
+		newMessageFutex := atomic.LoadUint32(&handler.header.futex)
+
+		// HACK-ish(mia): This means that the thread woke superfluously,
+		// not sure why why this happens. futex should compare the value
+		// before waiting again, so it shouldn't cause an erroneous wait.
+		if newMessageFutex <= handler.readerLastFutex {
+			continue
+		}
+
+		messagePosition := shmFileHeaderSize + int(newMessageFutex%ringSize)*handler.messageSize
+
+		shmData := make([]byte, handler.messageSize)
+		copy(shmData, handler.data[messagePosition:])
+
+		messageHeader := (*shmMessageHeader)(unsafe.Pointer(&shmData[0]))
+		message := ShmReaderMessage{
+			timestamp: messageHeader.timestamp,
+			futex:     newMessageFutex,
+			data:      shmData[shmMessageHeaderSize:],
+		}
+
+		// HACK(mia): if the message header does not match the message we want
+		// to be reading, it is not the right message.
+		if messageHeader.targetFutex != newMessageFutex {
+			continue
+		}
+
+		handler.readerLastFutex = newMessageFutex
+
+		return &message, nil
+	}
+}
+
+// ReadRaw returns a copy of the current packet in SHM.
+func (handler *ShmHandler) ReadRaw() ([]byte, error) {
+	if handler.mode != handlerModeReader {
+		return nil, fmt.Errorf("handler is in writer mode")
+	}
+
+	messageFutex := atomic.LoadUint32(&handler.header.futex)
+
+	messagePosition := shmFileHeaderSize + int(messageFutex%ringSize)*handler.messageSize
+
+	shmData := make([]byte, handler.messageSize-shmMessageHeaderSize)
+	copy(shmData, handler.data[messagePosition+shmMessageHeaderSize:])
+
+	return shmData, nil
 }
