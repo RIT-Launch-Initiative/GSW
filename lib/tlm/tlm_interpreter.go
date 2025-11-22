@@ -26,7 +26,7 @@ type TelemetryPacket struct {
 
 // InterpretUnsignedInteger interprets a byte slice as an unsigned integer.
 // The endianness parameter specifies the byte order of the data.
-// Size of the data must be 1, 2, 4, or 8 bytes.
+// Size of the data must be 1-8 bytes.
 func InterpretUnsignedInteger(data []byte, endianness string) (interface{}, error) {
 	switch len(data) {
 	case 1:
@@ -47,14 +47,34 @@ func InterpretUnsignedInteger(data []byte, endianness string) (interface{}, erro
 		}
 		return binary.BigEndian.Uint64(data), nil
 	default:
-		return nil, fmt.Errorf("unsupported data length: %d", len(data))
+		// I will crash out if we ever need to support integer sizes larger than 8 bytes - Aaron
+		if len(data) < 1 || len(data) > 8 {
+			return nil, fmt.Errorf("unsupported size for unsigned integer: %d bytes", len(data))
+		}
+
+		var val uint64
+
+		if endianness == "little" {
+			for i := 0; i < len(data); i++ {
+				val |= uint64(data[i]) << (8 * i)
+			}
+		} else {
+			for i := 0; i < len(data); i++ {
+				val |= uint64(data[i]) << (8 * (len(data) - 1 - i))
+			}
+		}
+
+		if len(data) <= 4 {
+			return uint32(val), nil
+		}
+
+		return val, nil
 	}
-	// TODO: Support non-aligned bytes less than 8?
 }
 
 // InterpretSignedInteger interprets a byte slice as a signed integer.
 // The endianness parameter specifies the byte order of the data.
-// Size of the data must be 1, 2, 4, or 8 bytes.
+// Size of the data must be 1-8 bytes.
 func InterpretSignedInteger(data []byte, endianness string) (interface{}, error) {
 	unsigned, err := InterpretUnsignedInteger(data, endianness)
 	if err != nil {
@@ -67,8 +87,22 @@ func InterpretSignedInteger(data []byte, endianness string) (interface{}, error)
 	case uint16:
 		return int16(v), nil
 	case uint32:
+		if len(data) < 4 {
+			bitLen := uint(8 * len(data))
+			if v&(1<<(bitLen-1)) != 0 {
+				v |= ^uint32(0) << bitLen
+			}
+		}
+
 		return int32(v), nil
 	case uint64:
+		if len(data) < 8 {
+			bitLen := uint(8 * len(data))
+			if v&(1<<(bitLen-1)) != 0 {
+				v |= ^uint64(0) << bitLen
+			}
+		}
+
 		return int64(v), nil
 	default:
 		return nil, fmt.Errorf("unsupported integer type for signed conversion: %T", v)
@@ -77,7 +111,7 @@ func InterpretSignedInteger(data []byte, endianness string) (interface{}, error)
 
 // InterpretFloat interprets a byte slice as a floating point number.
 // The endianness parameter specifies the byte order of the data.
-// Size of the data must be 4 or 8 bytes.
+// Size of the data must be 1-8 bytes.
 func InterpretFloat(data []byte, endianness string) (interface{}, error) {
 	unsigned, err := InterpretUnsignedInteger(data, endianness)
 	if err != nil {
@@ -103,9 +137,10 @@ func InterpretMeasurementValue(measurement Measurement, data []byte) (interface{
 	switch measurement.Type {
 	case "int":
 		if measurement.Unsigned {
-			return InterpretUnsignedInteger(data, measurement.Endianness)
+			result, err = InterpretUnsignedInteger(data, measurement.Endianness)
+		} else {
+			result, err = InterpretSignedInteger(data, measurement.Endianness)
 		}
-		result, err = InterpretSignedInteger(data, measurement.Endianness)
 	case "float":
 		result, err = InterpretFloat(data, measurement.Endianness)
 	default:
