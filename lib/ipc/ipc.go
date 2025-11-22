@@ -6,8 +6,14 @@ type Writer interface {
 	Cleanup()
 }
 
-// Reader is an interface for receiving data across processes
+// ReaderMessage represents data read from IPC.
+type ReaderMessage interface {
+	Data() []byte
+}
+
+// Reader implements a blocking interface for reading from IPC.
+// This is not thread safe.
 type Reader interface {
-	Read() ([]byte, error)
+	Read() (ReaderMessage, error)
 	Cleanup()
 }
