@@ -6,7 +6,9 @@ import (
 	"os"
 	"os/signal"
 	"strings"
+	"sync/atomic"
 	"syscall"
+	"time"
 
 	"github.com/AarC10/GSW-V2/lib/tlm"
 	"github.com/AarC10/GSW-V2/lib/util"
@@ -18,6 +20,8 @@ import (
 const valueColWidth = 12
 
 var shmDir = flag.String("shm", "/dev/shm", "directory to use for shared memory")
+
+var updateCounter uint64
 
 // padValue will left justify any string into a field of width valueColWidth
 func padValue(s string) string {
@@ -43,6 +47,13 @@ func main() {
 	app := tview.NewApplication()
 	table := tview.NewTable().
 		SetBorders(false)
+
+	// top bar: left title, right update rate
+	topLeft := tview.NewTextView().SetDynamicColors(true).SetText("[::b]Telemetry Viewer")
+	topRight := tview.NewTextView().SetDynamicColors(true).SetTextAlign(tview.AlignRight).SetText("0FPS")
+	topBar := tview.NewFlex().SetDirection(tview.FlexColumn).
+		AddItem(topLeft, 0, 1, false).
+		AddItem(topRight, 12, 0, false)
 
 	// Name column
 	table.SetCell(0, 0,
@@ -89,6 +100,18 @@ func main() {
 		statusBar.SetText(fmt.Sprintf("(h) HEX %s  | (b) BINARY %s ", h, b))
 	}
 	updateStatus()
+
+	go func() {
+		ticker := time.NewTicker(time.Second)
+		defer ticker.Stop()
+		for range ticker.C {
+			count := atomic.SwapUint64(&updateCounter, 0)
+			rateStr := fmt.Sprintf("%dFPS", count)
+			app.QueueUpdateDraw(func() {
+				topRight.SetText(rateStr)
+			})
+		}
+	}()
 
 	// live telem readers
 	rowIndex := 1
@@ -150,6 +173,8 @@ func main() {
 						table.GetCell(baseRow+i, 1).SetText(valStr)
 						table.GetCell(baseRow+i, 2).SetText(hexStr)
 						table.GetCell(baseRow+i, 3).SetText(binStr)
+						// count this UI update
+						atomic.AddUint64(&updateCounter, 1)
 					})
 					offset += meas.Size
 				}
@@ -174,6 +199,7 @@ func main() {
 
 	// table on top, status bar at bottom
 	flex := tview.NewFlex().SetDirection(tview.FlexRow).
+		AddItem(topBar, 1, 1, false).
 		AddItem(table, 0, 1, true).
 		AddItem(statusBar, 1, 1, false)
 
