@@ -32,7 +32,7 @@ func main() {
 	flag.Parse()
 	configData, err := proc.ReadTelemetryConfigFromShm(*shmDir)
 	if err != nil {
-		fmt.Println("*** Error accessing config file. Make sure the GSW service is running. ***")
+		fmt.Println("*** Error accessing config file. Make sure the GSW service is running. ***)")
 		fmt.Printf("(%v)\n", err)
 		return
 	}
@@ -133,7 +133,22 @@ func main() {
 				data := p.Data()
 
 				offset := 0
+
+				// prep slices to collect all updates for this packet
+				countMeas := len(pkt.Measurements)
+				valStrs := make([]string, countMeas)
+				hexStrs := make([]string, countMeas)
+				binStrs := make([]string, countMeas)
+
+				// capture flags locally tso we avoid closure/capture races
+				hexLocal := hexOn
+				binLocal := binOn
+
 				for i, name := range pkt.Measurements {
+					valStrs[i] = padValue("–")
+					hexStrs[i] = ""
+					binStrs[i] = ""
+
 					meas, ok := proc.GswConfig.Measurements[name]
 					if !ok || offset+meas.Size > len(data) {
 						continue
@@ -143,41 +158,42 @@ func main() {
 						val = "err"
 					}
 
-					// format & pad value
+					// format value
 					switch v := val.(type) {
 					case float32, float64:
 						val = fmt.Sprintf("%.8f", v)
 					}
 					valStr := fmt.Sprintf("%v", val)
-					valStr = padValue(valStr)
+					valStrs[i] = padValue(valStr)
 
 					// HEX
-					hexStr := ""
-					if hexOn {
-						hexStr = util.Base16String(data[offset:offset+meas.Size], 1)
+					if hexLocal {
+						hexStrs[i] = util.Base16String(data[offset:offset+meas.Size], 1)
 					}
 
 					// BIN
-					binStr := ""
-					if binOn {
+					if binLocal {
 						var parts []string
 						for _, b := range data[offset : offset+meas.Size] {
 							s := fmt.Sprintf("%08b", b)
 							parts = append(parts, s[:4]+" "+s[4:])
 						}
-						binStr = strings.Join(parts, " ")
+						binStrs[i] = strings.Join(parts, " ")
 					}
 
-					// update table
-					app.QueueUpdateDraw(func() {
-						table.GetCell(baseRow+i, 1).SetText(valStr)
-						table.GetCell(baseRow+i, 2).SetText(hexStr)
-						table.GetCell(baseRow+i, 3).SetText(binStr)
-						// count this UI update
-						atomic.AddUint64(&updateCounter, 1)
-					})
 					offset += meas.Size
 				}
+
+				// batch the  UI update for the entire measurement group
+				app.QueueUpdateDraw(func() {
+					for i := 0; i < countMeas; i++ {
+						table.GetCell(baseRow+i, 1).SetText(valStrs[i])
+						table.GetCell(baseRow+i, 2).SetText(hexStrs[i])
+						table.GetCell(baseRow+i, 3).SetText(binStrs[i])
+					}
+					// count this UI update as a single frame
+					atomic.AddUint64(&updateCounter, 1)
+				})
 			}
 		}(packet, rowIndex)
 
