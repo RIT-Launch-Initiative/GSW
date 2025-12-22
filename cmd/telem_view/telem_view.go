@@ -20,8 +20,10 @@ import (
 const valueColWidth = 12
 
 var shmDir = flag.String("shm", "/dev/shm", "directory to use for shared memory")
+var fpsLimit = flag.Int("fps", 0, "max UI frames per second (0 = unlimited)")
 
 var updateCounter uint64
+var lastUpdate int64 // unix nano of last UI update
 
 // padValue will left justify any string into a field of width valueColWidth
 func padValue(s string) string {
@@ -185,15 +187,35 @@ func main() {
 				}
 
 				// batch the  UI update for the entire measurement group
-				app.QueueUpdateDraw(func() {
-					for i := 0; i < countMeas; i++ {
-						table.GetCell(baseRow+i, 1).SetText(valStrs[i])
-						table.GetCell(baseRow+i, 2).SetText(hexStrs[i])
-						table.GetCell(baseRow+i, 3).SetText(binStrs[i])
+				if *fpsLimit <= 0 {
+					app.QueueUpdateDraw(func() {
+						for i := 0; i < countMeas; i++ {
+							table.GetCell(baseRow+i, 1).SetText(valStrs[i])
+							table.GetCell(baseRow+i, 2).SetText(hexStrs[i])
+							table.GetCell(baseRow+i, 3).SetText(binStrs[i])
+						}
+						// count this UI update as a single frame
+						atomic.AddUint64(&updateCounter, 1)
+					})
+				} else {
+					interval := time.Second / time.Duration(*fpsLimit)
+					now := time.Now().UnixNano()
+					old := atomic.LoadInt64(&lastUpdate)
+					if now-old >= interval.Nanoseconds() {
+						// try to claim the slot
+						if atomic.CompareAndSwapInt64(&lastUpdate, old, now) {
+							app.QueueUpdateDraw(func() {
+								for i := 0; i < countMeas; i++ {
+									table.GetCell(baseRow+i, 1).SetText(valStrs[i])
+									table.GetCell(baseRow+i, 2).SetText(hexStrs[i])
+									table.GetCell(baseRow+i, 3).SetText(binStrs[i])
+								}
+								// count this UI update as a single frame
+								atomic.AddUint64(&updateCounter, 1)
+							})
+						}
 					}
-					// count this UI update as a single frame
-					atomic.AddUint64(&updateCounter, 1)
-				})
+				}
 			}
 		}(packet, rowIndex)
 
