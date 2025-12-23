@@ -22,8 +22,8 @@ const valueColWidth = 12
 var shmDir = flag.String("shm", "/dev/shm", "directory to use for shared memory")
 var fpsLimit = flag.Int("fps", 0, "max UI frames per second (0 = unlimited)")
 
-var updateCounter uint64
-var pendingUpdate int32
+var updateCounter atomic.Uint64
+var pendingUpdate atomic.Bool
 
 // padValue will left justify any string into a field of width valueColWidth
 func padValue(s string) string {
@@ -109,7 +109,7 @@ func main() {
 		ticker := time.NewTicker(time.Second)
 		defer ticker.Stop()
 		for range ticker.C {
-			count := atomic.SwapUint64(&updateCounter, 0)
+			count := updateCounter.Swap(0)
 			rateStr := fmt.Sprintf("%dFPS", count)
 			app.QueueUpdateDraw(func() {
 				topRight.SetText(rateStr)
@@ -123,19 +123,18 @@ func main() {
 			interval = time.Second / time.Duration(*fpsLimit)
 		} else {
 			// when fps limit is 0 (unlimited), do ~60 FPS
-			// 1000 / 60 = 16.67ms
-			interval = 17 * time.Millisecond
+			interval = time.Second / 60
 		}
 		ticker := time.NewTicker(interval)
 		defer ticker.Stop()
 		for range ticker.C {
-			if atomic.LoadInt32(&pendingUpdate) == 0 {
+			if !pendingUpdate.Load() {
 				continue
 			}
 			app.QueueUpdateDraw(func() {
 				// clear pending flag and count this frame
-				atomic.StoreInt32(&pendingUpdate, 0)
-				atomic.AddUint64(&updateCounter, 1)
+				pendingUpdate.Store(false)
+				updateCounter.Add(1)
 			})
 		}
 	}()
@@ -217,7 +216,7 @@ func main() {
 					}
 				})
 				// mark pending updates to draw
-				atomic.StoreInt32(&pendingUpdate, 1)
+				pendingUpdate.Store(true)
 			}
 		}(packet, rowIndex)
 
