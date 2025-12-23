@@ -43,8 +43,10 @@ func main() {
 		return
 	}
 
-	hexOn := false
-	binOn := false
+	var hexOn atomic.Bool
+	var binOn atomic.Bool
+	hexOn.Store(false)
+	binOn.Store(false)
 
 	app := tview.NewApplication()
 	table := tview.NewTable().
@@ -93,10 +95,10 @@ func main() {
 		SetTextAlign(tview.AlignCenter)
 	updateStatus := func() {
 		h, b := "OFF", "OFF"
-		if hexOn {
+		if hexOn.Load() {
 			h = "ON"
 		}
-		if binOn {
+		if binOn.Load() {
 			b = "ON"
 		}
 		statusBar.SetText(fmt.Sprintf("(h) HEX %s  | (b) BINARY %s ", h, b))
@@ -166,8 +168,8 @@ func main() {
 				binStrs := make([]string, measCount)
 
 				// capture flags locally so we avoid closure/capture races
-				hexLocal := hexOn
-				binLocal := binOn
+				hexLocal := hexOn.Load()
+				binLocal := binOn.Load()
 
 				for i, name := range pkt.Measurements {
 					meas, ok := proc.GswConfig.Measurements[name]
@@ -226,10 +228,10 @@ func main() {
 	app.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		switch event.Rune() {
 		case 'h', 'H':
-			hexOn = !hexOn
+			hexOn.Store(!hexOn.Load())
 			updateStatus()
 		case 'b', 'B':
-			binOn = !binOn
+			binOn.Store(!binOn.Load())
 			updateStatus()
 		}
 		return event
