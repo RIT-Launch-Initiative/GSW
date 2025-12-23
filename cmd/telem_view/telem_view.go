@@ -23,7 +23,7 @@ var shmDir = flag.String("shm", "/dev/shm", "directory to use for shared memory"
 var fpsLimit = flag.Int("fps", 0, "max UI frames per second (0 = unlimited)")
 
 var updateCounter uint64
-var lastUpdate int64 // unix nano of last UI update
+var pendingUpdate int32
 
 // padValue will left justify any string into a field of width valueColWidth
 func padValue(s string) string {
@@ -115,6 +115,29 @@ func main() {
 		}
 	}()
 
+	go func() {
+		var interval time.Duration
+		if *fpsLimit > 0 {
+			interval = time.Second / time.Duration(*fpsLimit)
+		} else {
+			// when fps limit is 0 (unlimited), do ~60 FPS
+			// 1000 / 60 = 16.67ms
+			interval = 17 * time.Millisecond
+		}
+		ticker := time.NewTicker(interval)
+		defer ticker.Stop()
+		for range ticker.C {
+			if atomic.LoadInt32(&pendingUpdate) == 0 {
+				continue
+			}
+			app.QueueUpdateDraw(func() {
+				// clear pending flag and count this frame
+				atomic.StoreInt32(&pendingUpdate, 0)
+				atomic.AddUint64(&updateCounter, 1)
+			})
+		}
+	}()
+
 	// live telem readers
 	rowIndex := 1
 	for _, packet := range proc.GswConfig.TelemetryPackets {
@@ -186,36 +209,16 @@ func main() {
 					offset += meas.Size
 				}
 
-				// batch the  UI update for the entire measurement group
-				if *fpsLimit <= 0 {
-					app.QueueUpdateDraw(func() {
-						for i := 0; i < countMeas; i++ {
-							table.GetCell(baseRow+i, 1).SetText(valStrs[i])
-							table.GetCell(baseRow+i, 2).SetText(hexStrs[i])
-							table.GetCell(baseRow+i, 3).SetText(binStrs[i])
-						}
-						// count this UI update as a single frame
-						atomic.AddUint64(&updateCounter, 1)
-					})
-				} else {
-					interval := time.Second / time.Duration(*fpsLimit)
-					now := time.Now().UnixNano()
-					old := atomic.LoadInt64(&lastUpdate)
-					if now-old >= interval.Nanoseconds() {
-						// try to claim the slot
-						if atomic.CompareAndSwapInt64(&lastUpdate, old, now) {
-							app.QueueUpdateDraw(func() {
-								for i := 0; i < countMeas; i++ {
-									table.GetCell(baseRow+i, 1).SetText(valStrs[i])
-									table.GetCell(baseRow+i, 2).SetText(hexStrs[i])
-									table.GetCell(baseRow+i, 3).SetText(binStrs[i])
-								}
-								// count this UI update as a single frame
-								atomic.AddUint64(&updateCounter, 1)
-							})
-						}
+				// enqueue UI mutation for the entire measurement group (batch)
+				app.QueueUpdate(func() {
+					for i := 0; i < countMeas; i++ {
+						table.GetCell(baseRow+i, 1).SetText(valStrs[i])
+						table.GetCell(baseRow+i, 2).SetText(hexStrs[i])
+						table.GetCell(baseRow+i, 3).SetText(binStrs[i])
 					}
-				}
+				})
+				// mark pending updates to draw
+				atomic.StoreInt32(&pendingUpdate, 1)
 			}
 		}(packet, rowIndex)
 
