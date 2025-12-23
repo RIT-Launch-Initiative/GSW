@@ -33,9 +33,14 @@ $ docker run --name gsw-service \
 
 ### `docker-compose`
 
-For simplicity, a `docker-compose` file is provided for building and running GSW, Grafana, and InfluxDB:
+For simplicity, a `docker-compose` file is provided for building and running GSW, Mosquitto, Grafana, and InfluxDB:
 ```shell
 $ docker compose up --build
+```
+
+If you choose to run GSW on the host, but want to run the services in containers, you could run only the services using:
+```shell
+$ docker compose -f compose-services.yaml up --build
 ```
 
 #### Accessing Grafana

@@ -1,3 +1,6 @@
+include:
+  - compose-services.yaml
+
 services:
   gsw:
     build:
@@ -16,33 +19,3 @@ services:
       - 12005:12005/udp
       - 12006:12006/udp
       - 12002:12002/udp
-
-  grafana:
-    build:
-      context: data/grafana
-      dockerfile: Containerfile
-    ports:
-      - "127.0.0.1:3000:3000/tcp"
-    depends_on:
-      influxdb:
-        condition: service_started
-    environment:
-      - GSW_GRAFANA_INFLUXDB_URL=http://influxdb:8086
-      - GSW_GRAFANA_INFLUXDB_USER=root
-      - GSW_GRAFANA_INFLUXDB_PASSWORD=root
-      - GF_AUTH_ANONYMOUS_ENABLED=true
-      - GF_AUTH_ANONYMOUS_ORG_ROLE=Viewer
-      - GF_AUTH_BASIC_ENABLED=false
-    volumes:
-      - grafana-data:/var/lib/grafana
-  influxdb:
-    image: influxdb:1.11-alpine
-    volumes:
-      - influxdb-data:/var/lib/influxdb
-    environment:
-      - INFLUXDB_UDP_ENABLED=true
-      - INFLUXDB_UDP_DATABASE=gsw
-
-volumes:
-  grafana-data:
-  influxdb-data:
