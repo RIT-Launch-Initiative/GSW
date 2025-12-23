@@ -34,7 +34,7 @@ func main() {
 	flag.Parse()
 	configData, err := proc.ReadTelemetryConfigFromShm(*shmDir)
 	if err != nil {
-		fmt.Println("*** Error accessing config file. Make sure the GSW service is running. ***)")
+		fmt.Println("*** Error accessing config file. Make sure the GSW service is running. ***")
 		fmt.Printf("(%v)\n", err)
 		return
 	}
@@ -160,22 +160,19 @@ func main() {
 				offset := 0
 
 				// prep slices to collect all updates for this packet
-				countMeas := len(pkt.Measurements)
-				valStrs := make([]string, countMeas)
-				hexStrs := make([]string, countMeas)
-				binStrs := make([]string, countMeas)
+				measCount := len(pkt.Measurements)
+				valStrs := make([]string, measCount)
+				hexStrs := make([]string, measCount)
+				binStrs := make([]string, measCount)
 
-				// capture flags locally tso we avoid closure/capture races
+				// capture flags locally so we avoid closure/capture races
 				hexLocal := hexOn
 				binLocal := binOn
 
 				for i, name := range pkt.Measurements {
-					valStrs[i] = padValue("–")
-					hexStrs[i] = ""
-					binStrs[i] = ""
-
 					meas, ok := proc.GswConfig.Measurements[name]
 					if !ok || offset+meas.Size > len(data) {
+						valStrs[i] = padValue("–")
 						continue
 					}
 					val, err := tlm.InterpretMeasurementValue(meas, data[offset:offset+meas.Size])
@@ -211,7 +208,7 @@ func main() {
 
 				// enqueue UI mutation for the entire measurement group (batch)
 				app.QueueUpdate(func() {
-					for i := 0; i < countMeas; i++ {
+					for i := 0; i < measCount; i++ {
 						table.GetCell(baseRow+i, 1).SetText(valStrs[i])
 						table.GetCell(baseRow+i, 2).SetText(hexStrs[i])
 						table.GetCell(baseRow+i, 3).SetText(binStrs[i])
