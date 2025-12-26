@@ -71,7 +71,7 @@ func packetReader(ctx context.Context, packet tlm.TelemetryPacket) *OutputPacket
 		if err := ctx.Err(); err != nil {
 			break
 		}
-		p, err := reader.Read()
+		p, err := reader.Read(ctx)
 		if err != nil {
 			log.Fatal(fmt.Errorf("couldn't read packet: %w", err))
 		}

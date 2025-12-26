@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"flag"
 	"fmt"
 	"io"
@@ -44,7 +45,7 @@ func streamTelemetryPacket(packet tlm.TelemetryPacket, config *viper.Viper, auth
 	// stream data over WebSocket
 	if websocketConn != nil {
 		for {
-			p, err := reader.Read()
+			p, err := reader.Read(context.TODO())
 			if err != nil {
 				fmt.Printf("Error reading packet: %v\n", err)
 				continue
@@ -70,7 +71,7 @@ func streamTelemetryPacket(packet tlm.TelemetryPacket, config *viper.Viper, auth
 	if config.GetBool("use_http") {
 		liveAddr := config.GetString("http_addr")
 		for {
-			p, err := reader.Read()
+			p, err := reader.Read(context.TODO())
 			if err != nil {
 				fmt.Printf("Error reading packet: %v\n", err)
 				continue

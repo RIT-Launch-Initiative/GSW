@@ -20,10 +20,10 @@ func futex(addr unsafe.Pointer, op int, val uint32, timeout unsafe.Pointer, addr
 
 // futexWait waits for a futex at an address.
 // Internally, futex atomically checks if *addr == val before waiting.
-func futexWait(addr unsafe.Pointer, val uint32) error {
-	_, errno := futex(addr, _FUTEX_WAIT, val, nil, nil, 0)
+func futexWait(addr unsafe.Pointer, val uint32, timeout *syscall.Timespec) error {
+	_, errno := futex(addr, _FUTEX_WAIT, val, unsafe.Pointer(timeout), nil, 0)
 	if errno != 0 && errno != syscall.EAGAIN {
-		return fmt.Errorf("FUTEX_WAIT: %v", errno)
+		return fmt.Errorf("FUTEX_WAIT: %w", errno)
 	}
 	return nil
 }
@@ -32,7 +32,7 @@ func futexWait(addr unsafe.Pointer, val uint32) error {
 func futexWake(addr unsafe.Pointer) error {
 	_, errno := futex(addr, _FUTEX_WAKE, math.MaxInt32, nil, nil, 0)
 	if errno != 0 {
-		return fmt.Errorf("FUTEX_WAKE: %v", errno)
+		return fmt.Errorf("FUTEX_WAKE: %w", errno)
 	}
 	return nil
 }

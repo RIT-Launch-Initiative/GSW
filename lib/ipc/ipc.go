@@ -1,5 +1,7 @@
 package ipc
 
+import "context"
+
 // Writer is an interface for sending data across processes
 type Writer interface {
 	Write(data []byte) error
@@ -14,6 +16,6 @@ type ReaderMessage interface {
 // Reader implements a blocking interface for reading from IPC.
 // This is not thread safe.
 type Reader interface {
-	Read() (ReaderMessage, error)
+	Read(ctx context.Context) (ReaderMessage, error)
 	Cleanup()
 }
