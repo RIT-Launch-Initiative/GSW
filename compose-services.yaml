@@ -33,6 +33,7 @@ services:
       dockerfile: Containerfile
     ports:
       - "127.0.0.1:1883:1883/tcp"
+      - "127.0.0.1:1880:1880/tcp"
 
 volumes:
   grafana-data:
