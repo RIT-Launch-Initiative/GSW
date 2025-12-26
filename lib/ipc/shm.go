@@ -196,7 +196,7 @@ func (handler *ShmHandler) wait(ctx context.Context) error {
 	stopf := context.AfterFunc(ctx, func() {
 		// If the context is canceled, we wake all waiting futexes.
 		// Other readers should be able to handle this gracefully.
-		futexWake(unsafe.Pointer(&handler.header.futex))
+		_ = futexWake(unsafe.Pointer(&handler.header.futex))
 	})
 	defer stopf()
 

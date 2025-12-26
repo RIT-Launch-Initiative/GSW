@@ -97,12 +97,12 @@ func packetWriter(ctx context.Context, packet tlm.TelemetryPacket, client mqtt.C
 			}
 			val, err := tlm.InterpretMeasurementValue(meas, data[offset:offset+meas.Size])
 			if err != nil {
-				pLog.Println("error interpreting measurement: %v\n", err)
+				pLog.Printf("error interpreting measurement: %v\n", err)
 				continue
 			}
 			jsonStr, err := json.Marshal(val)
 			if err != nil {
-				pLog.Println("error marshaling measurement: %v\n", err)
+				pLog.Printf("error marshaling measurement: %v\n", err)
 				continue
 			}
 			client.Publish(fmt.Sprintf("%s/%s/%s", *topicPrefix, packet.Name, name), byte(0), false, jsonStr)
