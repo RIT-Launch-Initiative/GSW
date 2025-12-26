@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"os"
@@ -102,7 +103,7 @@ func main() {
 			defer reader.Cleanup()
 
 			for {
-				p, err := reader.Read()
+				p, err := reader.Read(context.TODO())
 				if err != nil {
 					fmt.Printf("Error reading packet: %v\n", err)
 					continue

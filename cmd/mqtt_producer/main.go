@@ -1,17 +1,30 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
+	"errors"
+	"flag"
 	"fmt"
 	"log"
+	"os"
+	"os/signal"
+	"sync"
+	"syscall"
 
 	"github.com/AarC10/GSW-V2/lib/tlm"
 	"github.com/AarC10/GSW-V2/proc"
-	MQTT "github.com/eclipse/paho.mqtt.golang"
+	mqtt "github.com/eclipse/paho.mqtt.golang"
+)
+
+var (
+	shmDir      = flag.String("shm", "/dev/shm", "directory to use for shared memory")
+	brokerUrl   = flag.String("broker", "tcp://127.0.0.1:1883", "mqtt broker url")
+	topicPrefix = flag.String("topic_prefix", "gsw", "mqtt topic prefix")
 )
 
 func main() {
-	configData, err := proc.ReadTelemetryConfigFromShm("/dev/shm")
+	configData, err := proc.ReadTelemetryConfigFromShm(*shmDir)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -20,28 +33,59 @@ func main() {
 		log.Fatal(err)
 	}
 
-	opts := MQTT.NewClientOptions()
-	opts.AddBroker("tcp://127.0.0.1:1883")
+	opts := mqtt.NewClientOptions()
+	opts.AddBroker(*brokerUrl)
 	opts.SetClientID("gsw-mqtt-app")
 	opts.SetCleanSession(true)
 
-	client := MQTT.NewClient(opts)
+	client := mqtt.NewClient(opts)
 	if token := client.Connect(); token.Wait() && token.Error() != nil {
 		log.Fatal(token.Error())
 	}
-	packet := proc.GswConfig.TelemetryPackets[0]
-	log.Println("Starting streaming for packet " + packet.Name)
 
-	reader, err := proc.NewIpcShmReaderForPacket(packet, "/dev/shm")
+	ctx, cancel := context.WithCancel(context.Background())
+
+	var wg sync.WaitGroup
+
+	for _, packet := range proc.GswConfig.TelemetryPackets {
+		wg.Add(1)
+		go func(packet tlm.TelemetryPacket) {
+			defer wg.Done()
+			err := packetWriter(ctx, packet, client)
+			if err != nil && !errors.Is(err, context.Canceled) {
+				log.Printf("error in writer: %v", err)
+			}
+		}(packet)
+	}
+
+	go func() {
+		sigChan := make(chan os.Signal, 1)
+		signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
+		<-sigChan
+		log.Println("shutting down")
+		cancel()
+	}()
+
+	wg.Wait()
+}
+
+func packetWriter(ctx context.Context, packet tlm.TelemetryPacket, client mqtt.Client) error {
+	pLog := log.New(os.Stderr, fmt.Sprintf("[%s] ", packet.Name), log.LstdFlags|log.Lmsgprefix)
+	pLog.Println("starting streaming")
+
+	reader, err := proc.NewIpcShmReaderForPacket(packet, *shmDir)
 	if err != nil {
-		log.Fatal(err)
+		pLog.Fatal(fmt.Errorf("couldn't create reader: %w", err))
 	}
 	defer reader.Cleanup()
 
 	for {
-		p, err := reader.Read()
+		p, err := reader.Read(ctx)
+		if ctx.Err() != nil {
+			return ctx.Err()
+		}
 		if err != nil {
-			fmt.Printf("error reading packet: %v\n", err)
+			pLog.Printf("error reading packet: %v\n", err)
 			continue
 		}
 		data := p.Data()
@@ -53,14 +97,15 @@ func main() {
 			}
 			val, err := tlm.InterpretMeasurementValue(meas, data[offset:offset+meas.Size])
 			if err != nil {
-				val = "err"
+				pLog.Println("error interpreting measurement: %v\n", err)
+				continue
 			}
 			jsonStr, err := json.Marshal(val)
 			if err != nil {
-				log.Fatal(err)
+				pLog.Println("error marshaling measurement: %v\n", err)
+				continue
 			}
-			token := client.Publish(fmt.Sprintf("gsw/%s/%s", packet.Name, name), byte(0), false, jsonStr)
-			token.Wait()
+			client.Publish(fmt.Sprintf("%s/%s/%s", *topicPrefix, packet.Name, name), byte(0), false, jsonStr)
 			offset += meas.Size
 		}
 	}
