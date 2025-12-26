@@ -7,7 +7,9 @@ import (
 	"os"
 	"os/signal"
 	"strings"
+	"sync/atomic"
 	"syscall"
+	"time"
 
 	"github.com/AarC10/GSW-V2/lib/tlm"
 	"github.com/AarC10/GSW-V2/lib/util"
@@ -19,6 +21,10 @@ import (
 const valueColWidth = 12
 
 var shmDir = flag.String("shm", "/dev/shm", "directory to use for shared memory")
+var fpsLimit = flag.Int("fps", 0, "max UI frames per second (0 = unlimited)")
+
+var updateCounter atomic.Uint64
+var pendingUpdate atomic.Bool
 
 // padValue will left justify any string into a field of width valueColWidth
 func padValue(s string) string {
@@ -38,12 +44,21 @@ func main() {
 		return
 	}
 
-	hexOn := false
-	binOn := false
+	var hexOn atomic.Bool
+	var binOn atomic.Bool
+	hexOn.Store(false)
+	binOn.Store(false)
 
 	app := tview.NewApplication()
 	table := tview.NewTable().
 		SetBorders(false)
+
+	// top bar: left title, right update rate
+	topLeft := tview.NewTextView().SetDynamicColors(true).SetText("[::b]Telemetry Viewer")
+	topRight := tview.NewTextView().SetDynamicColors(true).SetTextAlign(tview.AlignRight).SetText("0FPS")
+	topBar := tview.NewFlex().SetDirection(tview.FlexColumn).
+		AddItem(topLeft, 0, 1, false).
+		AddItem(topRight, 12, 0, false)
 
 	// Name column
 	table.SetCell(0, 0,
@@ -81,15 +96,49 @@ func main() {
 		SetTextAlign(tview.AlignCenter)
 	updateStatus := func() {
 		h, b := "OFF", "OFF"
-		if hexOn {
+		if hexOn.Load() {
 			h = "ON"
 		}
-		if binOn {
+		if binOn.Load() {
 			b = "ON"
 		}
 		statusBar.SetText(fmt.Sprintf("(h) HEX %s  | (b) BINARY %s ", h, b))
 	}
 	updateStatus()
+
+	go func() {
+		ticker := time.NewTicker(time.Second)
+		defer ticker.Stop()
+		for range ticker.C {
+			count := updateCounter.Swap(0)
+			rateStr := fmt.Sprintf("%dFPS", count)
+			app.QueueUpdateDraw(func() {
+				topRight.SetText(rateStr)
+			})
+		}
+	}()
+
+	go func() {
+		var interval time.Duration
+		if *fpsLimit > 0 {
+			interval = time.Second / time.Duration(*fpsLimit)
+		} else {
+			// when fps limit is 0 (unlimited), do ~60 FPS
+			interval = time.Second / 60
+		}
+		ticker := time.NewTicker(interval)
+		defer ticker.Stop()
+		for range ticker.C {
+			if !pendingUpdate.Load() {
+				continue
+			}
+			app.QueueUpdateDraw(func() {
+				// clear pending flag and count this frame
+				pendingUpdate.Store(false)
+				updateCounter.Add(1)
+			})
+		}
+	}()
 
 	// live telem readers
 	rowIndex := 1
@@ -111,9 +160,21 @@ func main() {
 				data := p.Data()
 
 				offset := 0
+
+				// prep slices to collect all updates for this packet
+				measCount := len(pkt.Measurements)
+				valStrs := make([]string, measCount)
+				hexStrs := make([]string, measCount)
+				binStrs := make([]string, measCount)
+
+				// capture flags locally so we avoid closure/capture races
+				hexLocal := hexOn.Load()
+				binLocal := binOn.Load()
+
 				for i, name := range pkt.Measurements {
 					meas, ok := proc.GswConfig.Measurements[name]
 					if !ok || offset+meas.Size > len(data) {
+						valStrs[i] = padValue("–")
 						continue
 					}
 					val, err := tlm.InterpretMeasurementValue(meas, data[offset:offset+meas.Size])
@@ -121,39 +182,42 @@ func main() {
 						val = "err"
 					}
 
-					// format & pad value
+					// format value
 					switch v := val.(type) {
 					case float32, float64:
 						val = fmt.Sprintf("%.8f", v)
 					}
 					valStr := fmt.Sprintf("%v", val)
-					valStr = padValue(valStr)
+					valStrs[i] = padValue(valStr)
 
 					// HEX
-					hexStr := ""
-					if hexOn {
-						hexStr = util.Base16String(data[offset:offset+meas.Size], 1)
+					if hexLocal {
+						hexStrs[i] = util.Base16String(data[offset:offset+meas.Size], 1)
 					}
 
 					// BIN
-					binStr := ""
-					if binOn {
+					if binLocal {
 						var parts []string
 						for _, b := range data[offset : offset+meas.Size] {
 							s := fmt.Sprintf("%08b", b)
 							parts = append(parts, s[:4]+" "+s[4:])
 						}
-						binStr = strings.Join(parts, " ")
+						binStrs[i] = strings.Join(parts, " ")
 					}
 
-					// update table
-					app.QueueUpdateDraw(func() {
-						table.GetCell(baseRow+i, 1).SetText(valStr)
-						table.GetCell(baseRow+i, 2).SetText(hexStr)
-						table.GetCell(baseRow+i, 3).SetText(binStr)
-					})
 					offset += meas.Size
 				}
+
+				// enqueue UI mutation for the entire measurement group (batch)
+				app.QueueUpdate(func() {
+					for i := 0; i < measCount; i++ {
+						table.GetCell(baseRow+i, 1).SetText(valStrs[i])
+						table.GetCell(baseRow+i, 2).SetText(hexStrs[i])
+						table.GetCell(baseRow+i, 3).SetText(binStrs[i])
+					}
+				})
+				// mark pending updates to draw
+				pendingUpdate.Store(true)
 			}
 		}(packet, rowIndex)
 
@@ -164,10 +228,10 @@ func main() {
 	app.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		switch event.Rune() {
 		case 'h', 'H':
-			hexOn = !hexOn
+			hexOn.Store(!hexOn.Load())
 			updateStatus()
 		case 'b', 'B':
-			binOn = !binOn
+			binOn.Store(!binOn.Load())
 			updateStatus()
 		}
 		return event
@@ -175,6 +239,7 @@ func main() {
 
 	// table on top, status bar at bottom
 	flex := tview.NewFlex().SetDirection(tview.FlexRow).
+		AddItem(topBar, 1, 1, false).
 		AddItem(table, 0, 1, true).
 		AddItem(statusBar, 1, 1, false)
 

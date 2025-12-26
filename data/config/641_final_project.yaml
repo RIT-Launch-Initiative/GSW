@@ -1,0 +1,133 @@
+name: 641_final_project
+
+measurements:
+    LSM_ACCEL_X:
+      name: LSM_ACCEL_X
+      size: 4
+      type: float
+      endianness: little
+    LSM_ACCEL_Y:
+      name: LSM_ACCEL_Y
+      size: 4
+      type: float
+      endianness: little
+    LSM_ACCEL_Z:
+      name: LSM_ACCEL_Z
+      size: 4
+      type: float
+      endianness: little
+      
+    LSM_GYRO_X:
+      name: LSM_GYRO_X
+      size: 4
+      type: float
+      endianness: little
+    LSM_GYRO_Y:
+      name: LSM_GYRO_Y
+      size: 4
+      type: float
+      endianness: little
+    LSM_GYRO_Z:
+      name: LSM_GYRO_Z
+      size: 4
+      type: float
+      endianness: little
+
+    MS5_PRESS:
+      name: MS5_PRESS
+      size: 4
+      type: float
+      endianness: little
+    MS5_TEMP:
+      name: MS5_TEMP
+      size: 4
+      type: float
+      endianness: little
+    
+    TMP_TEMP:
+      name: TMP_TEMP
+      size: 4
+      type: float
+      endianness: little
+
+    LATITUDE:
+      name: LATITUDE
+      size: 4
+      type: float
+      endianness: little
+  
+    LONGITUDE:
+      name: LONGITUDE
+      size: 4
+      type: float
+      endianness: little
+
+    ALTITUDE:
+      name: ALTITUDE
+      size: 4
+      type: float
+      endianness: little
+
+    SAT_COUNT:
+      name: SAT_COUNT
+      size: 2
+      type: int
+      endianness: little
+      unsigned: true
+
+    FIX_STATUS:
+      name: FIX_STATUS
+      size: 1
+      type: int
+      endianness: little
+      unsigned: false
+
+    FIX_QUALITY:
+      name: FIX_QUALITY
+      size: 1
+      type: int
+      endianness: little
+      unsigned: false
+
+    SNR:
+      name: RCV_SNR
+      size: 2
+      type: float
+      endianness: little
+      unsigned: false
+
+    RSSI:
+      name: RCV_RSSI
+      size: 2
+      type: int
+      unsigned: false
+
+telemetry_packets:
+  - name: SensorModule
+    port: 13100
+    measurements:
+      - LSM_ACCEL_X
+      - LSM_ACCEL_Y
+      - LSM_ACCEL_Z
+      - LSM_GYRO_X
+      - LSM_GYRO_Y
+      - LSM_GYRO_Z
+      - MS5_PRESS
+      - MS5_TEMP
+      - TMP_TEMP
+
+  - name: GNSSCoordinates
+    port: 12005
+    measurements:
+      - LATITUDE
+      - LONGITUDE
+      - ALTITUDE
+      - SAT_COUNT
+      - FIX_STATUS
+      - FIX_QUALITY
+
+  - name: ReceiverStats
+    port: 12006
+    measurements:
+      - RSSI
+      - SNR
