@@ -23,7 +23,7 @@ func DatabaseWriter(handler db.Handler, packet tlm.TelemetryPacket, channel chan
 
 		err := handler.Insert(measGroup)
 		if err != nil {
-			logger.Error("couldn't insert measurement group", zap.Error(err))
+			log.Error("couldn't insert measurement group", zap.Error(err))
 		}
 	}
 }

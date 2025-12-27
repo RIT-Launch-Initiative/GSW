@@ -72,6 +72,7 @@ func TelemetryPacketWriter(ctx context.Context, packet tlm.TelemetryPacket, outC
 				return ctx.Err()
 			}
 
+			// a closed connection would be unrecoverable, so return the error
 			if errors.Is(err, net.ErrClosed) {
 				return err
 			}
