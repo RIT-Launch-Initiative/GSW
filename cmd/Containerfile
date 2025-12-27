@@ -46,5 +46,6 @@ ENV GSW_LOGGER_OUTPUT_PATHS=stdout
 ENV GSW_DATABASE_HOST_NAME=influxdb
 ENV GSW_DATABASE_PORT_NUMBER=8089
 ENV GSW_LOGGING_CONFIG=data/config/logger.yaml
+ENV GSW_TELEMETRY_CONFIG=data/config/backplane.yaml
 
 ENTRYPOINT [ "gsw_service" ]
