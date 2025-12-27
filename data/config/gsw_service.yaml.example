@@ -1,0 +1,9 @@
+# path to telemetry definitions
+telemetry_config: data/config/backplane.yaml
+
+# database defines the hostname and port of an InfluxDB v1 UDP input
+database_host_name: localhost
+database_port_number: 8089
+
+# path to gsw_service logging config
+logging_config: data/config/logger.yaml

@@ -6,6 +6,11 @@ By Golang convention, all files meant to be executed are stored in the cmd folde
 * The GSW service can be compiled by running `go build cmd/gsw_service.go` from the project root directory
 * GSW applications are stored in subdirectories within the cmd folder and the `go build` command can be run on go files within those subdirectories
 
+## Configuration
+
+Copy `data/config/gsw_service.yaml.example` to `data/config/gsw_service.yaml` and modify as necessary.
+Environment variables could be used and prefixed as `GSW_`. For example, `telemetry_config: data/config/backplane.yaml` could be represented as `GSW_TELEMETRY_CONFIG=data/config/backplane.yaml` in environment variables.
+
 ## Running
 You can always run the GSW service by doing a `./gsw_service` after building. For running any Go program though, instead of doing `go build (FILE_PATH)` you can do `go run (FILE_PATH)` instead.
 
