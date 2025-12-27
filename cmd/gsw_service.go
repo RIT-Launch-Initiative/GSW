@@ -122,7 +122,7 @@ func readConfig() (*viper.Viper, int) {
 	err := config.ReadInConfig()
 
 	if err != nil {
-		logger.Fatal("Error reading GSW config: %w", zap.Error(err))
+		logger.Fatal("Error reading GSW config", zap.Error(err))
 	}
 
 	return config, *doPprof
