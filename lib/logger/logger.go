@@ -235,3 +235,8 @@ func Error(message string, fields ...zap.Field) {
 func Panic(message string, fields ...zap.Field) {
 	logger.Panic(message, fields...)
 }
+
+// Log retrieves the underlying zap logger
+func Log() *zap.Logger {
+	return logger
+}
