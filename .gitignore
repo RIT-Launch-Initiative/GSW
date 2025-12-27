@@ -32,3 +32,6 @@ data/logs/
 
 # environment variables
 .env
+
+# config
+data/config/gsw_service.yaml

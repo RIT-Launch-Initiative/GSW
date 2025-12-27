@@ -123,7 +123,11 @@ func readConfig() (*viper.Viper, int) {
 	err := config.ReadInConfig()
 
 	if err != nil {
-		logger.Fatal("Error reading GSW config: %w", zap.Error(err))
+		if _, ok := err.(viper.ConfigFileNotFoundError); !ok {
+			logger.Fatal("Error reading GSW config: %w", zap.Error(err))
+		} else {
+			logger.Warn("Config file not found, reading config from environment variables")
+		}
 	}
 	if !config.IsSet("database_host_name") {
 		logger.Panic("Error reading GSW config: database_host_name not set...")
