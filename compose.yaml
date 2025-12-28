@@ -10,6 +10,7 @@ services:
         condition: service_started
     environment:
       - GSW_DATABASE_HOST_NAME=influxdb
+      - GSW_TELEMETRY_CONFIG=data/config/backplane.yaml
     ports:
       - 11020:11020/udp
       - 13020:13020/udp
