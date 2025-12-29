@@ -1,3 +1,8 @@
+// NOTE(mia): Currently this is a minimal best-effort bridge that will not
+// scale with higher message rates, yet. Measurements that either the MQTT
+// broker or this bridge can't process will be dropped.
+// refer to https://github.com/RIT-Launch-Initiative/GSW/issues/59
+
 package main
 
 import (
