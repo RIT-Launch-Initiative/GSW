@@ -2,16 +2,20 @@ package proc
 
 import (
 	"fmt"
-	"github.com/AarC10/GSW-V2/lib/db"
-	"github.com/AarC10/GSW-V2/lib/tlm"
 	"time"
+
+	"github.com/AarC10/GSW-V2/lib/db"
+	"github.com/AarC10/GSW-V2/lib/logger"
+	"github.com/AarC10/GSW-V2/lib/tlm"
+	"go.uber.org/zap"
 )
 
 // DatabaseWriter writes telemetry data to the database
 // It reads data from the channel and writes it to the database
 func DatabaseWriter(handler db.Handler, packet tlm.TelemetryPacket, channel chan []byte) {
+	log := logger.Log().Named("database").With(zap.String("packet", packet.Name))
 	measGroup := initMeasurementGroup(packet)
-	fmt.Println("Started database writer for", packet.Name)
+	log.Info("Started database writer")
 
 	for {
 		data := <-channel
@@ -19,7 +23,7 @@ func DatabaseWriter(handler db.Handler, packet tlm.TelemetryPacket, channel chan
 
 		err := handler.Insert(measGroup)
 		if err != nil {
-			fmt.Printf("%s", err)
+			log.Error("couldn't insert measurement group", zap.Error(err))
 		}
 	}
 }

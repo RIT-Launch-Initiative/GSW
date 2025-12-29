@@ -1,12 +1,17 @@
 package proc
 
 import (
+	"context"
+	"errors"
 	"fmt"
 	"net"
 	"strconv"
+	"sync"
 
 	"github.com/AarC10/GSW-V2/lib/ipc"
+	"github.com/AarC10/GSW-V2/lib/logger"
 	"github.com/AarC10/GSW-V2/lib/tlm"
+	"go.uber.org/zap"
 )
 
 // newIpcShmHandlerForPacket creates a shared memory IPC handler for a telemetry packet
@@ -22,50 +27,64 @@ func newIpcShmHandlerForPacket(packet tlm.TelemetryPacket, write bool, shmDir st
 }
 
 // TelemetryPacketWriter is a goroutine that listens for telemetry data on a UDP port and writes it to shared memory
-func TelemetryPacketWriter(packet tlm.TelemetryPacket, outChannel chan []byte, shmDir string) {
+func TelemetryPacketWriter(ctx context.Context, packet tlm.TelemetryPacket, outChannel chan []byte, shmDir string) error {
+	log := logger.Log().Named("decom").With(zap.String("packet", packet.Name))
 	packetSize := GetPacketSize(packet)
-	shmWriter, _ := newIpcShmHandlerForPacket(packet, true, shmDir)
+	shmWriter, err := newIpcShmHandlerForPacket(packet, true, shmDir)
 	if shmWriter == nil {
-		fmt.Printf("Failed to create shared memory writer\n")
-		return
+		return fmt.Errorf("creating shared memory writer: %w", err)
 	}
 	defer shmWriter.Cleanup()
 
-	fmt.Printf("Packet size for port %d: %d bytes %d bits\n", packet.Port, packetSize, packetSize*8)
+	log.Info(fmt.Sprintf("Packet size: %d bytes %d bits", packetSize, packetSize*8))
 
 	addr, err := net.ResolveUDPAddr("udp", fmt.Sprintf(":%d", packet.Port))
 	if err != nil {
-		fmt.Printf("Error resolving UDP address: %v\n", err)
-		return
+		return fmt.Errorf("resolving listen address: %w", err)
 	}
 
 	conn, err := net.ListenUDP("udp", addr)
 	if err != nil {
-		fmt.Printf("Error listening on UDP: %v\n", err)
-		return
+		return fmt.Errorf("listening: %w", err)
 	}
-	defer func(conn *net.UDPConn) {
-		err := conn.Close()
-		if err != nil {
-			fmt.Printf("Error closing UDP connection: %v\n", err)
-		}
-	}(conn)
 
-	fmt.Printf("Listening on port %d for telemetry packet...\n", packet.Port)
+	var closeConnOnce sync.Once
+	closeConn := func() {
+		closeConnOnce.Do(func() {
+			if err := conn.Close(); err != nil {
+				log.Error("error closing UDP connection", zap.Error(err))
+			}
+		})
+	}
+	defer closeConn()
+
+	stopf := context.AfterFunc(ctx, closeConn)
+	defer stopf()
+
+	log.Info(fmt.Sprintf("Listening on %d for telemetry packet...", packet.Port))
 
 	// Receive data
 	buffer := make([]byte, packetSize)
 	for {
 		n, _, err := conn.ReadFromUDP(buffer)
 		if err != nil {
-			fmt.Printf("Error reading from UDP: %v\n", err)
+			if ctx.Err() != nil {
+				return ctx.Err()
+			}
+
+			// a closed connection would be unrecoverable, so return the error
+			if errors.Is(err, net.ErrClosed) {
+				return err
+			}
+
+			log.Error("error reading from UDP", zap.Error(err))
 			continue
 		}
 
 		if n == packetSize {
 			err := shmWriter.Write(buffer)
 			if err != nil {
-				fmt.Printf("Error writing to shared memory: %v\n", err)
+				log.Error("error writing to shared memory", zap.Error(err))
 			}
 
 			select {
@@ -75,7 +94,7 @@ func TelemetryPacketWriter(packet tlm.TelemetryPacket, outChannel chan []byte, s
 				break
 			}
 		} else {
-			fmt.Printf("Received packet of incorrect size. Expected: %d, Received: %d\n", packetSize, n)
+			log.Error("received packet of incorrect size", zap.Int("expected", packetSize), zap.Int("received", n))
 		}
 	}
 }

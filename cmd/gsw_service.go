@@ -85,8 +85,10 @@ func decomInitialize(ctx context.Context) map[int]chan []byte {
 		channelMap[packet.Port] = finalOutputChannel
 
 		go func(packet tlm.TelemetryPacket, ch chan []byte) {
-			proc.TelemetryPacketWriter(packet, finalOutputChannel, *shmDir)
-			<-ctx.Done()
+			err := proc.TelemetryPacketWriter(ctx, packet, finalOutputChannel, *shmDir)
+			if err != nil && !errors.Is(err, context.Canceled) {
+				logger.Error("error initializing packet writer", zap.Error(err))
+			}
 			close(ch)
 		}(packet, finalOutputChannel)
 	}
@@ -98,16 +100,13 @@ func dbInitialize(ctx context.Context, channelMap map[int]chan []byte, host stri
 	dbHandler := db.InfluxDBV1Handler{}
 	err := dbHandler.Initialize(host, port)
 	if err != nil {
-		logger.Warn("Warning. Telemetry packets will not be published to database")
 		return err
 	}
 
 	for _, packet := range proc.GswConfig.TelemetryPackets {
-		go func(dbHandler db.Handler, packet tlm.TelemetryPacket, ch chan []byte) {
-			proc.DatabaseWriter(dbHandler, packet, ch)
-			<-ctx.Done()
-			close(ch)
-		}(&dbHandler, packet, channelMap[packet.Port])
+		go func(packet tlm.TelemetryPacket, ch chan []byte) {
+			proc.DatabaseWriter(&dbHandler, packet, ch)
+		}(packet, channelMap[packet.Port])
 	}
 
 	return nil
@@ -124,7 +123,7 @@ func readConfig() (*viper.Viper, int) {
 
 	if err != nil {
 		if _, ok := err.(viper.ConfigFileNotFoundError); !ok {
-			logger.Fatal("Error reading GSW config: %w", zap.Error(err))
+			logger.Fatal("Error reading GSW config", zap.Error(err))
 		} else {
 			logger.Warn("Config file not found, reading config from environment variables")
 		}
@@ -169,7 +168,7 @@ func main() {
 
 	go func() {
 		sig := <-sigs
-		logger.Debug("Received signal: ", zap.String("signal", sig.String()))
+		logger.Debug("Received signal", zap.String("signal", sig.String()))
 		cancel()
 	}()
 
@@ -181,12 +180,21 @@ func main() {
 	defer telemetryConfigCleanup()
 
 	channelMap := decomInitialize(ctx)
-	err = dbInitialize(ctx, channelMap, config.GetString("database_host_name"), config.GetInt("database_port_number"))
-	if err != nil {
-		logger.Warn("DB Initialization failed", zap.Error(err))
+	if config.IsSet("database_host_name") && config.IsSet("database_port_number") {
+		err = dbInitialize(ctx, channelMap, config.GetString("database_host_name"), config.GetInt("database_port_number"))
+		if err != nil {
+			logger.Warn("DB Initialization failed, telemetry packets will not be published to the database", zap.Error(err))
+		}
+	} else {
+		logger.Warn("database_host_name or database_port_number is not set, telemetry packets will not be published to the database")
 	}
 
 	// Wait for context cancellation or signal handling
 	<-ctx.Done()
 	logger.Info("Shutting down GSW...")
+
+	for i, channel := range channelMap {
+		<-channel
+		logger.Info("channel closed", zap.Int("port", i))
+	}
 }
