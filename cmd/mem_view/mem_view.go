@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"os"
@@ -56,7 +57,7 @@ func printTelemetryPacket(startLine int, packet tlm.TelemetryPacket) {
 	fmt.Print(buildString(packet, make([]byte, proc.GetPacketSize(packet)), startLine))
 
 	for {
-		p, err := reader.Read()
+		p, err := reader.Read(context.TODO())
 		if err != nil {
 			fmt.Printf("Error reading packet: %v\n", err)
 			continue

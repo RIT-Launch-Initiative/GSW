@@ -1,0 +1,40 @@
+services:
+  grafana:
+    build:
+      context: data/grafana
+      dockerfile: Containerfile
+    ports:
+      - "127.0.0.1:3000:3000/tcp"
+    depends_on:
+      influxdb:
+        condition: service_started
+    environment:
+      - GSW_GRAFANA_INFLUXDB_URL=http://influxdb:8086
+      - GSW_GRAFANA_INFLUXDB_USER=root
+      - GSW_GRAFANA_INFLUXDB_PASSWORD=root
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Viewer
+      - GF_AUTH_BASIC_ENABLED=false
+    volumes:
+      - grafana-data:/var/lib/grafana
+  influxdb:
+    image: influxdb:1.11-alpine
+    volumes:
+      - influxdb-data:/var/lib/influxdb
+    environment:
+      - INFLUXDB_UDP_ENABLED=true
+      - INFLUXDB_UDP_DATABASE=gsw
+    ports:
+      - "127.0.0.1:8089:8089/udp"
+  
+  mosquitto:
+    build:
+      context: data/mosquitto
+      dockerfile: Containerfile
+    ports:
+      - "127.0.0.1:1883:1883/tcp"
+      - "127.0.0.1:1880:1880/tcp"
+
+volumes:
+  grafana-data:
+  influxdb-data:

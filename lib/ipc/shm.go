@@ -1,6 +1,8 @@
 package ipc
 
 import (
+	"context"
+	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -186,32 +188,48 @@ func (m *ShmReaderMessage) Data() []byte {
 
 // wait sleeps the thread until an update to SHM.
 // Only waits if the futex value is not outdated.
-func (handler *ShmHandler) wait() error {
+func (handler *ShmHandler) wait(ctx context.Context) error {
+	if ctx.Err() != nil {
+		return ctx.Err()
+	}
+
+	stopf := context.AfterFunc(ctx, func() {
+		// If the context is canceled, we wake all waiting futexes.
+		// Other readers should be able to handle this gracefully.
+		_ = futexWake(unsafe.Pointer(&handler.header.futex))
+	})
+	defer stopf()
+
 	currentFutex := atomic.LoadUint32(&handler.header.futex)
 	if handler.readerLastFutex != currentFutex {
 		return nil
 	}
 
-	return futexWait(unsafe.Pointer(&handler.header.futex), handler.readerLastFutex)
+	err := futexWait(unsafe.Pointer(&handler.header.futex), handler.readerLastFutex, nil)
+	if ctx.Err() != nil {
+		return ctx.Err()
+	}
+
+	return err
 }
 
 // Read the current message in shared memory.
-func (handler *ShmHandler) Read() (ReaderMessage, error) {
+func (handler *ShmHandler) Read(ctx context.Context) (ReaderMessage, error) {
 	if handler.mode != handlerModeReader {
 		return nil, fmt.Errorf("handler is in writer mode")
 	}
 
 	for {
-		err := handler.wait()
-		if err != nil {
+		err := handler.wait(ctx)
+		if err != nil && !errors.Is(err, syscall.ETIMEDOUT) {
 			return nil, fmt.Errorf("waiting for message: %w", err)
 		}
 
 		newMessageFutex := atomic.LoadUint32(&handler.header.futex)
 
-		// HACK-ish(mia): This means that the thread woke superfluously,
-		// not sure why why this happens. futex should compare the value
-		// before waiting again, so it shouldn't cause an erroneous wait.
+		// NOTE(mia): This means that the thread woke superfluously.
+		// futex should compare the value before waiting again, so
+		// it shouldn't cause an erroneous wait.
 		if newMessageFutex <= handler.readerLastFutex {
 			continue
 		}
