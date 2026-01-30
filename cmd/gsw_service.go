@@ -128,12 +128,6 @@ func readConfig() (*viper.Viper, int) {
 			logger.Warn("Config file not found, reading config from environment variables")
 		}
 	}
-	if !config.IsSet("database_host_name") {
-		logger.Panic("Error reading GSW config: database_host_name not set...")
-	}
-	if !config.IsSet("database_port_number") {
-		logger.Panic("Error reading GSW config: database_port_number not set...")
-	}
 
 	return config, *doPprof
 }
