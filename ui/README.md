@@ -7,7 +7,11 @@ Communicates with GSW through the `mqtt_producer` app and an MQTT server. This p
 ## Development
 
 ```shell
+# mosquitto container
 docker compose -f compose-services.yaml up --build
+
 go run ./cmd/mqtt_producer
-pnpm run dev
+
+# ui development server
+cd ui/ && pnpm run dev
 ```
