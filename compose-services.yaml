@@ -24,9 +24,13 @@ services:
     environment:
       - INFLUXDB_UDP_ENABLED=true
       - INFLUXDB_UDP_DATABASE=gsw
+      - INFLUXDB_UDP_BIND_ADDRESS=0.0.0.0:8089
+      - INFLUXDB_ADMIN_USER=root
+      - INFLUXDB_ADMIN_PASSWORD=root
     ports:
-      - "127.0.0.1:8089:8089/udp"
-  
+      - "8086:8086/tcp"
+      - "8089:8089/udp"
+
   mosquitto:
     build:
       context: data/mosquitto
