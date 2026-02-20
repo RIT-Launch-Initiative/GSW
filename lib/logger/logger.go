@@ -11,36 +11,33 @@ import (
 	"go.uber.org/zap/zapcore"
 )
 
-var logger *zap.Logger
+var logger = zap.Must(zap.NewDevelopment()).WithOptions(zap.AddCallerSkip(1)).Named("gsw")
 
 // InitLogger Initializes the logger
 // Configured using the logger.yaml file in the data/config directory
 // If the file is not found, the logger will default to a development logger
 func InitLogger() {
-	defaultLogger := zap.Must(zap.NewDevelopment())
-
 	viperConfig, err := loadLoggerConfig()
 	if err != nil {
-		defaultLogger.Warn(fmt.Sprint(err))
-		logger = defaultLogger
+		logger.Warn("couldn't load logging config, using default logger", zap.Error(err))
 		return
 	}
 
-	outputPaths, err := resolveOutputPaths(viperConfig.GetStringSlice("OutputPaths"), defaultLogger)
+	outputPaths, err := resolveOutputPaths(viperConfig.GetStringSlice("OutputPaths"))
 	if err != nil {
-		logger = defaultLogger
-		logger.Warn("Failed to resolve output paths, using default logger")
+		logger.Warn("failed to resolve output paths, using default logger", zap.Error(err))
 		return
 	}
 
 	level, err := zap.ParseAtomicLevel(viperConfig.GetString("level"))
 	if err != nil {
-		defaultLogger.Warn(fmt.Sprint(err))
+		logger.Warn("failed to parse log level, using INFO level", zap.Error(err))
+		level = zap.NewAtomicLevelAt(zapcore.InfoLevel)
 	}
 
-	encoderConfig, err := buildEncoderConfig(viperConfig, defaultLogger)
+	encoderConfig, err := buildEncoderConfig(viperConfig)
 	if err != nil {
-		logger = defaultLogger
+		logger.Warn("failed to build encoder config, using default logger", zap.Error(err))
 		return
 	}
 
@@ -75,7 +72,7 @@ func loadLoggerConfig() (*viper.Viper, error) {
 }
 
 // resolveOutputPaths generates a log file name and creates the file for all GSW logs within a session
-func resolveOutputPaths(paths []string, fallbackLogger *zap.Logger) ([]string, error) {
+func resolveOutputPaths(paths []string) ([]string, error) {
 	for i, path := range paths {
 		if path == "stdout" || path == "stderr" {
 			continue
@@ -96,12 +93,12 @@ func resolveOutputPaths(paths []string, fallbackLogger *zap.Logger) ([]string, e
 
 		if _, err := os.Create(totalPath); err != nil {
 			if err := os.MkdirAll(path, 0755); err != nil {
-				fallbackLogger.Warn("Failed to create log directory", zap.Error(err))
+				logger.Warn("Failed to create log directory", zap.Error(err))
 				return nil, err
 			}
 
 			if _, err := os.Create(totalPath); err != nil {
-				fallbackLogger.Warn("Failed to create log file", zap.Error(err))
+				logger.Warn("Failed to create log file", zap.Error(err))
 				return nil, err
 			}
 		}
@@ -112,7 +109,7 @@ func resolveOutputPaths(paths []string, fallbackLogger *zap.Logger) ([]string, e
 }
 
 // buildEncoderConfig builds the Zap logger based on a Viper configuration
-func buildEncoderConfig(cfg *viper.Viper, fallbackLogger *zap.Logger) (zapcore.EncoderConfig, error) {
+func buildEncoderConfig(cfg *viper.Viper) (zapcore.EncoderConfig, error) {
 	encCfg := zapcore.EncoderConfig{
 		MessageKey:    cfg.GetString("encoderConfig.messageKey"),
 		LevelKey:      cfg.GetString("encoderConfig.levelKey"),
@@ -126,22 +123,22 @@ func buildEncoderConfig(cfg *viper.Viper, fallbackLogger *zap.Logger) (zapcore.E
 	var err error
 
 	if encCfg.EncodeLevel, err = getLevelEncoder(cfg.GetString("encoderConfig.levelEncoder")); err != nil {
-		fallbackLogger.Warn("Invalid levelEncoder", zap.Error(err))
+		logger.Warn("Invalid levelEncoder", zap.Error(err))
 		return encCfg, err
 	}
 
 	if encCfg.EncodeTime, err = getTimeEncoder(cfg.GetString("encoderConfig.timeEncoder")); err != nil {
-		fallbackLogger.Warn("Invalid timeEncoder", zap.Error(err))
+		logger.Warn("Invalid timeEncoder", zap.Error(err))
 		return encCfg, err
 	}
 
 	if encCfg.EncodeDuration, err = getDurationEncoder(cfg.GetString("encoderConfig.durationEncoder")); err != nil {
-		fallbackLogger.Warn("Invalid durationEncoder", zap.Error(err))
+		logger.Warn("Invalid durationEncoder", zap.Error(err))
 		return encCfg, err
 	}
 
 	if encCfg.EncodeCaller, err = getCallerEncoder(cfg.GetString("encoderConfig.callerEncoder")); err != nil {
-		fallbackLogger.Warn("Invalid callerEncoder", zap.Error(err))
+		logger.Warn("Invalid callerEncoder", zap.Error(err))
 		return encCfg, err
 	}
 
@@ -238,5 +235,5 @@ func Panic(message string, fields ...zap.Field) {
 
 // Log retrieves the underlying zap logger
 func Log() *zap.Logger {
-	return logger
+	return logger.WithOptions(zap.AddCallerSkip(-1))
 }

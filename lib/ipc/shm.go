@@ -4,13 +4,15 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log"
 	"os"
 	"path/filepath"
 	"sync/atomic"
 	"syscall"
 	"time"
 	"unsafe"
+
+	"github.com/AarC10/GSW-V2/lib/logger"
+	"go.uber.org/zap"
 )
 
 type shmFileHeader struct {
@@ -112,20 +114,21 @@ func CreateShmReader(identifier string, shmDir string) (*ShmHandler, error) {
 func (handler *ShmHandler) Cleanup() {
 	if handler.data != nil {
 		if err := syscall.Munmap(handler.data); err != nil {
-			log.Printf("failed to unmap memory: %v\n", err)
+			logger.Error("failed to unmap memory", zap.Error(err))
 		}
 		handler.data = nil
 	}
 	if handler.file != nil {
 		if err := handler.file.Close(); err != nil {
-			log.Printf("failed to close file: %v\n", err)
+			logger.Error("failed to close file", zap.Error(err))
 		}
 
 		if handler.mode == handlerModeWriter {
 			if err := os.Remove(handler.file.Name()); err != nil {
-				log.Printf("failed to remove shm file: %v\n", err)
+				logger.Error("failed to remove shm file", zap.Error(err))
+
 			} else {
-				log.Printf("removed shm file: %s\n", handler.file.Name())
+				logger.Info("removed shm file", zap.String("shm", handler.file.Name()))
 			}
 		}
 

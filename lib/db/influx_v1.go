@@ -19,15 +19,13 @@ func (h *InfluxDBV1Handler) Initialize(host string, port int) error {
 	h.addr = fmt.Sprintf("%s:%d", host, port)
 	addr, err := net.ResolveUDPAddr("udp", h.addr)
 	if err != nil {
-		fmt.Println("Error creating InfluxDB UDP client:", err)
-		return err
+		return fmt.Errorf("resolving db address: %w", err)
 	}
 
-	logger.Info("Database UDP connection string: ", zap.String("url", addr.String()))
+	logger.Info("resolved database address", zap.String("url", addr.String()))
 
 	conn, err := net.DialUDP("udp", nil, addr)
 	if err != nil {
-		fmt.Println("Error creating InfluxDB UDP client:", err)
 		return err
 	}
 

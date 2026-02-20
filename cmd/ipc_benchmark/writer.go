@@ -4,13 +4,14 @@ import (
 	"context"
 	"encoding/binary"
 	"fmt"
-	"log"
 	"net"
 	"sync"
 	"time"
 
+	"github.com/AarC10/GSW-V2/lib/logger"
 	"github.com/AarC10/GSW-V2/lib/tlm"
 	"github.com/AarC10/GSW-V2/proc"
+	"go.uber.org/zap"
 )
 
 func createPacket(size int, seq uint64) []byte {
@@ -29,6 +30,7 @@ func packetWriter(ctx context.Context, serverAddress string, port, size int, wri
 	if err != nil {
 		return fmt.Errorf("resolving address: %w", err)
 	}
+	log := logger.Log().Named("packet_writer").With(zap.String("server", serverAddr.String()))
 
 	conn, err := net.DialUDP("udp", nil, serverAddr)
 	if err != nil {
@@ -37,7 +39,7 @@ func packetWriter(ctx context.Context, serverAddress string, port, size int, wri
 	defer func() {
 		err := conn.Close()
 		if err != nil {
-			log.Println("couldn't close connection", err)
+			log.Error("couldn't close connection to gsw", zap.Error(err))
 		}
 	}()
 
@@ -55,7 +57,7 @@ func packetWriter(ctx context.Context, serverAddress string, port, size int, wri
 			packet := createPacket(size, sequence)
 			_, err := conn.Write(packet)
 			if err != nil {
-				fmt.Printf("error writing packet (%s): %v\n", serverAddr.String(), err)
+				log.Error("error writing packet", zap.Error(err))
 			}
 			sequence += 1
 		}
@@ -67,7 +69,7 @@ func packetWriter(ctx context.Context, serverAddress string, port, size int, wri
 			packet := createPacket(size, sequence)
 			_, err := conn.Write(packet)
 			if err != nil {
-				fmt.Printf("error writing packet (%s): %v\n", serverAddr.String(), err)
+				log.Error("error writing packet", zap.Error(err))
 			}
 			sequence += 1
 		}
@@ -84,7 +86,7 @@ func writer(ctx context.Context, serverAddress string, packets []*tlm.TelemetryP
 			defer wg.Done()
 			err := packetWriter(ctx, serverAddress, port, size, writerSleep)
 			if err != nil {
-				log.Fatal("error running packet writer:", err)
+				logger.Fatal("error running packet writer", zap.Error(err))
 			}
 		}(serverAddress, packet.Port, size, writerSleep)
 	}
