@@ -11,15 +11,16 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"log"
 	"os"
 	"os/signal"
 	"sync"
 	"syscall"
 
+	"github.com/AarC10/GSW-V2/lib/logger"
 	"github.com/AarC10/GSW-V2/lib/tlm"
 	"github.com/AarC10/GSW-V2/proc"
 	mqtt "github.com/eclipse/paho.mqtt.golang"
+	"go.uber.org/zap"
 )
 
 var (
@@ -33,11 +34,11 @@ func main() {
 
 	configData, err := proc.ReadTelemetryConfigFromShm(*shmDir)
 	if err != nil {
-		log.Fatal(err)
+		logger.Fatal("error reading telemetry config from shm", zap.Error(err))
 	}
 	_, err = proc.ParseConfigBytes(configData)
 	if err != nil {
-		log.Fatal(err)
+		logger.Fatal("error parsing telemetry config from gsw", zap.Error(err))
 	}
 
 	opts := mqtt.NewClientOptions()
@@ -47,7 +48,7 @@ func main() {
 
 	client := mqtt.NewClient(opts)
 	if token := client.Connect(); token.Wait() && token.Error() != nil {
-		log.Fatal(token.Error())
+		logger.Fatal("error connecting to mqtt and creating token", zap.Error(token.Error()))
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -60,7 +61,7 @@ func main() {
 			defer wg.Done()
 			err := packetWriter(ctx, packet, client)
 			if err != nil && !errors.Is(err, context.Canceled) {
-				log.Printf("error in writer: %v", err)
+				logger.Error("error in writer", zap.Error(err))
 			}
 		}(packet)
 	}
@@ -69,7 +70,7 @@ func main() {
 		sigChan := make(chan os.Signal, 1)
 		signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
 		<-sigChan
-		log.Println("shutting down")
+		logger.Info("shutting down")
 		cancel()
 	}()
 
@@ -78,8 +79,8 @@ func main() {
 }
 
 func packetWriter(ctx context.Context, packet tlm.TelemetryPacket, client mqtt.Client) error {
-	pLog := log.New(os.Stderr, fmt.Sprintf("[%s] ", packet.Name), log.LstdFlags|log.Lmsgprefix)
-	pLog.Println("starting streaming")
+	pLog := logger.Log().With(zap.String("packet", packet.Name))
+	pLog.Info("starting streaming")
 
 	reader, err := proc.NewIpcShmReaderForPacket(packet, *shmDir)
 	if err != nil {
@@ -93,7 +94,7 @@ func packetWriter(ctx context.Context, packet tlm.TelemetryPacket, client mqtt.C
 			return ctx.Err()
 		}
 		if err != nil {
-			pLog.Printf("error reading packet: %v\n", err)
+			pLog.Error("error reading packet", zap.Error(err))
 			continue
 		}
 		data := p.Data()
@@ -105,12 +106,12 @@ func packetWriter(ctx context.Context, packet tlm.TelemetryPacket, client mqtt.C
 			}
 			val, err := tlm.InterpretMeasurementValue(meas, data[offset:offset+meas.Size])
 			if err != nil {
-				pLog.Printf("error interpreting measurement: %v\n", err)
+				pLog.Error("error interpreting measurement", zap.Error(err))
 				continue
 			}
 			jsonStr, err := json.Marshal(val)
 			if err != nil {
-				pLog.Printf("error marshaling measurement: %v\n", err)
+				pLog.Error("error marshaling measurement", zap.Error(err))
 				continue
 			}
 			// qos=0 delivery not guaranteed

@@ -4,15 +4,16 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"log"
 	"strings"
 	"sync"
 
 	"net/http"
 	_ "net/http/pprof"
 
+	"github.com/AarC10/GSW-V2/lib/logger"
 	"github.com/AarC10/GSW-V2/lib/tlm"
 	"github.com/AarC10/GSW-V2/proc"
+	"go.uber.org/zap"
 )
 
 type packetsMapFlagValue map[*tlm.TelemetryPacket]struct{}
@@ -61,10 +62,11 @@ func (p *packetsMapFlagValue) Packets() []*tlm.TelemetryPacket {
 
 func initProfiling(pprofPort int) {
 	go func() {
-		log.Printf("Running pprof server at localhost:%d", pprofPort)
-		err := http.ListenAndServe(fmt.Sprintf("localhost:%d", pprofPort), nil)
+		pprofAddr := fmt.Sprintf("localhost:%d", pprofPort)
+		logger.Info("Running pprof server", zap.String("addr", pprofAddr))
+		err := http.ListenAndServe(pprofAddr, nil)
 		if err != nil {
-			log.Fatalf("Error starting pprof server: %v", err)
+			logger.Fatal("error starting pprof server", zap.Error(err))
 		}
 	}()
 }
@@ -72,11 +74,11 @@ func initProfiling(pprofPort int) {
 func main() {
 	configData, err := proc.ReadTelemetryConfigFromShm("/dev/shm")
 	if err != nil {
-		log.Fatal(fmt.Errorf("couldn't read config from shm: %w", err))
+		logger.Fatal("couldn't read config from shm", zap.Error(err))
 	}
 	_, err = proc.ParseConfigBytes(configData)
 	if err != nil {
-		log.Fatal(fmt.Errorf("couldn't parse shm config: %w", err))
+		logger.Fatal("couldn't parse shm config", zap.Error(err))
 	}
 
 	timeout := flag.Duration("duration", 0, "the test duration")
@@ -96,7 +98,7 @@ func main() {
 	flag.Parse()
 
 	if !*isReader && !*isWriter {
-		log.Fatal("use -reader and/or -writer to start the process as a reader or writer")
+		logger.Fatal("use -reader and/or -writer to start the process as a reader or writer")
 	}
 
 	if *profilePort != 0 {
@@ -113,20 +115,20 @@ func main() {
 
 	var wg sync.WaitGroup
 	if *isReader {
-		log.Println("running reader")
+		logger.Info("running reader")
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
 			output := reader(ctx, packetsSlice)
 			outputString, err := readerOutputFormat.GenerateReaderOutput(*output)
 			if err != nil {
-				log.Fatal(fmt.Errorf("couldn't generate output: %w", err))
+				logger.Fatal("couldn't generate output", zap.Error(err))
 			}
 			fmt.Print(outputString)
 		}()
 	}
 	if *isWriter {
-		log.Println("running writer")
+		logger.Info("running writer")
 		wg.Add(1)
 		go func() {
 			defer wg.Done()

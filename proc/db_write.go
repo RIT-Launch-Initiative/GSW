@@ -1,7 +1,6 @@
 package proc
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/AarC10/GSW-V2/lib/db"
@@ -48,7 +47,7 @@ func UpdateMeasurementGroup(packet tlm.TelemetryPacket, measurements db.Measurem
 	for i, measurementName := range packet.Measurements {
 		measurement, ok := GswConfig.Measurements[measurementName]
 		if !ok {
-			fmt.Printf("\t\tMeasurement '%s' not found\n", measurementName)
+			logger.Error("measurement not found", zap.String("measurement", measurementName))
 			continue
 		}
 
