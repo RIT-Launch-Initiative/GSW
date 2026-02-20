@@ -93,12 +93,12 @@ func resolveOutputPaths(paths []string) ([]string, error) {
 
 		if _, err := os.Create(totalPath); err != nil {
 			if err := os.MkdirAll(path, 0755); err != nil {
-				logger.Warn("Failed to create log directory", zap.Error(err))
+				logger.Warn("failed to create log directory", zap.Error(err))
 				return nil, err
 			}
 
 			if _, err := os.Create(totalPath); err != nil {
-				logger.Warn("Failed to create log file", zap.Error(err))
+				logger.Warn("failed to create log file", zap.Error(err))
 				return nil, err
 			}
 		}
@@ -123,22 +123,22 @@ func buildEncoderConfig(cfg *viper.Viper) (zapcore.EncoderConfig, error) {
 	var err error
 
 	if encCfg.EncodeLevel, err = getLevelEncoder(cfg.GetString("encoderConfig.levelEncoder")); err != nil {
-		logger.Warn("Invalid levelEncoder", zap.Error(err))
+		logger.Warn("invalid levelEncoder", zap.Error(err))
 		return encCfg, err
 	}
 
 	if encCfg.EncodeTime, err = getTimeEncoder(cfg.GetString("encoderConfig.timeEncoder")); err != nil {
-		logger.Warn("Invalid timeEncoder", zap.Error(err))
+		logger.Warn("invalid timeEncoder", zap.Error(err))
 		return encCfg, err
 	}
 
 	if encCfg.EncodeDuration, err = getDurationEncoder(cfg.GetString("encoderConfig.durationEncoder")); err != nil {
-		logger.Warn("Invalid durationEncoder", zap.Error(err))
+		logger.Warn("invalid durationEncoder", zap.Error(err))
 		return encCfg, err
 	}
 
 	if encCfg.EncodeCaller, err = getCallerEncoder(cfg.GetString("encoderConfig.callerEncoder")); err != nil {
-		logger.Warn("Invalid callerEncoder", zap.Error(err))
+		logger.Warn("invalid callerEncoder", zap.Error(err))
 		return encCfg, err
 	}
 
