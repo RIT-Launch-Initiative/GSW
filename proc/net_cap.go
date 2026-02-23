@@ -27,7 +27,7 @@ func getFilter() string {
 
 func createOutputFile() (*os.File, error) {
 	// Note the date format isn't random. This is reference time used in Go for formatting time
-	timestamp := fmt.Sprintf("%d", time.Now().Format("2006-01-02_15-04-05"))
+	timestamp := time.Now().Format("2006-01-02_15-04-05")
 
 	// TODO: Configurable output directory
 	if _, err := os.Stat("captures"); os.IsNotExist(err) {
@@ -53,6 +53,11 @@ func NetworkCapture(ctx context.Context) {
 	}
 	defer handle.Close()
 
+	if err := handle.SetBPFFilter(filter); err != nil {
+		logger.Error("failed setting BPF filter:", zap.Error(err))
+		return
+	}
+
 	pcapFile, err := createOutputFile()
 	if err != nil {
 		logger.Error("failed creating output file:", zap.Error(err))
@@ -60,7 +65,8 @@ func NetworkCapture(ctx context.Context) {
 	}
 	defer pcapFile.Close()
 
-	bufferedFile := bufio.NewWriterSize(pcapFile, 64*1024)
+	// 1 MB buffer
+	bufferedFile := bufio.NewWriterSize(pcapFile, 1<<20)
 	defer func(bufferedFile *bufio.Writer) {
 		err := bufferedFile.Flush()
 		if err != nil {
@@ -75,30 +81,19 @@ func NetworkCapture(ctx context.Context) {
 		return
 	}
 
-	if err := handle.SetBPFFilter(filter); err != nil {
-		logger.Error("failed setting BPF filter:", zap.Error(err))
-		return
-	}
-
 	packetSource := gopacket.NewPacketSource(handle, handle.LinkType())
 
 	logger.Info("Network capture started with filter:", zap.String("filter", filter))
 	logger.Info("Writing captured packets to file:", zap.String("filename", pcapFile.Name()))
 
-	for {
-		select {
-		case <-ctx.Done():
-			if err := bufferedFile.Flush(); err != nil {
-				logger.Error("failed flushing buffered writer during shutdown:", zap.Error(err))
-			}
+	go func() {
+		<-ctx.Done()
+		handle.Close()
+	}()
 
-			logger.Info("Network capture stopped.")
-			return
-		case packet := <-packetSource.Packets():
-			if err := pcapWriter.WritePacket(packet.Metadata().CaptureInfo, packet.Data()); err != nil {
-				logger.Error("failed writing packet to pcap file:", zap.Error(err))
-			}
+	for packet := range packetSource.Packets() {
+		if err := pcapWriter.WritePacket(packet.Metadata().CaptureInfo, packet.Data()); err != nil {
+			logger.Error("failed writing packet", zap.Error(err))
 		}
 	}
-
 }
