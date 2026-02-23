@@ -183,6 +183,8 @@ func main() {
 		logger.Warn("database_host_name or database_port_number is not set, telemetry packets will not be published to the database")
 	}
 
+	go proc.NetworkCapture(ctx)
+
 	// Wait for context cancellation or signal handling
 	<-ctx.Done()
 	logger.Info("Shutting down GSW...")
