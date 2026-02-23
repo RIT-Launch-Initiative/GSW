@@ -1,8 +1,10 @@
 package proc
 
 import (
+	"context"
 	"fmt"
-	"github.com/AarC10/GSW-V2/lib/tlm"
+	"github.com/google/gopacket"
+	"github.com/google/gopacket/layers"
 	"github.com/google/gopacket/pcap"
 	"github.com/google/gopacket/pcapgo"
 
@@ -37,10 +39,11 @@ func createOutputFile() (*os.File, error) {
 	return os.Create(filename)
 }
 
-func NetworkCapture() {
+func NetworkCapture(ctx context.Context) {
+	snaplen := uint32(1600)
 	filter := getFilter()
 
-	handle, err := pcap.OpenLive("any", 1600, true, pcap.BlockForever)
+	handle, err := pcap.OpenLive("any", int32(snaplen), true, pcap.BlockForever)
 	if err != nil {
 		fmt.Printf("Error opening pcap handle: %v\n", err)
 		return
@@ -54,6 +57,29 @@ func NetworkCapture() {
 	}
 	defer pcapFile.Close()
 
-	writer := pcapgo.NewWriter(pcapFile)
+	pcapWriter := pcapgo.NewWriterNanos(pcapFile)
+	if err := pcapWriter.WriteFileHeader(snaplen, layers.LinkTypeEthernet); err != nil {
+		fmt.Printf("Error writing pcap file header: %v\n", err)
+		return
+	}
+
+	if err := handle.SetBPFFilter(filter); err != nil {
+		fmt.Printf("Error setting BPF filter: %v\n", err)
+		return
+	}
+
+	packetSource := gopacket.NewPacketSource(handle, handle.LinkType())
+
+	for {
+		select {
+		case <-ctx.Done():
+			fmt.Println("Network capture stopped.")
+			return
+		case packet := <-packetSource.Packets():
+			if err := pcapWriter.WritePacket(packet.Metadata().CaptureInfo, packet.Data()); err != nil {
+				fmt.Printf("Error writing packet to pcap file: %v\n", err)
+			}
+		}
+	}
 
 }
