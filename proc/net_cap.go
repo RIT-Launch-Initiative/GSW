@@ -27,7 +27,8 @@ func getFilter() string {
 }
 
 func createOutputFile() (*os.File, error) {
-	timestamp := fmt.Sprintf("%d", time.Now().Unix())
+	// Note the date format isn't random. This is reference time used in Go for formatting time
+	timestamp := fmt.Sprintf("%d", time.Now().Format("2006-01-02_15-04-05"))
 
 	// TODO: Configurable output directory
 	if _, err := os.Stat("captures"); os.IsNotExist(err) {
