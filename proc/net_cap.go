@@ -47,33 +47,33 @@ func NetworkCapture(ctx context.Context) {
 
 	handle, err := pcap.OpenLive("any", int32(snaplen), true, pcap.BlockForever)
 	if err != nil {
-		logger.Error("failed opening pcap handle: %v\n", zap.Error(err))
+		logger.Error("failed opening pcap handle:", zap.Error(err))
 		return
 	}
 	defer handle.Close()
 
 	pcapFile, err := createOutputFile()
 	if err != nil {
-		logger.Error("failed creating output file: %v\n", zap.Error(err))
+		logger.Error("failed creating output file:", zap.Error(err))
 		return
 	}
 	defer pcapFile.Close()
 
 	pcapWriter := pcapgo.NewWriterNanos(pcapFile)
-	if err := pcapWriter.WriteFileHeader(snaplen, layers.LinkTypeEthernet); err != nil {
-		logger.Error("failed writing pcap file header: %v\n", zap.Error(err))
+	if err := pcapWriter.WriteFileHeader(snaplen, handle.LinkType()); err != nil {
+		logger.Error("failed writing pcap file header:", zap.Error(err))
 		return
 	}
 
 	if err := handle.SetBPFFilter(filter); err != nil {
-		logger.Error("failed setting BPF filter: %v\n", zap.Error(err))
+		logger.Error("failed setting BPF filter:", zap.Error(err))
 		return
 	}
 
 	packetSource := gopacket.NewPacketSource(handle, handle.LinkType())
 
-	logger.Info("Network capture started with filter: %s\n", zap.String("filter", filter))
-	logger.Info("Writing captured packets to file: %s\n", zap.String("filename", pcapFile.Name()))
+	logger.Info("Network capture started with filter:", zap.String("filter", filter))
+	logger.Info("Writing captured packets to file:", zap.String("filename", pcapFile.Name()))
 
 	for {
 		select {
@@ -82,7 +82,7 @@ func NetworkCapture(ctx context.Context) {
 			return
 		case packet := <-packetSource.Packets():
 			if err := pcapWriter.WritePacket(packet.Metadata().CaptureInfo, packet.Data()); err != nil {
-				logger.Error("failed writing packet to pcap file: %v\n", zap.Error(err))
+				logger.Error("failed writing packet to pcap file:", zap.Error(err))
 			}
 		}
 	}
