@@ -1,6 +1,7 @@
 package proc
 
 import (
+	"bufio"
 	"context"
 	"fmt"
 	"github.com/AarC10/GSW-V2/lib/logger"
@@ -59,7 +60,10 @@ func NetworkCapture(ctx context.Context) {
 	}
 	defer pcapFile.Close()
 
-	pcapWriter := pcapgo.NewWriterNanos(pcapFile)
+	bufferedFile := bufio.NewWriterSize(pcapFile, 1<<20)
+	defer bufferedFile.Flush()
+
+	pcapWriter := pcapgo.NewWriterNanos(bufferedFile)
 	if err := pcapWriter.WriteFileHeader(snaplen, handle.LinkType()); err != nil {
 		logger.Error("failed writing pcap file header:", zap.Error(err))
 		return
