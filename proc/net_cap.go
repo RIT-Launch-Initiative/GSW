@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"context"
 	"fmt"
+
 	"github.com/AarC10/GSW-V2/lib/logger"
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/pcap"
@@ -62,7 +63,13 @@ func NetworkCapture(ctx context.Context) error {
 		logger.Error("failed creating output file:", zap.Error(err))
 		return err
 	}
-	defer pcapFile.Close()
+	defer func(pcapFile *os.File) {
+		err := pcapFile.Close()
+		if err != nil {
+			logger.Error("failed closing pcap file:", zap.Error(err))
+			return
+		}
+	}(pcapFile)
 
 	// TODO: 128 KB buffer. Make this configurable?
 	bufferedFile := bufio.NewWriterSize(pcapFile, 128*1024)
