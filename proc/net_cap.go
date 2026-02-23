@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"github.com/AarC10/GSW-V2/lib/logger"
 	"github.com/google/gopacket"
-	"github.com/google/gopacket/layers"
 	"github.com/google/gopacket/pcap"
 	"github.com/google/gopacket/pcapgo"
 	"go.uber.org/zap"
@@ -61,8 +60,14 @@ func NetworkCapture(ctx context.Context) {
 	}
 	defer pcapFile.Close()
 
-	bufferedFile := bufio.NewWriterSize(pcapFile, 1<<20)
-	defer bufferedFile.Flush()
+	bufferedFile := bufio.NewWriterSize(pcapFile, 64*1024)
+	defer func(bufferedFile *bufio.Writer) {
+		err := bufferedFile.Flush()
+		if err != nil {
+			logger.Error("failed flushing buffered writer:", zap.Error(err))
+			return
+		}
+	}(bufferedFile)
 
 	pcapWriter := pcapgo.NewWriterNanos(bufferedFile)
 	if err := pcapWriter.WriteFileHeader(snaplen, handle.LinkType()); err != nil {
@@ -83,6 +88,10 @@ func NetworkCapture(ctx context.Context) {
 	for {
 		select {
 		case <-ctx.Done():
+			if err := bufferedFile.Flush(); err != nil {
+				logger.Error("failed flushing buffered writer during shutdown:", zap.Error(err))
+			}
+
 			logger.Info("Network capture stopped.")
 			return
 		case packet := <-packetSource.Packets():
