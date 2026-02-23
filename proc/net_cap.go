@@ -42,31 +42,30 @@ func createOutputFile() (*os.File, error) {
 	return os.Create(filename)
 }
 
-func NetworkCapture(ctx context.Context) {
+func NetworkCapture(ctx context.Context) error {
 	snaplen := uint32(1600)
 	filter := getFilter()
 
-	handle, err := pcap.OpenLive("any", int32(snaplen), true, pcap.BlockForever)
+	handle, err := pcap.OpenLive("any", int32(snaplen), true, 100*time.Millisecond)
 	if err != nil {
 		logger.Error("failed opening pcap handle:", zap.Error(err))
-		return
+		return err
 	}
-	defer handle.Close()
 
 	if err := handle.SetBPFFilter(filter); err != nil {
 		logger.Error("failed setting BPF filter:", zap.Error(err))
-		return
+		return err
 	}
 
 	pcapFile, err := createOutputFile()
 	if err != nil {
 		logger.Error("failed creating output file:", zap.Error(err))
-		return
+		return err
 	}
 	defer pcapFile.Close()
 
-	// 1 MB buffer
-	bufferedFile := bufio.NewWriterSize(pcapFile, 1<<20)
+	// TODO: 128 KB buffer. Make this configurable?
+	bufferedFile := bufio.NewWriterSize(pcapFile, 128*1024)
 	defer func(bufferedFile *bufio.Writer) {
 		err := bufferedFile.Flush()
 		if err != nil {
@@ -78,7 +77,7 @@ func NetworkCapture(ctx context.Context) {
 	pcapWriter := pcapgo.NewWriterNanos(bufferedFile)
 	if err := pcapWriter.WriteFileHeader(snaplen, handle.LinkType()); err != nil {
 		logger.Error("failed writing pcap file header:", zap.Error(err))
-		return
+		return err
 	}
 
 	packetSource := gopacket.NewPacketSource(handle, handle.LinkType())
@@ -96,4 +95,6 @@ func NetworkCapture(ctx context.Context) {
 			logger.Error("failed writing packet", zap.Error(err))
 		}
 	}
+
+	return nil
 }
