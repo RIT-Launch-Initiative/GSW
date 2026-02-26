@@ -187,16 +187,6 @@ func main() {
 		logger.Warn("database_host_name or database_port_number is not set, telemetry packets will not be published to the database")
 	}
 
-	// Start network capture
-	var captureWg sync.WaitGroup
-	captureWg.Add(1)
-	go func() {
-		defer captureWg.Done()
-		if err := proc.NetworkCapture(ctx); err != nil {
-			logger.Error("network capture error", zap.Error(err))
-		}
-	}()
-
 	// Wait for shutdown signal
 	<-ctx.Done()
 	logger.Info("Shutting down GSW...")
@@ -214,7 +204,4 @@ func main() {
 		logger.Info("channel closed", zap.Int("port", i))
 	}
 
-	// Flush network capture to disk
-	captureWg.Wait()
-	logger.Info("network capture stopped")
 }
