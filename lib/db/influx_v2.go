@@ -88,13 +88,13 @@ func (handler *InfluxDBV2Handler) CreateQuery(measurements MeasurementGroup) str
 func (handler *InfluxDBV2Handler) Insert(measurements MeasurementGroup) error {
 	point := influxdb2.NewPointWithMeasurement(measurements.DatabaseName)
 
-	var ts time.Time
+	var timestamp time.Time
 	if measurements.Timestamp != 0 {
-		ts = time.Unix(0, measurements.Timestamp)
+		timestamp = time.Unix(0, measurements.Timestamp)
 	} else {
-		ts = time.Now()
+		timestamp = time.Now()
 	}
-	point.SetTime(ts)
+	point.SetTime(timestamp)
 
 	for _, m := range measurements.Measurements {
 		// Try numeric first; fall back to string field.
