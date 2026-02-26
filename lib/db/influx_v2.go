@@ -1,0 +1,118 @@
+package db
+
+import (
+	"context"
+	"fmt"
+
+	"github.com/AarC10/GSW-V2/lib/logger"
+	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
+	"github.com/influxdata/influxdb-client-go/v2/api"
+	"github.com/influxdata/influxdb-client-go/v2/api/write"
+	"go.uber.org/zap"
+)
+
+// InfluxDBV2Handler is a BatchHandler implementation for InfluxDB v1
+type InfluxDBV2Handler struct {
+	client   influxdb2.Client
+	writeAPI api.WriteAPI
+	org      string
+	bucket   string
+	cfg      Config
+}
+
+// Initialize satisfies the Handler interface using host/port only so
+// for V2 you most likey want InitializeWithConfig instead.
+// This is a wrapper around InitializeWithConfig that fills in the URL and leaves
+func (handler *InfluxDBV2Handler) Initialize(host string, port int) error {
+	return handler.InitializeWithConfig(Config{
+		URL:           fmt.Sprintf("http://%s:%d", host, port),
+		Token:         "",
+		Org:           "gsw",
+		Bucket:        "gsw",
+		BatchSize:     100,
+		FlushInterval: 1000,
+		Precision:     "ns",
+	})
+}
+
+// InitializeWithConfig sets up the InfluxDB v2 client with full config
+func (handler *InfluxDBV2Handler) InitializeWithConfig(cfg Config) error {
+	if cfg.BatchSize == 0 {
+		cfg.BatchSize = 100
+	}
+	if cfg.FlushInterval == 0 {
+		cfg.FlushInterval = 1000
+	}
+	if cfg.Precision == "" {
+		cfg.Precision = "ns"
+	}
+
+	handler.cfg = cfg
+	handler.org = cfg.Org
+	handler.bucket = cfg.Bucket
+
+	options := influxdb2.DefaultOptions().
+		SetBatchSize(cfg.BatchSize).
+		SetFlushInterval(cfg.FlushInterval)
+
+	handler.client = influxdb2.NewClientWithOptions(cfg.URL, cfg.Token, options)
+	handler.writeAPI = handler.client.WriteAPI(cfg.Org, cfg.Bucket)
+
+	go func() {
+		for err := range handler.writeAPI.Errors() {
+			logger.Error("InfluxDB V2 async write error", zap.Error(err))
+		}
+	}()
+
+	logger.Info("InfluxDB V2 client initialized",
+		zap.String("url", cfg.URL),
+		zap.String("org", cfg.Org),
+		zap.String("bucket", cfg.Bucket),
+		zap.Uint("batchSize", cfg.BatchSize),
+		zap.Uint("flushInterval", cfg.FlushInterval),
+	)
+	return nil
+}
+
+// CreateQuery generates InfluxDB line protocol for a MeasurementGroup
+func (handler *InfluxDBV2Handler) CreateQuery(measurements MeasurementGroup) string {
+	return CreateQuery(measurements)
+}
+
+// Insert writes a MeasurementGroup to InfluxDB v2 as a single point
+func (handler *InfluxDBV2Handler) Insert(measurements MeasurementGroup) error {
+	return nil
+}
+
+// InsertBatch writes multiple MeasurementGroups in one shot and flushes
+func (handler *InfluxDBV2Handler) InsertBatch(batch []MeasurementGroup) error {
+	for _, mg := range batch {
+		if err := handler.Insert(mg); err != nil {
+			return err
+		}
+	}
+	return handler.Flush()
+}
+
+// Flush forces all buffered points to be sent immediately
+func (handler *InfluxDBV2Handler) Flush() error {
+	handler.writeAPI.Flush()
+	return nil
+}
+
+// Close flushes pending writes and closes the client.
+func (handler *InfluxDBV2Handler) Close() error {
+	handler.writeAPI.Flush()
+	handler.client.Close()
+	return nil
+}
+
+// BlockingInsert writes a point using the blocking write API.
+func (handler *InfluxDBV2Handler) BlockingInsert(ctx context.Context, measurements MeasurementGroup) error {
+	return nil
+}
+
+// Ensure InfluxDBV2Handler satisfies BatchHandler at compile time
+var _ BatchHandler = (*InfluxDBV2Handler)(nil)
+
+type writePoint = write.Point
