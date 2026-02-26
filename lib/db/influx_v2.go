@@ -9,7 +9,6 @@ import (
 	"github.com/AarC10/GSW-V2/lib/logger"
 	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
 	"github.com/influxdata/influxdb-client-go/v2/api"
-	"github.com/influxdata/influxdb-client-go/v2/api/write"
 	"go.uber.org/zap"
 )
 
@@ -160,6 +159,3 @@ func (handler *InfluxDBV2Handler) BlockingInsert(ctx context.Context, measuremen
 
 // Ensure InfluxDBV2Handler satisfies BatchHandler at compile time.
 var _ BatchHandler = (*InfluxDBV2Handler)(nil)
-
-// writePoint is a helper implementing write.PointWriter for testing.
-type writePoint = write.Point
