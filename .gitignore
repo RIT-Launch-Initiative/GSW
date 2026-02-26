@@ -33,6 +33,8 @@ data/config/gsw_service.yaml
 data/config/logger.yaml
 
 # Outputs
-data/logs/
-bin/
 arm64/
+bin/
+captures/
+data/logs/
+
