@@ -22,8 +22,8 @@ type InfluxDBV2Handler struct {
 	cfg      Config
 }
 
-// Initialize satisfies the Handler interface using host/port only
-// This is a wrapper around InitializeWithConfig that fills in the URL and leaves
+// Initialize satisfies the Handler interface using host/port only.
+// This is a wrapper around InitializeWithConfig that fills in the URL and leaves.
 func (handler *InfluxDBV2Handler) Initialize(host string, port int) error {
 	return handler.InitializeWithConfig(Config{
 		URL:           fmt.Sprintf("http://%s:%d", host, port),
@@ -36,7 +36,7 @@ func (handler *InfluxDBV2Handler) Initialize(host string, port int) error {
 	})
 }
 
-// InitializeWithConfig sets up the InfluxDB v2 client with full config
+// InitializeWithConfig sets up the InfluxDB v2 client with full config.
 func (handler *InfluxDBV2Handler) InitializeWithConfig(cfg Config) error {
 	if cfg.BatchSize == 0 {
 		cfg.BatchSize = 100

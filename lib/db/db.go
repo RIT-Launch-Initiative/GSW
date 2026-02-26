@@ -2,9 +2,13 @@ package db
 
 // Handler is an interface for database access implementations
 type Handler interface {
+	// Initialize sets up the database .
 	Initialize(host string, port int) error
+	// Insert sends the measurement data to the database.
 	Insert(measurements MeasurementGroup) error
+	// CreateQuery generates the database query for measurementGroup.
 	CreateQuery(measurements MeasurementGroup) string
+	// Close closes the database client when done.
 	Close() error
 }
 
@@ -35,9 +39,9 @@ type Config struct {
 
 // MeasurementGroup is a group of measurements to be sent to the database
 type MeasurementGroup struct {
-	DatabaseName string
-	Timestamp    int64
-	Measurements []Measurement
+	DatabaseName string        // Name of the database
+	Timestamp    int64         // Unix timestamp in nanoseconds
+	Measurements []Measurement // List of measurements to be sent
 }
 
 // Measurement is a single measurement to be sent to the database
