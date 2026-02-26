@@ -6,8 +6,10 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"os/signal"
 	"strings"
 	"sync"
+	"syscall"
 	"time"
 
 	"github.com/AarC10/GSW-V2/lib/logger"
@@ -111,7 +113,9 @@ func NetworkCapture(ctx context.Context) error {
 }
 
 func main() {
-	// Load config
+	flag.Parse()
+	logger.InitLogger()
+
 	configData, err := proc.ReadTelemetryConfigFromShm(*shmDir)
 	if err != nil {
 		logger.Fatal("couldn't read config from gsw", zap.Error(err))
@@ -123,17 +127,23 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	// Start network capture
-	var captureWg sync.WaitGroup
-	captureWg.Add(1)
+	sigs := make(chan os.Signal, 1)
+	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
 	go func() {
-		defer captureWg.Done()
-		if err := proc.NetworkCapture(ctx); err != nil {
+		sig := <-sigs
+		logger.Info("received signal", zap.String("signal", sig.String()))
+		cancel()
+	}()
+
+	var wg sync.WaitGroup
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		if err := NetworkCapture(ctx); err != nil {
 			logger.Error("network capture error", zap.Error(err))
 		}
 	}()
 
-	// Flush network capture to disk
-	captureWg.Wait()
+	wg.Wait()
 	logger.Info("network capture stopped")
 }
