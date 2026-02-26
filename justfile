@@ -27,3 +27,7 @@ test:
 # Format all Go code
 fmt:
     gofmt -w .
+
+# Blast all code in bin
+clean:
+    rm -rf bin/*
