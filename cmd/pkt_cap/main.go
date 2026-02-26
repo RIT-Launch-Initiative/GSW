@@ -101,7 +101,7 @@ func capture(ctx context.Context) error {
 		}
 	}
 
-	return nil
+	return ctx.Err()
 }
 func main() {
 	flag.Parse()

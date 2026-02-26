@@ -30,6 +30,8 @@ RUN --mount=type=cache,id=gsw_mod,target=/go/pkg/mod \
         ./cmd/$binary/; \
     done
 
+RUN apk add --update --no-cache libpcap-dev
+
 FROM alpine
 
 RUN addgroup -S appgroup && adduser -S appuser -G appgroup
