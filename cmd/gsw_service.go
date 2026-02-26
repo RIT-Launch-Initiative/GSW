@@ -78,14 +78,16 @@ func telemetryConfigInitialize(config *viper.Viper) (func(), error) {
 }
 
 // decomInitialize starts decommutation goroutines for each telemetry packet
-func decomInitialize(ctx context.Context) map[int]chan []byte {
+func decomInitialize(ctx context.Context, wg *sync.WaitGroup) map[int]chan []byte {
 	channelMap := make(map[int]chan []byte)
 
 	for _, packet := range proc.GswConfig.TelemetryPackets {
 		finalOutputChannel := make(chan []byte)
 		channelMap[packet.Port] = finalOutputChannel
 
+		wg.Add(1)
 		go func(packet tlm.TelemetryPacket, ch chan []byte) {
+			defer wg.Done()
 			err := proc.TelemetryPacketWriter(ctx, packet, finalOutputChannel, *shmDir)
 			if err != nil && !errors.Is(err, context.Canceled) {
 				logger.Error("error initializing packet writer", zap.Error(err))
@@ -97,13 +99,12 @@ func decomInitialize(ctx context.Context) map[int]chan []byte {
 	return channelMap
 }
 
-func dbInitialize(ctx context.Context, channelMap map[int]chan []byte, host string, port int) (*sync.WaitGroup, error) {
+func dbInitialize(ctx context.Context, channelMap map[int]chan []byte, host string, port int, wg *sync.WaitGroup) error {
 	dbHandler := db.InfluxDBV1Handler{}
 	if err := dbHandler.Initialize(host, port); err != nil {
-		return nil, err
+		return err
 	}
 
-	var wg sync.WaitGroup
 	for _, packet := range proc.GswConfig.TelemetryPackets {
 		wg.Add(1)
 		go func(packet tlm.TelemetryPacket, ch chan []byte) {
@@ -111,7 +112,7 @@ func dbInitialize(ctx context.Context, channelMap map[int]chan []byte, host stri
 			proc.DatabaseWriter(ctx, &dbHandler, packet, ch)
 		}(packet, channelMap[packet.Port])
 	}
-	return &wg, nil
+	return nil
 }
 
 func readConfig() (*viper.Viper, int) {
@@ -173,14 +174,14 @@ func main() {
 		cancel()
 	}()
 
+	var wg sync.WaitGroup
+
 	// Start decom writers
-	channelMap := decomInitialize(ctx)
+	channelMap := decomInitialize(ctx, &wg)
 
 	// Start DB writers
-	var dbWg *sync.WaitGroup
 	if config.IsSet("database_host_name") && config.IsSet("database_port_number") {
-		dbWg, err = dbInitialize(ctx, channelMap, config.GetString("database_host_name"), config.GetInt("database_port_number"))
-		if err != nil {
+		if err = dbInitialize(ctx, channelMap, config.GetString("database_host_name"), config.GetInt("database_port_number"), &wg); err != nil {
 			logger.Warn("DB Initialization failed, telemetry packets will not be published to the database", zap.Error(err))
 		}
 	} else {
@@ -190,18 +191,6 @@ func main() {
 	// Wait for shutdown signal
 	<-ctx.Done()
 	logger.Info("Shutting down GSW...")
-
-	// Stop DB writers first by canceling context and waiting for them to finish
-	// Should exit before decom writers clean up SHM files
-	if dbWg != nil {
-		dbWg.Wait()
-		logger.Info("database writers stopped")
-	}
-
-	// Clean up SHM files
-	for i, channel := range channelMap {
-		<-channel
-		logger.Info("channel closed", zap.Int("port", i))
-	}
-
+	wg.Wait()
+	logger.Info("GSW stopped")
 }
