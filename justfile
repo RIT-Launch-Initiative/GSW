@@ -5,6 +5,7 @@ default:
 # Glootie from Rick and Morty: just build <app>
 build app:
     go build -o bin/{{app}} ./cmd/{{app}}
+    {{ if app == "pkt_cap" { "sudo setcap 'cap_net_raw,cap_net_admin=eip' bin/pkt_cap" } else { "" } }}
 
 # Build all apps
 build-all:
@@ -12,7 +13,7 @@ build-all:
 
 # Run any app: just run <app>
 run app:
-    go run ./cmd/{{app}}
+    {{ if app == "pkt_cap" { "just build pkt_cap && ./bin/pkt_cap" } else { "go run ./cmd/" + app } }}
 
 # Run GSW service
 run-gsw:
