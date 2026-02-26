@@ -57,8 +57,6 @@ func CreateQuery(measurements MeasurementGroup) string {
 
 	query += "\n"
 
-	// TODO: Make a debug logger?
-
 	return query
 }
 

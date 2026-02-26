@@ -172,6 +172,15 @@ func getTimeEncoder(name string) (zapcore.TimeEncoder, error) {
 		return zapcore.EpochNanosTimeEncoder, nil
 	case "epoch":
 		return zapcore.EpochTimeEncoder, nil
+	case "datetime":
+		return func(t time.Time, enc zapcore.PrimitiveArrayEncoder) {
+			enc.AppendString(t.Format("2006-01-02 15:04:05"))
+		}, nil
+
+	case "time":
+		return func(t time.Time, enc zapcore.PrimitiveArrayEncoder) {
+			enc.AppendString(t.Format("15:04:05"))
+		}, nil
 	default:
 		return nil, fmt.Errorf("unsupported timeEncoder: %s", name)
 	}

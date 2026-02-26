@@ -13,7 +13,7 @@ encoderConfig:
   stacktraceKey: stacktrace     # Key for stacktrace logs (stacktrace, "")
   lineEnding: "\n"              # Line ending character
   levelEncoder: capitalColor    # Encode log levels (lowercase, uppercase, color, etc.)
-  timeEncoder: iso8601          # Format timestamp (iso8601, epoch, etc.)
+  timeEncoder: datetime         # Format timestamp (iso8601, millis, nanos, epoch, datetime, time)
   durationEncoder: string       # Encode durations as strings
   callerEncoder: short          # Encode caller information (short or full path)
 
