@@ -199,13 +199,9 @@ func main() {
 	defer telemetryConfigCleanup()
 
 	channelMap := decomInitialize(ctx)
-	if config.IsSet("database_host_name") && config.IsSet("database_port_number") {
-		err = dbInitialize(ctx, channelMap, config)
-		if err != nil {
-			logger.Warn("DB Initialization failed, telemetry packets will not be published to the database", zap.Error(err))
-		}
-	} else {
-		logger.Warn("database_host_name or database_port_number is not set, telemetry packets will not be published to the database")
+	err = dbInitialize(ctx, channelMap, config)
+	if err != nil {
+		logger.Warn("DB Initialization failed, telemetry packets will not be published to the database", zap.Error(err))
 	}
 
 	// Wait for context cancellation or signal handling
