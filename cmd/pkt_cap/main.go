@@ -55,19 +55,16 @@ func NetworkCapture(ctx context.Context) error {
 
 	handle, err := pcap.OpenLive("any", int32(snaplen), true, 100*time.Millisecond)
 	if err != nil {
-		logger.Error("failed opening pcap handle:", zap.Error(err))
-		return err
+		return fmt.Errorf("error opening pcap handle: %v", err)
 	}
 
 	if err := handle.SetBPFFilter(filter); err != nil {
-		logger.Error("failed setting BPF filter:", zap.Error(err))
-		return err
+		return fmt.Errorf("error setting BPF filter: %v", err)
 	}
 
 	pcapFile, err := createOutputFile()
 	if err != nil {
-		logger.Error("failed creating output file:", zap.Error(err))
-		return err
+		return fmt.Errorf("error creating output file: %v", err)
 	}
 	defer func(pcapFile *os.File) {
 		err := pcapFile.Close()
@@ -89,8 +86,7 @@ func NetworkCapture(ctx context.Context) error {
 
 	pcapWriter := pcapgo.NewWriterNanos(bufferedFile)
 	if err := pcapWriter.WriteFileHeader(snaplen, handle.LinkType()); err != nil {
-		logger.Error("failed writing pcap file header:", zap.Error(err))
-		return err
+		return fmt.Errorf("error writing pcap file header: %v", err)
 	}
 
 	packetSource := gopacket.NewPacketSource(handle, handle.LinkType())
