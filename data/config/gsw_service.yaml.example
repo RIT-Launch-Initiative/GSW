@@ -1,9 +1,19 @@
-# path to telemetry definitions
+# Path to telemetry definitions
 telemetry_config: data/config/backplane.yaml
 
-# database defines the hostname and port of an InfluxDB v1 UDP input
-database_host_name: localhost
-database_port_number: 8089
+# InfluxDB V1 (UDP)
+# database_host_name: localhost
+# database_port_number: 8089
 
-# path to gsw_service logging config
+# InfluxDB V2 (batched HTTP)
+# If database_v2_url is set, V2 will be used and V1 settings are ignored
+database_v2_url: http://localhost:8086
+database_v2_token: your-token-here
+database_v2_org: gsw
+database_v2_bucket: gsw
+database_v2_batch_size: 100          # points buffered before auto-flush
+database_v2_flush_interval_ms: 1000  # max ms before flushing partial batch
+database_v2_precision: ns            # ns | us | ms | s
+
+# Path to GSW service logging config
 logging_config: data/config/logger.yaml

@@ -22,8 +22,7 @@ type InfluxDBV2Handler struct {
 	cfg      Config
 }
 
-// Initialize satisfies the Handler interface using host/port only so
-// for V2 you most likey want InitializeWithConfig instead.
+// Initialize satisfies the Handler interface using host/port only
 // This is a wrapper around InitializeWithConfig that fills in the URL and leaves
 func (handler *InfluxDBV2Handler) Initialize(host string, port int) error {
 	return handler.InitializeWithConfig(Config{
@@ -78,9 +77,9 @@ func (handler *InfluxDBV2Handler) InitializeWithConfig(cfg Config) error {
 }
 
 // CreateQuery generates InfluxDB line protocol for a MeasurementGroup.
-// Reuses the same logic as V1 for consistency.
+// This is literally useless so just return nothing.
 func (handler *InfluxDBV2Handler) CreateQuery(measurements MeasurementGroup) string {
-	return CreateQuery(measurements)
+	return ""
 }
 
 // Insert writes a MeasurementGroup to InfluxDB v2 as a single point.
@@ -96,14 +95,13 @@ func (handler *InfluxDBV2Handler) Insert(measurements MeasurementGroup) error {
 	}
 	point.SetTime(timestamp)
 
-	for _, m := range measurements.Measurements {
-		// Try numeric first; fall back to string field.
-		if f, err := strconv.ParseFloat(m.Value, 64); err == nil {
-			point.AddField(m.Name, f)
-		} else if i, err := strconv.ParseInt(m.Value, 10, 64); err == nil {
-			point.AddField(m.Name, i)
+	for _, measurement := range measurements.Measurements {
+		if floatVal, err := strconv.ParseFloat(measurement.Value, 64); err == nil {
+			point.AddField(measurement.Name, floatVal)
+		} else if intVal, err := strconv.ParseInt(measurement.Value, 10, 64); err == nil {
+			point.AddField(measurement.Name, intVal)
 		} else {
-			point.AddField(m.Name, m.Value)
+			point.AddField(measurement.Name, measurement.Value)
 		}
 	}
 

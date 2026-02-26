@@ -96,22 +96,47 @@ func decomInitialize(ctx context.Context) map[int]chan []byte {
 	return channelMap
 }
 
-func dbInitialize(ctx context.Context, channelMap map[int]chan []byte, host string, port int) error {
-	dbHandler := db.InfluxDBV1Handler{}
-	err := dbHandler.Initialize(host, port)
-	if err != nil {
-		return err
+func dbInitialize(ctx context.Context, channelMap map[int]chan []byte, config *viper.Viper) error {
+	var handler db.Handler
+
+	if config.IsSet("database_v2_url") {
+		v2cfg := db.Config{
+			URL:           config.GetString("database_v2_url"),
+			Token:         config.GetString("database_v2_token"),
+			Org:           config.GetString("database_v2_org"),
+			Bucket:        config.GetString("database_v2_bucket"),
+			BatchSize:     uint(config.GetInt("database_v2_batch_size")),
+			FlushInterval: uint(config.GetInt("database_v2_flush_interval_ms")),
+			Precision:     config.GetString("database_v2_precision"),
+		}
+		h := &db.InfluxDBV2Handler{}
+		if err := h.InitializeWithConfig(v2cfg); err != nil {
+			return fmt.Errorf("initializing InfluxDB V2: %w", err)
+		}
+		handler = h
+		logger.Info("Using InfluxDB V2 handler with batching",
+			zap.Uint("batchSize", v2cfg.BatchSize),
+			zap.Uint("flushIntervalMs", v2cfg.FlushInterval),
+		)
+	} else {
+		host := config.GetString("database_host_name")
+		port := config.GetInt("database_port_number")
+		h := &db.InfluxDBV1Handler{}
+		if err := h.Initialize(host, port); err != nil {
+			return fmt.Errorf("initializing InfluxDB V1: %w", err)
+		}
+		handler = h
+		logger.Info("Using InfluxDB V1 handler (UDP)")
 	}
 
 	for _, packet := range proc.GswConfig.TelemetryPackets {
 		go func(packet tlm.TelemetryPacket, ch chan []byte) {
-			proc.DatabaseWriter(&dbHandler, packet, ch)
+			proc.DatabaseWriter(handler, packet, ch)
 		}(packet, channelMap[packet.Port])
 	}
 
 	return nil
 }
-
 func readConfig() (*viper.Viper, int) {
 	config := viper.New()
 	config.SetConfigName(*configFilepath)
@@ -175,7 +200,7 @@ func main() {
 
 	channelMap := decomInitialize(ctx)
 	if config.IsSet("database_host_name") && config.IsSet("database_port_number") {
-		err = dbInitialize(ctx, channelMap, config.GetString("database_host_name"), config.GetInt("database_port_number"))
+		err = dbInitialize(ctx, channelMap, config)
 		if err != nil {
 			logger.Warn("DB Initialization failed, telemetry packets will not be published to the database", zap.Error(err))
 		}
