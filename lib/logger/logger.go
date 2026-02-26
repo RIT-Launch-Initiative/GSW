@@ -41,16 +41,57 @@ func InitLogger() {
 		return
 	}
 
-	loggerConfig := zap.Config{
-		Level:            level,
-		Development:      false,
-		Encoding:         viperConfig.GetString("encoding"),
-		OutputPaths:      outputPaths,
-		ErrorOutputPaths: outputPaths,
-		EncoderConfig:    encoderConfig,
+	encoding := viperConfig.GetString("encoding")
+
+	makeEncoder := func(color bool) zapcore.Encoder {
+		encoderCopy := encoderConfig
+		if !color {
+			switch viperConfig.GetString("encoderConfig.levelEncoder") {
+			case "capitalColor":
+				encoderCopy.EncodeLevel = zapcore.CapitalLevelEncoder
+			case "lowercaseColor":
+				encoderCopy.EncodeLevel = zapcore.LowercaseLevelEncoder
+			}
+		}
+
+		if encoding == "json" {
+			return zapcore.NewJSONEncoder(encoderCopy)
+		}
+		return zapcore.NewConsoleEncoder(encoderCopy)
 	}
 
-	logger = zap.Must(loggerConfig.Build(zap.AddCaller(), zap.AddCallerSkip(1)))
+	var cores []zapcore.Core
+
+	// stdout/stderr get color if user requested a color encoder
+	stdEncoder := makeEncoder(true)
+	fileEncoder := makeEncoder(false)
+
+	for _, outputPath := range outputPaths {
+		switch outputPath {
+		case "stdout":
+			cores = append(cores, zapcore.NewCore(stdEncoder, zapcore.AddSync(os.Stdout), level))
+		case "stderr":
+			cores = append(cores, zapcore.NewCore(stdEncoder, zapcore.AddSync(os.Stderr), level))
+		default:
+			outputFile, err := os.OpenFile(outputPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+			if err != nil {
+				logger.Warn("failed to open log file", zap.String("path", outputPath), zap.Error(err))
+				continue
+			}
+			cores = append(cores, zapcore.NewCore(fileEncoder, zapcore.AddSync(outputFile), level))
+		}
+	}
+
+	if len(cores) == 0 {
+		logger.Warn("no valid output outputPaths, using default logger")
+		return
+	}
+
+	logger = zap.New(
+		zapcore.NewTee(cores...),
+		zap.AddCaller(),
+		zap.AddCallerSkip(1),
+	)
 }
 
 // loadLoggerConfig loads the logger configuration from a YAML file
