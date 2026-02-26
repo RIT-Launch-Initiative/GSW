@@ -22,83 +22,79 @@ import (
 
 var shmDir = flag.String("shm", "/dev/shm", "directory to use for shared memory")
 
-func getFilter() string {
-	ports := []string{}
+func getFilter() (string, error) {
+	if len(proc.GswConfig.TelemetryPackets) == 0 {
+		return "", fmt.Errorf("no telemetry packets configured")
+	}
+
+	ports := make([]string, 0, len(proc.GswConfig.TelemetryPackets))
 	for _, packet := range proc.GswConfig.TelemetryPackets {
 		ports = append(ports, fmt.Sprintf("udp port %d", packet.Port))
 	}
 
-	filter := strings.Join(ports, " or ")
-	return filter
+	return strings.Join(ports, " or "), nil
 }
 
 func createOutputFile() (*os.File, error) {
-	// Note the date format isn't random. This is reference time used in Go for formatting time
 	timestamp := time.Now().Format("2006-01-02_15-04-05")
-
-	// TODO: Configurable output directory
-	if _, err := os.Stat("captures"); os.IsNotExist(err) {
-		err := os.Mkdir("captures", 0755)
-		if err != nil {
-			return nil, fmt.Errorf("error creating captures directory: %v", err)
-		}
+	if err := os.MkdirAll("captures", 0755); err != nil {
+		return nil, fmt.Errorf("creating captures directory: %w", err)
 	}
 
 	filename := fmt.Sprintf("captures/%s_%s.pcap", proc.GswConfig.Name, timestamp)
-
 	return os.Create(filename)
 }
 
-func NetworkCapture(ctx context.Context) error {
-	snaplen := uint32(1600)
-	filter := getFilter()
-
-	handle, err := pcap.OpenLive("any", int32(snaplen), true, 100*time.Millisecond)
+func capture(ctx context.Context) error {
+	filter, err := getFilter()
 	if err != nil {
-		return fmt.Errorf("error opening pcap handle: %v", err)
+		return fmt.Errorf("building capture filter: %w", err)
 	}
 
+	snaplen := uint32(65535)
+	handle, err := pcap.OpenLive("any", int32(snaplen), true, 100*time.Millisecond)
+	if err != nil {
+		return fmt.Errorf("opening pcap handle: %w", err)
+	}
+	defer handle.Close()
+
 	if err := handle.SetBPFFilter(filter); err != nil {
-		return fmt.Errorf("error setting BPF filter: %v", err)
+		return fmt.Errorf("setting BPF filter: %w", err)
 	}
 
 	pcapFile, err := createOutputFile()
 	if err != nil {
-		return fmt.Errorf("error creating output file: %v", err)
+		return fmt.Errorf("creating output file: %w", err)
 	}
-	defer func(pcapFile *os.File) {
-		err := pcapFile.Close()
-		if err != nil {
-			logger.Error("failed closing pcap file:", zap.Error(err))
-			return
+	defer func() {
+		if err := pcapFile.Close(); err != nil {
+			logger.Error("failed closing pcap file", zap.Error(err))
 		}
-	}(pcapFile)
+	}()
 
-	// TODO: 128 KB buffer. Make this configurable?
 	bufferedFile := bufio.NewWriterSize(pcapFile, 128*1024)
-	defer func(bufferedFile *bufio.Writer) {
-		err := bufferedFile.Flush()
-		if err != nil {
-			logger.Error("failed flushing buffered writer:", zap.Error(err))
-			return
+	defer func() {
+		if err := bufferedFile.Flush(); err != nil {
+			logger.Error("failed flushing buffered writer", zap.Error(err))
 		}
-	}(bufferedFile)
+	}()
 
 	pcapWriter := pcapgo.NewWriterNanos(bufferedFile)
 	if err := pcapWriter.WriteFileHeader(snaplen, handle.LinkType()); err != nil {
-		return fmt.Errorf("error writing pcap file header: %v", err)
+		return fmt.Errorf("writing pcap file header: %w", err)
 	}
 
-	packetSource := gopacket.NewPacketSource(handle, handle.LinkType())
-
-	logger.Info("Network capture started with filter:", zap.String("filter", filter))
-	logger.Info("Writing captured packets to file:", zap.String("filename", pcapFile.Name()))
+	logger.Info("network capture started",
+		zap.String("filter", filter),
+		zap.String("file", pcapFile.Name()),
+	)
 
 	go func() {
 		<-ctx.Done()
 		handle.Close()
 	}()
 
+	packetSource := gopacket.NewPacketSource(handle, handle.LinkType())
 	for packet := range packetSource.Packets() {
 		if err := pcapWriter.WritePacket(packet.Metadata().CaptureInfo, packet.Data()); err != nil {
 			logger.Error("failed writing packet", zap.Error(err))
@@ -107,7 +103,6 @@ func NetworkCapture(ctx context.Context) error {
 
 	return nil
 }
-
 func main() {
 	flag.Parse()
 	logger.InitLogger()
@@ -135,7 +130,7 @@ func main() {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		if err := NetworkCapture(ctx); err != nil {
+		if err := capture(ctx); err != nil {
 			logger.Error("network capture error", zap.Error(err))
 		}
 	}()
