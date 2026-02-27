@@ -1,7 +1,6 @@
 FROM golang:1.25-alpine AS build
 
-RUN apk add --update --no-cache build-base
-RUN apk add --update --no-cache libpcap-dev
+RUN apk add --update --no-cache build-base libpcap-dev
 
 WORKDIR /go/src/app
 
