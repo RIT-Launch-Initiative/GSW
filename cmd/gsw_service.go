@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"sync"
 	"syscall"
 
 	"github.com/AarC10/GSW-V2/lib/db"
@@ -77,14 +78,16 @@ func telemetryConfigInitialize(config *viper.Viper) (func(), error) {
 }
 
 // decomInitialize starts decommutation goroutines for each telemetry packet
-func decomInitialize(ctx context.Context) map[int]chan []byte {
+func decomInitialize(ctx context.Context, wg *sync.WaitGroup) map[int]chan []byte {
 	channelMap := make(map[int]chan []byte)
 
 	for _, packet := range proc.GswConfig.TelemetryPackets {
 		finalOutputChannel := make(chan []byte)
 		channelMap[packet.Port] = finalOutputChannel
 
+		wg.Add(1)
 		go func(packet tlm.TelemetryPacket, ch chan []byte) {
+			defer wg.Done()
 			err := proc.TelemetryPacketWriter(ctx, packet, finalOutputChannel, *shmDir)
 			if err != nil && !errors.Is(err, context.Canceled) {
 				logger.Error("error initializing packet writer", zap.Error(err))
@@ -96,19 +99,19 @@ func decomInitialize(ctx context.Context) map[int]chan []byte {
 	return channelMap
 }
 
-func dbInitialize(ctx context.Context, channelMap map[int]chan []byte, host string, port int) error {
+func dbInitialize(ctx context.Context, channelMap map[int]chan []byte, host string, port int, wg *sync.WaitGroup) error {
 	dbHandler := db.InfluxDBV1Handler{}
-	err := dbHandler.Initialize(host, port)
-	if err != nil {
+	if err := dbHandler.Initialize(host, port); err != nil {
 		return err
 	}
 
 	for _, packet := range proc.GswConfig.TelemetryPackets {
+		wg.Add(1)
 		go func(packet tlm.TelemetryPacket, ch chan []byte) {
-			proc.DatabaseWriter(&dbHandler, packet, ch)
+			defer wg.Done()
+			proc.DatabaseWriter(ctx, &dbHandler, packet, ch)
 		}(packet, channelMap[packet.Port])
 	}
-
 	return nil
 }
 
@@ -146,49 +149,48 @@ func main() {
 	flag.Parse()
 	logger.InitLogger()
 
-	// Read gsw_service config
 	config, profilingPort := readConfig()
-
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
 
 	if profilingPort != 0 {
 		initProfiling(profilingPort)
 	}
 
+	telemetryConfigCleanup, err := telemetryConfigInitialize(config)
+	if err != nil {
+		logger.Fatal("Exiting GSW...")
+		return
+	}
+	defer telemetryConfigCleanup()
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
 	// Setup signal handling
 	sigs := make(chan os.Signal, 1)
 	signal.Notify(sigs, syscall.SIGTERM, syscall.SIGINT)
-
 	go func() {
 		sig := <-sigs
 		logger.Debug("Received signal", zap.String("signal", sig.String()))
 		cancel()
 	}()
 
-	telemetryConfigCleanup, err := telemetryConfigInitialize(config)
-	if err != nil {
-		logger.Panic("Exiting GSW...")
-		return
-	}
-	defer telemetryConfigCleanup()
+	var wg sync.WaitGroup
 
-	channelMap := decomInitialize(ctx)
+	// Start decom writers
+	channelMap := decomInitialize(ctx, &wg)
+
+	// Start DB writers
 	if config.IsSet("database_host_name") && config.IsSet("database_port_number") {
-		err = dbInitialize(ctx, channelMap, config.GetString("database_host_name"), config.GetInt("database_port_number"))
-		if err != nil {
+		if err = dbInitialize(ctx, channelMap, config.GetString("database_host_name"), config.GetInt("database_port_number"), &wg); err != nil {
 			logger.Warn("DB Initialization failed, telemetry packets will not be published to the database", zap.Error(err))
 		}
 	} else {
 		logger.Warn("database_host_name or database_port_number is not set, telemetry packets will not be published to the database")
 	}
 
-	// Wait for context cancellation or signal handling
+	// Wait for shutdown signal
 	<-ctx.Done()
 	logger.Info("Shutting down GSW...")
-
-	for i, channel := range channelMap {
-		<-channel
-		logger.Info("channel closed", zap.Int("port", i))
-	}
+	wg.Wait()
+	logger.Info("GSW stopped")
 }
