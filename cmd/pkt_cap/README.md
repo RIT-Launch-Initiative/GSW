@@ -7,7 +7,7 @@ sudo apt-get install libpcap-dev
 ```
 
 ### Arch Linux
-```bashbash
+```bash
 sudo pacman -S libpcap
 ```
 

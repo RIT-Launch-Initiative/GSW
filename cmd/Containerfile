@@ -1,6 +1,7 @@
 FROM golang:1.25-alpine AS build
 
 RUN apk add --update --no-cache build-base
+RUN apk add --update --no-cache libpcap-dev
 
 WORKDIR /go/src/app
 
@@ -22,15 +23,13 @@ RUN --mount=type=cache,id=gsw_mod,target=/go/pkg/mod \
 
 RUN --mount=type=cache,id=gsw_mod,target=/go/pkg/mod \
     --mount=type=cache,id=gsw_build,target=/root/.cache/go-build \
-    for binary in grafana_live live_setup mem_view ipc_benchmark telem_view udp_command mqtt_producer; do \
+    for binary in grafana_live live_setup mem_view ipc_benchmark telem_view udp_command mqtt_producer pkt_cap; do \
         CGO_ENABLED=1 GOOS=linux go build \
         -trimpath \
         -o /build-output/bin/$binary \
         -v \
         ./cmd/$binary/; \
     done
-
-RUN apk add --update --no-cache libpcap-dev
 
 FROM alpine
 
