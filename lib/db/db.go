@@ -16,7 +16,6 @@ type BatchHandler interface {
 	Flush() error
 }
 
-
 // MeasurementGroup is a group of measurements to be sent to the database
 type MeasurementGroup struct {
 	DatabaseName string        // Name of the database
