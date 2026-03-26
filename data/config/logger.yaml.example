@@ -1,8 +1,9 @@
 level: debug                    # Log level
 encoding: console               # Log format: json or console
 outputPaths:                    # Where logs are written
-    - stdout                    # Standard output 
+    - stdout                    # Standard output
     - data/logs/                # (when adding a folder add the '/' at the end)
+
 encoderConfig:
   messageKey: message           # Key for the log message
   levelKey: level               # Key for the log level
@@ -11,8 +12,8 @@ encoderConfig:
   callerKey: caller             # Key for the caller information
   stacktraceKey: stacktrace     # Key for stacktrace logs (stacktrace, "")
   lineEnding: "\n"              # Line ending character
-  levelEncoder: capital         # Encode log levels (lowercase, uppercase, color, etc.)
-  timeEncoder: iso8601          # Format timestamp (iso8601, epoch, etc.)
+  levelEncoder: capitalColor    # Encode log levels (lowercase, uppercase, color, etc.)
+  timeEncoder: datetime         # Format timestamp (iso8601, millis, nanos, epoch, datetime, time)
   durationEncoder: string       # Encode durations as strings
   callerEncoder: short          # Encode caller information (short or full path)
 

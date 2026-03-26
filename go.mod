@@ -7,6 +7,7 @@ toolchain go1.24.9
 require (
 	github.com/eclipse/paho.mqtt.golang v1.5.1
 	github.com/gdamore/tcell/v2 v2.7.1
+	github.com/google/gopacket v1.1.19
 	github.com/gorilla/websocket v1.5.3
 	github.com/influxdata/influxdb-client-go/v2 v2.14.0
 	github.com/joho/godotenv v1.5.1
