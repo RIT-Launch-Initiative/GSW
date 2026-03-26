@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/AarC10/GSW-V2/lib/logger"
@@ -29,7 +30,49 @@ type InfluxDBV2Config struct {
 	Bucket        string
 	BatchSize     uint
 	FlushInterval uint
-	Precision     string
+	Precision     Precision
+}
+
+// Precision constrains write precision to values supported by InfluxDB.
+type Precision string
+
+const (
+	PrecisionNS Precision = "ns"
+	PrecisionUS Precision = "us"
+	PrecisionMS Precision = "ms"
+	PrecisionS  Precision = "s"
+)
+
+// ParsePrecision normalizes and validates config precision values.
+func ParsePrecision(raw string) (Precision, error) {
+	switch strings.ToLower(strings.TrimSpace(raw)) {
+	case "", string(PrecisionNS):
+		return PrecisionNS, nil
+	case string(PrecisionUS):
+		return PrecisionUS, nil
+	case string(PrecisionMS):
+		return PrecisionMS, nil
+	case string(PrecisionS):
+		return PrecisionS, nil
+	default:
+		return "", fmt.Errorf("expected one of ns, us, ms, s")
+	}
+}
+
+// Duration maps precision values to the influx client write precision option.
+func (p Precision) Duration() (time.Duration, error) {
+	switch p {
+	case PrecisionNS:
+		return time.Nanosecond, nil
+	case PrecisionUS:
+		return time.Microsecond, nil
+	case PrecisionMS:
+		return time.Millisecond, nil
+	case PrecisionS:
+		return time.Second, nil
+	default:
+		return 0, fmt.Errorf("unsupported precision %q", p)
+	}
 }
 
 // Initialize satisfies the Handler interface using host/port only.
@@ -42,7 +85,7 @@ func (handler *InfluxDBV2Handler) Initialize(host string, port int) error {
 		Bucket:        "gsw",
 		BatchSize:     100,
 		FlushInterval: 1000,
-		Precision:     "ns",
+		Precision:     PrecisionNS,
 	})
 }
 
@@ -55,7 +98,12 @@ func (handler *InfluxDBV2Handler) InitializeWithConfig(cfg InfluxDBV2Config) err
 		cfg.FlushInterval = 1000
 	}
 	if cfg.Precision == "" {
-		cfg.Precision = "ns"
+		cfg.Precision = PrecisionNS
+	}
+
+	precision, err := cfg.Precision.Duration()
+	if err != nil {
+		return fmt.Errorf("invalid precision: %w", err)
 	}
 
 	handler.cfg = cfg
@@ -64,7 +112,8 @@ func (handler *InfluxDBV2Handler) InitializeWithConfig(cfg InfluxDBV2Config) err
 
 	options := influxdb2.DefaultOptions().
 		SetBatchSize(cfg.BatchSize).
-		SetFlushInterval(cfg.FlushInterval)
+		SetFlushInterval(cfg.FlushInterval).
+		SetPrecision(precision)
 
 	handler.client = influxdb2.NewClientWithOptions(cfg.URL, cfg.Token, options)
 	handler.writeAPI = handler.client.WriteAPI(cfg.Org, cfg.Bucket)
@@ -80,6 +129,7 @@ func (handler *InfluxDBV2Handler) InitializeWithConfig(cfg InfluxDBV2Config) err
 		zap.String("url", cfg.URL),
 		zap.String("org", cfg.Org),
 		zap.String("bucket", cfg.Bucket),
+		zap.String("precision", string(cfg.Precision)),
 		zap.Uint("batchSize", cfg.BatchSize),
 		zap.Uint("flushInterval", cfg.FlushInterval),
 	)

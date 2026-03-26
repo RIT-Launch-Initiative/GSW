@@ -103,6 +103,11 @@ func dbInitialize(ctx context.Context, channelMap map[int]chan []byte, config *v
 	var handler db.Handler
 
 	if config.IsSet("database_v2_url") {
+		precision, err := db.ParsePrecision(config.GetString("database_v2_precision"))
+		if err != nil {
+			return fmt.Errorf("invalid database_v2_precision: %w", err)
+		}
+
 		v2cfg := db.InfluxDBV2Config{
 			URL:           config.GetString("database_v2_url"),
 			Token:         config.GetString("database_v2_token"),
@@ -110,7 +115,7 @@ func dbInitialize(ctx context.Context, channelMap map[int]chan []byte, config *v
 			Bucket:        config.GetString("database_v2_bucket"),
 			BatchSize:     uint(config.GetInt("database_v2_batch_size")),
 			FlushInterval: uint(config.GetInt("database_v2_flush_interval_ms")),
-			Precision:     config.GetString("database_v2_precision"),
+			Precision:     precision,
 		}
 		h := &db.InfluxDBV2Handler{}
 		if err := h.InitializeWithConfig(v2cfg); err != nil {
