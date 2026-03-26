@@ -103,7 +103,7 @@ func dbInitialize(ctx context.Context, channelMap map[int]chan []byte, config *v
 	var handler db.Handler
 
 	if config.IsSet("database_v2_url") {
-		v2cfg := db.Config{
+		v2cfg := db.InfluxDBV2Config{
 			URL:           config.GetString("database_v2_url"),
 			Token:         config.GetString("database_v2_token"),
 			Org:           config.GetString("database_v2_org"),
@@ -122,10 +122,12 @@ func dbInitialize(ctx context.Context, channelMap map[int]chan []byte, config *v
 			zap.Uint("flushIntervalMs", v2cfg.FlushInterval),
 		)
 	} else {
-		host := config.GetString("database_host_name")
-		port := config.GetInt("database_port_number")
+		v1cfg := db.InfluxDBV1Config{
+			Host: config.GetString("database_host_name"),
+			Port: config.GetInt("database_port_number"),
+		}
 		h := &db.InfluxDBV1Handler{}
-		if err := h.Initialize(host, port); err != nil {
+		if err := h.InitializeWithConfig(v1cfg); err != nil {
 			return fmt.Errorf("initializing InfluxDB V1: %w", err)
 		}
 		handler = h

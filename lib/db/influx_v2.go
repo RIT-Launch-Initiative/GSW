@@ -18,13 +18,24 @@ type InfluxDBV2Handler struct {
 	writeAPI api.WriteAPI
 	org      string
 	bucket   string
-	cfg      Config
+	cfg      InfluxDBV2Config
+}
+
+// InfluxDBV2Config holds the fields needed by the InfluxDB v2 client.
+type InfluxDBV2Config struct {
+	URL           string
+	Token         string
+	Org           string
+	Bucket        string
+	BatchSize     uint
+	FlushInterval uint
+	Precision     string
 }
 
 // Initialize satisfies the Handler interface using host/port only.
 // This is a wrapper around InitializeWithConfig that fills in the URL and leaves.
 func (handler *InfluxDBV2Handler) Initialize(host string, port int) error {
-	return handler.InitializeWithConfig(Config{
+	return handler.InitializeWithConfig(InfluxDBV2Config{
 		URL:           fmt.Sprintf("http://%s:%d", host, port),
 		Token:         "",
 		Org:           "gsw",
@@ -36,7 +47,7 @@ func (handler *InfluxDBV2Handler) Initialize(host string, port int) error {
 }
 
 // InitializeWithConfig sets up the InfluxDB v2 client with full config.
-func (handler *InfluxDBV2Handler) InitializeWithConfig(cfg Config) error {
+func (handler *InfluxDBV2Handler) InitializeWithConfig(cfg InfluxDBV2Config) error {
 	if cfg.BatchSize == 0 {
 		cfg.BatchSize = 100
 	}
@@ -77,7 +88,7 @@ func (handler *InfluxDBV2Handler) InitializeWithConfig(cfg Config) error {
 
 // CreateQuery generates InfluxDB line protocol for a MeasurementGroup.
 // This is literally useless so just return nothing.
-func (handler *InfluxDBV2Handler) CreateQuery(measurements MeasurementGroup) string {
+func (handler *InfluxDBV2Handler) CreateQuery(_ MeasurementGroup) string {
 	return ""
 }
 
