@@ -99,7 +99,7 @@ func decomInitialize(ctx context.Context, wg *sync.WaitGroup) map[int]chan []byt
 	return channelMap
 }
 
-func dbInitialize(ctx context.Context, channelMap map[int]chan []byte, host string, port int, wg *sync.WaitGroup) error {
+func dbInitialize(ctx context.Context, channelMap map[int]chan []byte, config *viper.Viper, wg *sync.WaitGroup) error {
 	var handler db.Handler
 
 	if config.IsSet("database_v2_url") {
@@ -130,17 +130,18 @@ func dbInitialize(ctx context.Context, channelMap map[int]chan []byte, host stri
 		}
 		handler = h
 		logger.Info("Using InfluxDB V1 handler (UDP)")
-    
+	}
+
 	for _, packet := range proc.GswConfig.TelemetryPackets {
 		wg.Add(1)
 		go func(packet tlm.TelemetryPacket, ch chan []byte) {
 			defer wg.Done()
-			proc.DatabaseWriter(ctx, &dbHandler, packet, ch)
+			proc.DatabaseWriter(ctx, handler, packet, ch)
 		}(packet, channelMap[packet.Port])
 	}
 	return nil
 }
-  
+
 func readConfig() (*viper.Viper, int) {
 	config := viper.New()
 	config.SetConfigName(*configFilepath)
@@ -206,12 +207,8 @@ func main() {
 	channelMap := decomInitialize(ctx, &wg)
 
 	// Start DB writers
-	if config.IsSet("database_host_name") && config.IsSet("database_port_number") {
-		if err = dbInitialize(ctx, channelMap, config.GetString("database_host_name"), config.GetInt("database_port_number"), &wg); err != nil {
-			logger.Warn("DB Initialization failed, telemetry packets will not be published to the database", zap.Error(err))
-		}
-	} else {
-		logger.Warn("database_host_name or database_port_number is not set, telemetry packets will not be published to the database")
+	if err = dbInitialize(ctx, channelMap, config, &wg); err != nil {
+		logger.Warn("DB Initialization failed, telemetry packets will not be published to the database", zap.Error(err))
 	}
 
 	// Wait for shutdown signal
