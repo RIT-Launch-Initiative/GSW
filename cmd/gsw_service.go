@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"strings"
 	"sync"
 	"syscall"
 
@@ -20,6 +21,11 @@ import (
 	"net/http"
 	_ "net/http/pprof"
 )
+
+type resolvedDBConfig struct {
+	v1 *db.InfluxDBV1Config
+	v2 *db.InfluxDBV2Config
+}
 
 var (
 	shmDir         = flag.String("shm", "/dev/shm", "directory to use for shared memory")
@@ -99,20 +105,78 @@ func decomInitialize(ctx context.Context, wg *sync.WaitGroup) map[int]chan []byt
 	return channelMap
 }
 
-func dbInitialize(ctx context.Context, channelMap map[int]chan []byte, host string, port int, wg *sync.WaitGroup) error {
-	dbHandler := db.InfluxDBV1Handler{}
-	if err := dbHandler.Initialize(host, port); err != nil {
-		return err
+func dbInitialize(ctx context.Context, channelMap map[int]chan []byte, cfg resolvedDBConfig, wg *sync.WaitGroup) error {
+	var handler db.Handler
+
+	if cfg.v2 != nil {
+		h := &db.InfluxDBV2Handler{}
+		if err := h.InitializeWithConfig(*cfg.v2); err != nil {
+			return fmt.Errorf("initializing InfluxDB V2: %w", err)
+		}
+		handler = h
+		logger.Info("Using InfluxDB V2 handler with batching",
+			zap.Uint("batchSize", cfg.v2.BatchSize),
+			zap.Uint("flushIntervalMs", cfg.v2.FlushInterval),
+		)
+	} else if cfg.v1 != nil {
+		h := &db.InfluxDBV1Handler{}
+		if err := h.InitializeWithConfig(*cfg.v1); err != nil {
+			return fmt.Errorf("initializing InfluxDB V1: %w", err)
+		}
+		handler = h
+		logger.Info("Using InfluxDB V1 handler (UDP)")
+	} else {
+		return nil
 	}
 
 	for _, packet := range proc.GswConfig.TelemetryPackets {
 		wg.Add(1)
 		go func(packet tlm.TelemetryPacket, ch chan []byte) {
 			defer wg.Done()
-			proc.DatabaseWriter(ctx, &dbHandler, packet, ch)
+			proc.DatabaseWriter(ctx, handler, packet, ch)
 		}(packet, channelMap[packet.Port])
 	}
 	return nil
+}
+
+func resolveDBConfig(config *viper.Viper) (resolvedDBConfig, error) {
+	v2Map := config.GetStringMap("database_v2")
+	if len(v2Map) > 0 {
+		precision, err := db.ParsePrecision(config.GetString("database_v2.precision"))
+		if err != nil {
+			return resolvedDBConfig{}, fmt.Errorf("invalid database_v2.precision: %w", err)
+		}
+
+		v2cfg := db.InfluxDBV2Config{
+			URL:           config.GetString("database_v2.url"),
+			Token:         config.GetString("database_v2.token"),
+			Org:           config.GetString("database_v2.org"),
+			Bucket:        config.GetString("database_v2.bucket"),
+			BatchSize:     uint(config.GetInt("database_v2.batch_size")),
+			FlushInterval: uint(config.GetInt("database_v2.flush_interval_ms")),
+			Precision:     precision,
+		}
+
+		if v2cfg.URL == "" || v2cfg.Org == "" || v2cfg.Bucket == "" {
+			return resolvedDBConfig{}, errors.New("database_v2.url, database_v2.org, and database_v2.bucket are required when database_v2 is set")
+		}
+
+		return resolvedDBConfig{v2: &v2cfg}, nil
+	}
+
+	hostSet := config.IsSet("database_host_name")
+	portSet := config.IsSet("database_port_number")
+	if hostSet || portSet {
+		host := config.GetString("database_host_name")
+		port := config.GetInt("database_port_number")
+		if host == "" || port <= 0 {
+			return resolvedDBConfig{}, errors.New("database_host_name and database_port_number must both be set for InfluxDB V1")
+		}
+		v1cfg := db.InfluxDBV1Config{Host: host, Port: port}
+		return resolvedDBConfig{v1: &v1cfg}, nil
+	}
+
+	return resolvedDBConfig{}, nil
 }
 
 func readConfig() (*viper.Viper, int) {
@@ -120,6 +184,7 @@ func readConfig() (*viper.Viper, int) {
 	config.SetConfigName(*configFilepath)
 	config.SetConfigType("yaml")
 	config.SetEnvPrefix("GSW")
+	config.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
 	config.AutomaticEnv()
 	config.AddConfigPath("data/config/")
 	err := config.ReadInConfig()
@@ -179,13 +244,15 @@ func main() {
 	// Start decom writers
 	channelMap := decomInitialize(ctx, &wg)
 
-	// Start DB writers
-	if config.IsSet("database_host_name") && config.IsSet("database_port_number") {
-		if err = dbInitialize(ctx, channelMap, config.GetString("database_host_name"), config.GetInt("database_port_number"), &wg); err != nil {
-			logger.Warn("DB Initialization failed, telemetry packets will not be published to the database", zap.Error(err))
+	resolvedDB, err := resolveDBConfig(config)
+	if err != nil {
+		logger.Warn("Database configuration is invalid; telemetry packets will not be published to the database", zap.Error(err))
+	} else if resolvedDB.v1 != nil || resolvedDB.v2 != nil {
+		if err = dbInitialize(ctx, channelMap, resolvedDB, &wg); err != nil {
+			logger.Warn("DB initialization failed, telemetry packets will not be published to the database", zap.Error(err))
 		}
 	} else {
-		logger.Warn("database_host_name or database_port_number is not set, telemetry packets will not be published to the database")
+		logger.Info("No database configuration found; telemetry packets will not be published to the database")
 	}
 
 	// Wait for shutdown signal

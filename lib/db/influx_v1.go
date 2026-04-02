@@ -14,9 +14,20 @@ type InfluxDBV1Handler struct {
 	addr string      // IP address and port of InfluxDB
 }
 
+// InfluxDBV1Config holds the fields needed for UDP writes.
+type InfluxDBV1Config struct {
+	Host string
+	Port int
+}
+
 // Initialize sets up the InfluxDB UDP connection
 func (h *InfluxDBV1Handler) Initialize(host string, port int) error {
-	h.addr = fmt.Sprintf("%s:%d", host, port)
+	return h.InitializeWithConfig(InfluxDBV1Config{Host: host, Port: port})
+}
+
+// InitializeWithConfig sets up the InfluxDB UDP connection.
+func (h *InfluxDBV1Handler) InitializeWithConfig(cfg InfluxDBV1Config) error {
+	h.addr = fmt.Sprintf("%s:%d", cfg.Host, cfg.Port)
 	addr, err := net.ResolveUDPAddr("udp", h.addr)
 	if err != nil {
 		return fmt.Errorf("resolving db address: %w", err)

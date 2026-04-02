@@ -2,14 +2,18 @@ package db
 
 // Handler is an interface for database access implementations
 type Handler interface {
-	// Initialize sets up the database client
-	Initialize(host string, port int) error
-	// Insert sends the measurement data to the database
+	// Insert sends the measurement data to the database.
 	Insert(measurements MeasurementGroup) error
-	// CreateQuery generates the database query for measurementGroup
+	// CreateQuery generates the database query for measurementGroup.
 	CreateQuery(measurements MeasurementGroup) string
-	// Close closes the database client when done
+	// Close closes the database client when done.
 	Close() error
+}
+
+// BatchHandler extends Handler with batch write support
+type BatchHandler interface {
+	Handler
+	Flush() error
 }
 
 // MeasurementGroup is a group of measurements to be sent to the database
