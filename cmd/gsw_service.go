@@ -164,31 +164,6 @@ func resolveDBConfig(config *viper.Viper) (resolvedDBConfig, error) {
 		return resolvedDBConfig{v2: &v2cfg}, nil
 	}
 
-	if config.IsSet("database_v2_url") || config.IsSet("database_v2_org") || config.IsSet("database_v2_bucket") {
-		logger.Warn("Legacy database_v2_* keys are deprecated; prefer nested database_v2.* config")
-
-		precision, err := db.ParsePrecision(config.GetString("database_v2_precision"))
-		if err != nil {
-			return resolvedDBConfig{}, fmt.Errorf("invalid database_v2_precision: %w", err)
-		}
-
-		v2cfg := db.InfluxDBV2Config{
-			URL:           config.GetString("database_v2_url"),
-			Token:         config.GetString("database_v2_token"),
-			Org:           config.GetString("database_v2_org"),
-			Bucket:        config.GetString("database_v2_bucket"),
-			BatchSize:     uint(config.GetInt("database_v2_batch_size")),
-			FlushInterval: uint(config.GetInt("database_v2_flush_interval_ms")),
-			Precision:     precision,
-		}
-
-		if v2cfg.URL == "" || v2cfg.Org == "" || v2cfg.Bucket == "" {
-			return resolvedDBConfig{}, errors.New("database_v2_url, database_v2_org, and database_v2_bucket are required when legacy database_v2_* settings are used")
-		}
-
-		return resolvedDBConfig{v2: &v2cfg}, nil
-	}
-
 	hostSet := config.IsSet("database_host_name")
 	portSet := config.IsSet("database_port_number")
 	if hostSet || portSet {
