@@ -1,0 +1,40 @@
+{
+  "version": 8,
+  "name": "Aliflux Offline",
+  "metadata": {},
+  "sources": {
+    "aliflux": {
+      "type": "raster",
+      "tiles": [
+        "/aliflux/{z}/{x}/{y}.png"
+      ],
+      "tileSize": 256,
+      "minzoom": 1,
+      "maxzoom": 6,
+      "bounds": [
+        -165.42133467816151,
+        -82.63542205486746,
+        142.2508008323103,
+        84.94825393909099
+      ],
+      "attribution": "EliteMapper by Visor Dynamics"
+    }
+  },
+  "layers": [
+    {
+      "id": "background",
+      "type": "background",
+      "paint": {
+        "background-color": "#f6f2ea"
+      }
+    },
+    {
+      "id": "aliflux-raster",
+      "type": "raster",
+      "source": "aliflux",
+      "paint": {
+        "raster-opacity": 1
+      }
+    }
+  ]
+}
