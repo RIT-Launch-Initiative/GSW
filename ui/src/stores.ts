@@ -44,24 +44,26 @@ export function disconnectMqtt() {
 
 export type ParsedTopic = {
     prefix: string;
+    packet: string;
     measurement: string;
 };
 
-export type PacketData = Record<string, unknown>;
+export type PacketData = Record<string, Record<string, unknown>>;
 
 export function parseTopic(topic: string): ParsedTopic | null {
     const parts = topic.split("/");
-    if (parts.length < 2) {
+    if (parts.length < 3) {
         return null;
     }
 
-    const [prefix, measurement] = parts;
-    if (!prefix || !measurement) {
+    const [prefix, packet, measurement] = parts;
+    if (!prefix || !packet || !measurement) {
         return null;
     }
 
     return {
         prefix,
+        packet,
         measurement,
     };
 }
@@ -75,10 +77,10 @@ export function getDataByPacket(mqttMap: Map<string, unknown>): PacketData {
             return;
         }
 
-        if (!grouped[parsed.prefix]) {
-            grouped[parsed.prefix] = {};
+        if (!grouped[parsed.packet]) {
+            grouped[parsed.packet] = {};
         }
-        grouped[parsed.measurement] = value;
+        grouped[parsed.packet][parsed.measurement] = value;
     });
 
     return grouped;

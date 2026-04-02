@@ -5,6 +5,7 @@
     import "maplibre-gl/dist/maplibre-gl.css";
 
     let markerPosition = { lng: -77.67641, lat: 43.08348 };
+    let satCount = 0
 
     onMount(() => {
         connectMqtt();
@@ -17,17 +18,23 @@
     // Subscribe to MQTT data changes
     $: {
         const data = getDataByPacket($mqttData);
-        const gnsscoordinates = data.gnsscoordinates as
-            | { latitude?: number; longitude?: number }
-            | undefined;
-        if (gnsscoordinates && typeof gnsscoordinates.latitude === 'number' && typeof gnsscoordinates.longitude === 'number') {
-            markerPosition = { lng: gnsscoordinates.longitude, lat: gnsscoordinates.latitude };
+        const prefix = data.b
+        if (prefix) {
+            const gnsscoordinates = prefix.gnsscoordinates as
+                | { latitude?: number; longitude?: number, sat_count?: number }
+                | undefined;
+            if (gnsscoordinates && typeof gnsscoordinates.latitude === 'number' && typeof gnsscoordinates.longitude === 'number') {
+                markerPosition = { lng: gnsscoordinates.longitude, lat: gnsscoordinates.latitude };
+            }
+            if (gnsscoordinates && typeof gnsscoordinates.sat_count === 'number') {
+                satCount = gnsscoordinates.sat_count
+            }
         }
     }
 </script>
 
-<div class="flex w-full" style="">
-    <div class="flex max-w-[40rem] flex-col gap-3 font-mono">
+<div class="relative flex w-full min-h-screen" style="">
+    <div class="flex max-w-[40rem] flex-col gap-3 font-mono pr-[34rem]">
         {#each Object.entries(getDataByPacket($mqttData)) as [packetName, measurements] (packetName)}
             {@const packetMeasurements = measurements as Record<string, unknown>}
             <section class="rounded border border-gray-300 p-3">
@@ -37,9 +44,10 @@
                 {/each}
             </section>
         {/each}
+
     </div>
     <MapLibre
-    class="h-[10pc] w-[5pc] min-h-[20%] min-w-[30%] right-[0px] top-[0px]"
+    class="absolute right-0 top-0 h-[20%] w-[20rem]"
     style="/src/style.aliflux.json"
     zoom={3.5}
     center={{ lng: -77.67641, lat: 43.08348 }}
@@ -50,4 +58,11 @@
         lnglat={markerPosition}
         />
     </MapLibre>
+    <div class="absolute right-[16rem] top-[14%] rounded bg-black/70 px-2 py-1 text-s text-white">
+        Sat: {satCount !== null ? `${satCount}` : "--"}
+    </div>
+    <div class="absolute right-2 top-[20%] rounded bg-black/70 px-2 py-1 text-s text-white">
+        LAT: {markerPosition.lat !== null ? `${markerPosition.lat.toFixed(5)}` : "--.-----"},
+        LONG: {markerPosition.lng !== null ? `${markerPosition.lng.toFixed(5)}` : "--.-----"}
+    </div>
 </div>
