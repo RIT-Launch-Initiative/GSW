@@ -9,7 +9,7 @@ telemetry_config: data/config/backplane.yaml
 # If database_v2 is set, V2 will be used and V1 settings are ignored
 database_v2:
   url: http://localhost:8086
-  token: your-token-here
+  token: gsw-local-dev-token
   org: gsw
   bucket: gsw
   batch_size: 100          # points buffered before auto-flush
