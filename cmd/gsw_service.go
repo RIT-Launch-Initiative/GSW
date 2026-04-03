@@ -140,8 +140,16 @@ func dbInitialize(ctx context.Context, channelMap map[int]chan []byte, cfg resol
 }
 
 func resolveDBConfig(config *viper.Viper) (resolvedDBConfig, error) {
-	v2Map := config.GetStringMap("database_v2")
-	if len(v2Map) > 0 {
+	v2Configured := config.IsSet("database_v2") ||
+		config.IsSet("database_v2.url") ||
+		config.IsSet("database_v2.token") ||
+		config.IsSet("database_v2.org") ||
+		config.IsSet("database_v2.bucket") ||
+		config.IsSet("database_v2.batch_size") ||
+		config.IsSet("database_v2.flush_interval_ms") ||
+		config.IsSet("database_v2.precision")
+
+	if v2Configured {
 		precision, err := db.ParsePrecision(config.GetString("database_v2.precision"))
 		if err != nil {
 			return resolvedDBConfig{}, fmt.Errorf("invalid database_v2.precision: %w", err)
