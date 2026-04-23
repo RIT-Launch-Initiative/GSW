@@ -12,7 +12,7 @@
         startSineWaveMqttGenerator,
         stopSineWaveMqttGenerator
     } from "./stores";
-    import { MapLibre, NavigationControl, ScaleControl, GlobeControl, Marker } from 'svelte-maplibre-gl';
+    import { MapLibre, Marker } from 'svelte-maplibre-gl';
     import "maplibre-gl/dist/maplibre-gl.css";
 
     const DEFAULT_GROUND_STATION = { lon: -77.67641, lat: 43.08348 };
@@ -72,7 +72,7 @@
     let gForce: number | null = null;
     let gForceMax: number = 0.0;
     const mqttChannel: string | number = "1";
-    const ALTITUDE_MAX = 12000;
+    const ALTITUDE_MAX = 13000;
     const G_FORCE_MAX = 20;
     let altitudePercent = 0;
     let gForcePercent = 0;
@@ -163,7 +163,7 @@
 </script>
 
 <div class="relative flex w-full min-h-screen" style="background-color: {backgroundColor};">
-    <div class="absolute left-0 top-0 z-50 w-64 rounded border border-gray-300 bg-white/95 p-2 shadow">
+    <div class="absolute left-0 top-0 z-50 w-64 rounded border border-gray-300 bg-white p-2 shadow">
         <div class="grid grid-cols-2 gap-2">
             {#each topLeftMetricStubs as metric (metric.label)}
                 <div class="rounded border border-gray-200 bg-gray-50 p-2">
@@ -175,14 +175,14 @@
     </div>
 
     <div
-        class="font-guardians absolute left-1/2 top-0 z-60 flex h-20 w-72 -translate-x-1/2 items-center justify-center bg-red-600/90 text-4xl font-black tracking-widest text-white shadow-lg"
+        class="font-guardians absolute left-1/2 top-0 z-60 flex h-20 w-72 -translate-x-1/2 items-center justify-center bg-red-600 text-4xl font-black tracking-widest text-white shadow-lg"
         style="clip-path: polygon(0% 0%, 100% 0%, 80% 100%, 20% 100%);"
     >
         RISK
     </div>
 
     <div
-        class="font-guardians absolute left-1/7 right-1/7 bottom-0 z-60 flex h-20 items-center justify-center bg-red-600/90 text-3xl font-normal text-white shadow-lg"
+        class="font-guardians absolute left-1/7 right-1/7 bottom-0 z-60 flex h-20 items-center justify-center bg-red-600 text-3xl font-normal text-white shadow-lg"
         style="clip-path: polygon(95% 0%, 5% 0%, 0% 100%, 100% 100%);"
     >
         <div class="flex w-full items-center">
@@ -196,7 +196,7 @@
         />
     </div>
 
-    <div class="absolute bottom-10 left-2 top-[13rem] z-50 rounded bg-black/70 px-2 py-1 text-white">
+    <div class="absolute bottom-10 left-2 top-[13rem] z-50 rounded bg-black px-2 py-1 text-white">
         <div class="flex h-full flex-col items-center">
             <div class="mb-2 text-center text-xs font-semibold">Altitude</div>
             <div class="relative w-3 flex-1 rounded bg-white/20">
@@ -217,7 +217,7 @@
         </div>
     </div>
 
-    <div class="absolute bottom-10 right-2 top-[13rem] z-50 rounded bg-black/70 px-2 py-1 text-white">
+    <div class="absolute bottom-10 right-2 top-[13rem] z-50 rounded bg-black px-2 py-1 text-white">
         <div class="flex h-full flex-col items-center">
             <div class="mb-2 text-center text-xs font-semibold">G Force</div>
             <div class="relative w-3 flex-1 rounded bg-white/20">
@@ -241,13 +241,13 @@
     </div>
 
     <div class="absolute left-2 bottom-1 z-10 w-40 flex">
-        <div class="mt-2 rounded bg-black/70 px-2 py-1 text-sm text-white">
+        <div class="mt-2 rounded bg-black px-2 py-1 text-sm text-white">
             {callSign ? callSign : "------"}
         </div>
     </div>
 
     <div class="absolute right-2 bottom-1 z-10 w-30">
-        <div class="mt-2 rounded bg-black/70 px-2 py-1 text-sm text-white">
+        <div class="mt-2 rounded bg-black px-2 py-1 text-sm text-white">
             Last trans: {secondsSinceLastTransmission !== null ? `${secondsSinceLastTransmission}s` : "------"}
         </div>
     </div>
@@ -275,11 +275,11 @@
                 </Marker>
 
             </MapLibre>
-            <div class="absolute left-2 top-2 rounded bg-black/70 px-2 py-1 text-sm text-white">
+            <div class="absolute left-2 top-2 rounded bg-black px-2 py-1 text-sm text-white">
                 SAT: {satCount !== null ? `${satCount}` : "--"}
             </div>
         </div>
-        <div class="mt-2 rounded bg-black/70 px-2 py-1 text-sm text-white">
+        <div class="mt-2 rounded bg-black px-2 py-1 text-sm text-white">
             LAT: {rocketPosition.lat !== null ? `${rocketPosition.lat.toFixed(5)}` : "--.-----"},
             LON: {rocketPosition.lon !== null ? `${rocketPosition.lon.toFixed(5)}` : "--.-----"}
         </div>
