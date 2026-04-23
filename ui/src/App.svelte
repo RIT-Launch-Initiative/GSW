@@ -15,25 +15,25 @@
     import { MapLibre, NavigationControl, ScaleControl, GlobeControl, Marker } from 'svelte-maplibre-gl';
     import "maplibre-gl/dist/maplibre-gl.css";
 
-    const DEFAULT_GROUND_STATION = { lng: -77.67641, lat: 43.08348 };
+    const DEFAULT_GROUND_STATION = { lon: -77.67641, lat: 43.08348 };
     const DEFAULT_BACKGROUND_COLOR = "#ffffff";
     const DEFAULT_CALL_SIGN = "KE2EGW";
 
-    let groundStationPosition = { lng: -77.67641, lat: 43.08348 };
+    let groundStationPosition = { lon: -77.67641, lat: 43.08348 };
     let backgroundColor = DEFAULT_BACKGROUND_COLOR;
     let callSign = DEFAULT_CALL_SIGN;
 
     function parseGroundStationParam(value: string | null) {
         if (!value) return null;
-        const [latRaw, lngRaw] = value.split(",").map((part) => part.trim());
-        if (!latRaw || !lngRaw) return null;
+        const [latRaw, lonRaw] = value.split(",").map((part) => part.trim());
+        if (!latRaw || !lonRaw) return null;
 
         const lat = Number(latRaw);
-        const lng = Number(lngRaw);
-        if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
-        if (lat < -90 || lat > 90 || lng < -180 || lng > 180) return null;
+        const lon = Number(lonRaw);
+        if (!Number.isFinite(lat) || !Number.isFinite(lon)) return null;
+        if (lat < -90 || lat > 90 || lon < -180 || lon > 180) return null;
 
-        return { lat, lng };
+        return { lat, lon };
     }
 
     function applyUrlParameters() {
@@ -146,7 +146,7 @@
             const latitude = getNumberCaseInsensitive(gnsscoordinates, "latitude");
             const longitude = getNumberCaseInsensitive(gnsscoordinates, "longitude");
             if (latitude !== null && longitude !== null) {
-                rocketPosition = { lng: longitude, lat: latitude };
+                rocketPosition = { lon: longitude, lat: latitude };
             }
 
             satCount = getNumberCaseInsensitive(gnsscoordinates, "sat_count");
@@ -257,7 +257,7 @@
             <MapLibre
             class="h-40 w-70"
             style="/src/style.aliflux.json"
-            zoom={3.5}
+            zoom={10.0}
             center={groundStationPosition}
             attributionControl={false}
             >
@@ -281,7 +281,7 @@
         </div>
         <div class="mt-2 rounded bg-black/70 px-2 py-1 text-sm text-white">
             LAT: {rocketPosition.lat !== null ? `${rocketPosition.lat.toFixed(5)}` : "--.-----"},
-            LNG: {rocketPosition.lng !== null ? `${rocketPosition.lng.toFixed(5)}` : "--.-----"}
+            LON: {rocketPosition.lon !== null ? `${rocketPosition.lon.toFixed(5)}` : "--.-----"}
         </div>
     </div>
 </div>
