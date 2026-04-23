@@ -1,4 +1,3 @@
-<!-- add time since last transmission, add url parameters for: add customizable background color, add call sign, ground station location -->
 <script lang="ts">
     import { onMount, onDestroy } from "svelte";
     import {
@@ -163,12 +162,12 @@
 </script>
 
 <div class="relative flex w-full min-h-screen" style="background-color: {backgroundColor};">
-    <div class="absolute left-0 top-0 z-50 w-64 rounded border border-gray-300 bg-white p-2 shadow">
+    <div class="absolute left-0 top-0 z-50 w-64 rounded border border-gray-300 bg-black p-2 shadow">
         <div class="grid grid-cols-2 gap-2">
             {#each topLeftMetricStubs as metric (metric.label)}
-                <div class="rounded border border-gray-200 bg-gray-50 p-2">
-                    <div class="text-[10px] font-semibold tracking-wide text-gray-600"></div>
-                    <div class="mt-1 text-base font-mono font-bold text-gray-900">{metric.value} {metric.label}</div>
+                <div class="rounded border border-black bg-white/20 p-2">
+                    <div class="text-[10px] font-semibold tracking-wide text-white"></div>
+                    <div class="mt-1 text-base font-mono font-bold text-white">{metric.value} {metric.label}</div>
                 </div>
             {/each}
         </div>
@@ -190,7 +189,7 @@
             <span class="w-1/2 pl-12 text-left">INITIATIVE</span>
         </div>
         <img
-            src="/ritlaunch.png"
+            src="/launchwhite.png"
             alt="RIT Launch logo"
             class="pointer-events-none absolute left-1/2 h-15 w-15 -translate-x-1/2 object-contain"
         />
