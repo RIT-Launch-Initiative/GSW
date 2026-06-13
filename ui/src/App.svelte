@@ -45,6 +45,7 @@
         const mockMqttParam = query.get("mockMqtt");
         const mqttAddressParam = query.get("mqttAddress");
         const mqttChannelParam = query.get("mqttChannel");
+        const teamNumberParam = query.get("teamNumber");
 
         if (bgParam && /^#(?:[0-9a-fA-F]{3}){1,2}$/.test(bgParam)) {
             backgroundColor = bgParam;
@@ -69,6 +70,10 @@
 
         if (mqttChannelParam && /^\d+$/.test(mqttChannelParam)) {
             mqttChannel = mqttChannelParam;
+        }
+
+        if (teamNumberParam) {
+            teamNumber = teamNumberParam;
         }
     }
 
@@ -120,6 +125,7 @@
     let mockMqtt = false;
     let mqttAddress = "";
     let mqttChannel = "0";
+    let teamNumber = "2";
 
     onMount(() => {
         applyUrlParameters();
@@ -230,10 +236,10 @@
     </div>
 
     <div
-        class="font-guardians absolute left-1/2 top-0 z-60 flex h-20 w-72 -translate-x-1/2 items-center justify-center bg-red-600 text-4xl font-black tracking-widest text-white shadow-lg"
-        style="clip-path: polygon(0% 0%, 100% 0%, 80% 100%, 20% 100%);"
+        class="font-guardians absolute left-1/2 top-0 z-60 flex h-15 w-95 -translate-x-1/2 items-center justify-center bg-red-600 text-3xl font-black tracking-widest text-white shadow-lg"
+        style="clip-path: polygon(0% 0%, 100% 0%, 90% 100%, 10% 100%);"
     >
-        RISK
+        RISK #{teamNumber}
     </div>
 
     <div
