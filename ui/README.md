@@ -4,6 +4,10 @@ Ground station UI and overlays implemented in [Svelte](https://svelte.dev/).
 
 Communicates with GSW through the `mqtt_producer` app and an MQTT server. This project uses [`pnpm`](https://pnpm.io/) over `npm` for its performance benefits.
 
+## Usage
+
+Example URL format: `http://localhost:5173/?bg=%23fafbf2&callSign=KE2EGW-1&groundStation=43.08348,-77.67641&mockMqtt=true&mqttAddress=127.0.0.1:3000&mqttChannel=3`
+
 ## Development
 
 ```shell

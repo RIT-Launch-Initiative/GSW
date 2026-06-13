@@ -85,9 +85,9 @@ export function startSineWaveMqttGenerator(options: SineWaveGeneratorOptions = {
         const snr = 20 + Math.sin(t * 0.6) * 5;
         const temperature = 24 + Math.sin(t * 0.22) * 4;
 
-        const accel_x = 9.81 + Math.sin(t + 0.35)
-        const accel_y = 9.81 + Math.sin(t + 0.35)
-        const accel_z = 9.81 + Math.sin(t + 0.35)
+        const accel_x = 9.81 + Math.sin(t + 0.35);
+        const accel_y = 9.81 + Math.sin(t + 0.35);
+        const accel_z = 9.81 + Math.sin(t + 0.35);
         
         emitSyntheticMessage(topicRoot + "gnsscoordinates", {
             latitude,

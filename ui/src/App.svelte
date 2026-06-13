@@ -11,7 +11,7 @@
         startSineWaveMqttGenerator,
         stopSineWaveMqttGenerator
     } from "./stores";
-    import { MapLibre, Marker } from 'svelte-maplibre-gl';
+    import { MapLibre, Marker } from "svelte-maplibre-gl";
     import "maplibre-gl/dist/maplibre-gl.css";
 
     const DEFAULT_GROUND_STATION = { lon: -77.67641, lat: 43.08348 };
@@ -42,6 +42,9 @@
         const bgParam = query.get("bg");
         const callSignParam = query.get("callSign");
         const groundStationParam = query.get("groundStation");
+        const mockMqttParam = query.get("mockMqtt");
+        const mqttAddressParam = query.get("mqttAddress");
+        const mqttChannelParam = query.get("mqttChannel");
 
         if (bgParam && /^#(?:[0-9a-fA-F]{3}){1,2}$/.test(bgParam)) {
             backgroundColor = bgParam;
@@ -54,6 +57,18 @@
         const parsedGroundStation = parseGroundStationParam(groundStationParam);
         if (parsedGroundStation) {
             groundStationPosition = parsedGroundStation;
+        }
+
+        if (mockMqttParam && mockMqttParam.toLowerCase() !== "false") {
+            mockMqtt = true;
+        }
+
+        if (mqttAddressParam) {
+            mqttAddress = mqttAddressParam;
+        }
+
+        if (mqttChannelParam && /^\d+$/.test(mqttChannelParam)) {
+            mqttChannel = mqttChannelParam;
         }
     }
 
@@ -70,7 +85,6 @@
     let accelZ: number | null = null;
     let gForce: number | null = null;
     let gForceMax: number = 0.0;
-    const mqttChannel: string | number = "1";
     const ALTITUDE_MAX = 13000;
     const G_FORCE_MAX = 20;
     let altitudePercent = 0;
@@ -85,11 +99,16 @@
     let nowMs = Date.now();
     let secondsSinceLastTransmission: number | null = null;
     let nowTimer: ReturnType<typeof setInterval> | null = null;
+    let mockMqtt = false;
+    let mqttAddress = "";
+    let mqttChannel = "0";
 
     onMount(() => {
         applyUrlParameters();
-        connectMqtt();
-        startSineWaveMqttGenerator({ intervalMs: 3000, channel: mqttChannel });
+        connectMqtt(mqttAddress);
+        if (mockMqtt) {
+            startSineWaveMqttGenerator({ intervalMs: 3000, channel: mqttChannel });
+        }
         nowTimer = setInterval(() => {
             nowMs = Date.now();
         }, 500);
@@ -100,7 +119,10 @@
             clearInterval(nowTimer);
             nowTimer = null;
         }
-        stopSineWaveMqttGenerator();
+        if (mockMqtt) {
+            stopSineWaveMqttGenerator();
+        }
+
         disconnectMqtt();
     });
 
@@ -108,7 +130,7 @@
         ? 0
         : Math.max(0, Math.min(100, (altitude / ALTITUDE_MAX) * 100));
 
-    $: altitudeMax = Math.max(altitudeMax, altitudePercent)
+    $: altitudeMax = Math.max(altitudeMax, altitudePercent);
     
     $: gForce = accelX !== null && accelY !== null && accelZ !== null
         ? Math.sqrt(accelX ** 2 + accelY ** 2 + accelZ ** 2)
@@ -118,7 +140,7 @@
         ? 0
         : Math.max(0, Math.min(100, (gForce / G_FORCE_MAX) * 100));
         
-    $: gForceMax = Math.max(gForceMax, gForcePercent)
+    $: gForceMax = Math.max(gForceMax, gForcePercent);
 
     $: topLeftMetricStubs = [
         { label: "mA", value: battCurrent !== null ? `${(battCurrent * 1000).toFixed(1)}` : "--" },
@@ -254,22 +276,22 @@
     <div class="absolute right-0 top-0 z-10 w-70">
         <div class="relative h-40 w-70">
             <MapLibre
-            class="h-40 w-70"
-            style="/src/style.aliflux.json"
-            zoom={10.0}
-            center={groundStationPosition}
-            attributionControl={false}
+                class="h-40 w-70"
+                style="/src/style.aliflux.json"
+                zoom={10.0}
+                center={groundStationPosition}
+                attributionControl={false}
             >
                 <Marker lnglat={rocketPosition} anchor="bottom">
                     <img src="/ritlaunch.png"
-                    alt="Launch logo"
-                    class="h-10 w-10 object-contain"
+                        alt="Launch logo"
+                        class="h-10 w-10 object-contain"
                     />
                 </Marker>
                 <Marker lnglat={groundStationPosition} anchor="bottom">
                     <img src="/ritlaunch.png"
-                    alt="Launch logo"
-                    class="h-10 w-10 object-contain"
+                        alt="Launch logo"
+                        class="h-10 w-10 object-contain"
                     />
                 </Marker>
 
