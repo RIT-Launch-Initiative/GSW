@@ -28,6 +28,12 @@ test:
 fmt:
     gofmt -w .
 
+build-ui:
+  cd ui && pnpm build
+
+run-ui:
+  cd ui && pnpm preview
+
 # Blast all code in bin
 clean:
     rm -rf bin/*
