@@ -129,7 +129,7 @@
 
     onMount(() => {
         applyUrlParameters();
-        connectMqtt(mqttAddress);
+        connectMqtt(mqttAddress || undefined);
         if (mockMqtt) {
             startSineWaveMqttGenerator({ intervalMs: 3000, channel: mqttChannel });
         }
@@ -196,13 +196,17 @@
     // Subscribe to MQTT data changes
     $: {
         const data = getDataByPacket($mqttData) as Record<string, unknown>;
-        const prefix = getChannelPayload(data, mqttChannel);
-        if (prefix) {
+        // Channel-based lookup (mock: gsw/{channel}/{packetType} → object) falls back to
+        // direct packet-name lookup (real: gsw/{PacketName}/{field} → scalar).
+        const lookup = getChannelPayload(data, mqttChannel) ?? data;
+
+        const gnsscoordinates = getObjectCaseInsensitive(lookup, "gnsscoordinates");
+        const powermodule = getObjectCaseInsensitive(lookup, "powermodule");
+        const receiverstats = getObjectCaseInsensitive(lookup, "receiverstats");
+        const sensormodule = getObjectCaseInsensitive(lookup, "sensormodule");
+
+        if (gnsscoordinates || powermodule || receiverstats || sensormodule) {
             lastTransmission = Date.now();
-            const gnsscoordinates = getObjectCaseInsensitive(prefix, "gnsscoordinates");
-            const powermodule = getObjectCaseInsensitive(prefix, "powermodule");
-            const receiverstats = getObjectCaseInsensitive(prefix, "receiverstats");
-            const sensormodule = getObjectCaseInsensitive(prefix, "sensormodule");
 
             const latitude = getNumberCaseInsensitive(gnsscoordinates, "latitude");
             const longitude = getNumberCaseInsensitive(gnsscoordinates, "longitude");
@@ -215,10 +219,10 @@
             battCurrent = getNumberCaseInsensitive(powermodule, "CURR_BATT");
             battVoltage = getNumberCaseInsensitive(powermodule, "VOLT_BATT");
             receiverSnr = getNumberCaseInsensitive(receiverstats, "SNR", "RCV_SNR", "snr");
-            temperature = getNumberCaseInsensitive(sensormodule, "temperature");
-            accelX = getNumberCaseInsensitive(sensormodule, "ACCEL_X", "ADX_ACCEL_X", "LSM_ACCEL_X");
-            accelY = getNumberCaseInsensitive(sensormodule, "ACCEL_Y", "ADX_ACCEL_Y", "LSM_ACCEL_Y");
-            accelZ = getNumberCaseInsensitive(sensormodule, "ACCEL_Z", "ADX_ACCEL_Z", "LSM_ACCEL_Z");
+            temperature = getNumberCaseInsensitive(sensormodule, "temperature", "TEMP_BMP388", "TEMP_MS5611", "TEMP_TMP117");
+            accelX = getNumberCaseInsensitive(sensormodule, "accel_x", "ACCEL_X", "ADX_ACCEL_X", "LSM_ACCEL_X");
+            accelY = getNumberCaseInsensitive(sensormodule, "accel_y", "ACCEL_Y", "ADX_ACCEL_Y", "LSM_ACCEL_Y");
+            accelZ = getNumberCaseInsensitive(sensormodule, "accel_z", "ACCEL_Z", "ADX_ACCEL_Z", "LSM_ACCEL_Z");
         }
     }
 </script>
