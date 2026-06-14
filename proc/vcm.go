@@ -2,9 +2,12 @@ package proc
 
 import (
 	"fmt"
-	"github.com/AarC10/GSW-V2/lib/tlm"
-	"gopkg.in/yaml.v2"
 	"os"
+
+	"github.com/AarC10/GSW-V2/lib/logger"
+	"github.com/AarC10/GSW-V2/lib/tlm"
+	"go.uber.org/zap"
+	"gopkg.in/yaml.v2"
 )
 
 // Configuration is a struct that holds the configuration for the GSW
@@ -81,7 +84,7 @@ func GetPacketSize(packet tlm.TelemetryPacket) int {
 	for _, measurementName := range packet.Measurements {
 		measurement, ok := GswConfig.Measurements[measurementName]
 		if !ok {
-			fmt.Printf("\t\tMeasurement '%s' not found\n", measurementName)
+			logger.Error("measurement not found", zap.String("measurement", measurementName))
 			continue
 		}
 		size += measurement.Size

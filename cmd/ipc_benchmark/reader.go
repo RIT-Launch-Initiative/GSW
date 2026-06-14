@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/binary"
 	"fmt"
-	"log"
 	"os"
 	"strings"
 	"sync"
@@ -12,8 +11,10 @@ import (
 	"time"
 
 	"github.com/AarC10/GSW-V2/lib/ipc"
+	"github.com/AarC10/GSW-V2/lib/logger"
 	"github.com/AarC10/GSW-V2/lib/tlm"
 	"github.com/AarC10/GSW-V2/proc"
+	"go.uber.org/zap"
 )
 
 const (
@@ -26,7 +27,7 @@ var totalPacketsLost atomic.Uint64
 func packetReader(ctx context.Context, packet tlm.TelemetryPacket) *OutputPacket {
 	reader, err := proc.NewIpcShmReaderForPacket(packet, "/dev/shm")
 	if err != nil {
-		log.Fatal(fmt.Errorf("couldn't create reader for packet: %w", err))
+		logger.Fatal("couldn't create reader for packet", zap.Error(err))
 	}
 
 	defer reader.Cleanup()
@@ -73,11 +74,11 @@ func packetReader(ctx context.Context, packet tlm.TelemetryPacket) *OutputPacket
 		}
 		p, err := reader.Read(ctx)
 		if err != nil {
-			log.Fatal(fmt.Errorf("couldn't read packet: %w", err))
+			logger.Fatal("couldn't read packet", zap.Error(err))
 		}
 		shmPacket, ok := p.(*ipc.ShmReaderMessage)
 		if !ok {
-			log.Fatal(fmt.Errorf("packet is not from shm IPC reader"))
+			logger.Fatal("packet is not from shm IPC reader")
 		}
 
 		data := shmPacket.Data()

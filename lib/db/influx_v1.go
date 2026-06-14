@@ -14,20 +14,29 @@ type InfluxDBV1Handler struct {
 	addr string      // IP address and port of InfluxDB
 }
 
+// InfluxDBV1Config holds the fields needed for UDP writes.
+type InfluxDBV1Config struct {
+	Host string
+	Port int
+}
+
 // Initialize sets up the InfluxDB UDP connection
 func (h *InfluxDBV1Handler) Initialize(host string, port int) error {
-	h.addr = fmt.Sprintf("%s:%d", host, port)
+	return h.InitializeWithConfig(InfluxDBV1Config{Host: host, Port: port})
+}
+
+// InitializeWithConfig sets up the InfluxDB UDP connection.
+func (h *InfluxDBV1Handler) InitializeWithConfig(cfg InfluxDBV1Config) error {
+	h.addr = fmt.Sprintf("%s:%d", cfg.Host, cfg.Port)
 	addr, err := net.ResolveUDPAddr("udp", h.addr)
 	if err != nil {
-		fmt.Println("Error creating InfluxDB UDP client:", err)
-		return err
+		return fmt.Errorf("resolving db address: %w", err)
 	}
 
-	logger.Info("Database UDP connection string: ", zap.String("url", addr.String()))
+	logger.Info("resolved database address", zap.String("url", addr.String()))
 
 	conn, err := net.DialUDP("udp", nil, addr)
 	if err != nil {
-		fmt.Println("Error creating InfluxDB UDP client:", err)
 		return err
 	}
 
@@ -58,8 +67,6 @@ func CreateQuery(measurements MeasurementGroup) string {
 	}
 
 	query += "\n"
-
-	// TODO: Make a debug logger?
 
 	return query
 }

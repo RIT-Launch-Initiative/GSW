@@ -1,7 +1,7 @@
 package proc
 
 import (
-	"fmt"
+	"context"
 	"time"
 
 	"github.com/AarC10/GSW-V2/lib/db"
@@ -12,18 +12,24 @@ import (
 
 // DatabaseWriter writes telemetry data to the database
 // It reads data from the channel and writes it to the database
-func DatabaseWriter(handler db.Handler, packet tlm.TelemetryPacket, channel chan []byte) {
+func DatabaseWriter(ctx context.Context, handler db.Handler, packet tlm.TelemetryPacket, channel chan []byte) {
 	log := logger.Log().Named("database").With(zap.String("packet", packet.Name))
 	measGroup := initMeasurementGroup(packet)
 	log.Info("Started database writer")
 
 	for {
-		data := <-channel
-		UpdateMeasurementGroup(packet, measGroup, data)
-
-		err := handler.Insert(measGroup)
-		if err != nil {
-			log.Error("couldn't insert measurement group", zap.Error(err))
+		select {
+		case <-ctx.Done():
+			log.Info("database writer shutting down")
+			return
+		case data, ok := <-channel:
+			if !ok {
+				return
+			}
+			UpdateMeasurementGroup(packet, measGroup, data)
+			if err := handler.Insert(measGroup); err != nil {
+				log.Error("couldn't insert measurement group", zap.Error(err))
+			}
 		}
 	}
 }
@@ -48,7 +54,7 @@ func UpdateMeasurementGroup(packet tlm.TelemetryPacket, measurements db.Measurem
 	for i, measurementName := range packet.Measurements {
 		measurement, ok := GswConfig.Measurements[measurementName]
 		if !ok {
-			fmt.Printf("\t\tMeasurement '%s' not found\n", measurementName)
+			logger.Error("measurement not found", zap.String("measurement", measurementName))
 			continue
 		}
 

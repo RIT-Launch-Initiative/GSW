@@ -11,11 +11,13 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/AarC10/GSW-V2/lib/logger"
 	"github.com/AarC10/GSW-V2/lib/tlm"
 	"github.com/AarC10/GSW-V2/lib/util"
 	"github.com/AarC10/GSW-V2/proc"
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
+	"go.uber.org/zap"
 )
 
 const valueColWidth = 12
@@ -35,13 +37,10 @@ func main() {
 	flag.Parse()
 	configData, err := proc.ReadTelemetryConfigFromShm(*shmDir)
 	if err != nil {
-		fmt.Println("*** Error accessing config file. Make sure the GSW service is running. ***")
-		fmt.Printf("(%v)\n", err)
-		return
+		logger.Fatal("couldn't read config from gsw", zap.Error(err))
 	}
 	if _, err = proc.ParseConfigBytes(configData); err != nil {
-		fmt.Printf("Error parsing YAML: %v\n", err)
-		return
+		logger.Fatal("couldn't parse gsw config", zap.Error(err))
 	}
 
 	var hexOn atomic.Bool
@@ -144,9 +143,10 @@ func main() {
 	rowIndex := 1
 	for _, packet := range proc.GswConfig.TelemetryPackets {
 		go func(pkt tlm.TelemetryPacket, baseRow int) {
+			log := logger.Log().Named("packet_reader").With(zap.String("packet", pkt.Name))
 			reader, err := proc.NewIpcShmReaderForPacket(pkt, *shmDir)
 			if err != nil {
-				fmt.Printf("Error creating reader: %v\n", err)
+				log.Error("error creating reader", zap.Error(err))
 				return
 			}
 			defer reader.Cleanup()
@@ -154,7 +154,7 @@ func main() {
 			for {
 				p, err := reader.Read(context.TODO())
 				if err != nil {
-					fmt.Printf("Error reading packet: %v\n", err)
+					log.Error("error reading packet", zap.Error(err))
 					continue
 				}
 				data := p.Data()
