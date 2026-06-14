@@ -46,6 +46,7 @@
         const mqttAddressParam = query.get("mqttAddress");
         const mqttChannelParam = query.get("mqttChannel");
         const teamNumberParam = query.get("teamNumber");
+        const altitudeOffsetParam = query.get("altitudeOffset");
 
         if (bgParam && /^#(?:[0-9a-fA-F]{3}){1,2}$/.test(bgParam)) {
             backgroundColor = bgParam;
@@ -74,6 +75,13 @@
 
         if (teamNumberParam) {
             teamNumber = teamNumberParam;
+        }
+
+        if (altitudeOffsetParam) {
+            const parsed = Number(altitudeOffsetParam);
+            if (Number.isFinite(parsed)) {
+                altitudeOffsetFt = parsed;
+            }
         }
     }
 
@@ -126,6 +134,7 @@
     let mqttAddress = "";
     let mqttChannel = "0";
     let teamNumber = "2";
+    let altitudeOffsetFt = 0;
 
     onMount(() => {
         applyUrlParameters();
@@ -193,6 +202,12 @@
         return Math.max(0, Math.min(100, (value / max) * 100));
     }
 
+    // Standard barometric formula. Assumes pressure in kPa, returns feet.
+    function pressureToAltitudeFt(pressureKpa: number): number {
+        const altMeters = 44330 * (1 - Math.pow(pressureKpa / 101.325, 1 / 5.255));
+        return altMeters * 3.28084;
+    }
+
     // Subscribe to MQTT data changes
     $: {
         const data = getDataByPacket($mqttData) as Record<string, unknown>;
@@ -215,14 +230,19 @@
             }
 
             satCount = getNumberCaseInsensitive(gnsscoordinates, "sat_count");
-            altitude = getNumberCaseInsensitive(gnsscoordinates, "altitude");
+            const pressureKpa = getNumberCaseInsensitive(sensormodule, "PRESS_BMP388", "PRESS_MS5611")
+                ?? getNumberCaseInsensitive(gnsscoordinates, "altitude");
+            altitude = pressureKpa !== null ? pressureToAltitudeFt(pressureKpa) - altitudeOffsetFt : null;
             battCurrent = getNumberCaseInsensitive(powermodule, "CURR_BATT");
             battVoltage = getNumberCaseInsensitive(powermodule, "VOLT_BATT");
             receiverSnr = getNumberCaseInsensitive(receiverstats, "SNR", "RCV_SNR", "snr");
             temperature = getNumberCaseInsensitive(sensormodule, "temperature", "TEMP_BMP388", "TEMP_MS5611", "TEMP_TMP117");
-            accelX = getNumberCaseInsensitive(sensormodule, "accel_x", "ACCEL_X", "ADX_ACCEL_X", "LSM_ACCEL_X");
-            accelY = getNumberCaseInsensitive(sensormodule, "accel_y", "ACCEL_Y", "ADX_ACCEL_Y", "LSM_ACCEL_Y");
-            accelZ = getNumberCaseInsensitive(sensormodule, "accel_z", "ACCEL_Z", "ADX_ACCEL_Z", "LSM_ACCEL_Z");
+            const rawAccelX = getNumberCaseInsensitive(sensormodule, "LSM_ACCEL_X", "accel_x", "ACCEL_X", "ADX_ACCEL_X");
+            const rawAccelY = getNumberCaseInsensitive(sensormodule, "LSM_ACCEL_Y", "accel_y", "ACCEL_Y", "ADX_ACCEL_Y");
+            const rawAccelZ = getNumberCaseInsensitive(sensormodule, "LSM_ACCEL_Z", "accel_z", "ACCEL_Z", "ADX_ACCEL_Z");
+            accelX = rawAccelX !== null ? rawAccelX / 9.81 : null;
+            accelY = rawAccelY !== null ? rawAccelY / 9.81 : null;
+            accelZ = rawAccelZ !== null ? rawAccelZ / 9.81 : null;
         }
     }
 </script>
