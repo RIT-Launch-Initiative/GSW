@@ -371,7 +371,7 @@
         <div class="relative h-40 w-70">
             <MapLibre
                 class="h-40 w-70"
-                style="/src/style.aliflux.json"
+                style="/style.aliflux.json"
                 zoom={10.0}
                 center={groundStationPosition}
                 attributionControl={false}

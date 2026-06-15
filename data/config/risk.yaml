@@ -1,43 +1,49 @@
 name: flight
 
 measurements:
-    # Power module downlink (fixed-point)
+    # Power module downlink (fixed-point, mV/mA/mW → scale to V/A/W)
     VOLT_BATT:
       name: VOLT_BATT
       size: 2
       type: int
       endianness: little
       unsigned: false
+      scaling: 0.001
     CURR_BATT:
       name: CURR_BATT
       size: 2
       type: int
       endianness: little
       unsigned: false
+      scaling: 0.001
     PWER_BATT:
       name: PWER_BATT
       size: 2
       type: int
       endianness: little
       unsigned: false
+      scaling: 0.001
     VOLT_3V3:
       name: VOLT_3V3
       size: 2
       type: int
       endianness: little
       unsigned: false
+      scaling: 0.001
     CURR_3V3:
       name: CURR_3V3
       size: 2
       type: int
       endianness: little
       unsigned: false
+      scaling: 0.001
     PWER_3V3:
       name: PWER_3V3
       size: 2
       type: int
       endianness: little
       unsigned: false
+      scaling: 0.001
 
     # Sensor module downlink (fixed-point)
     PRESS:
@@ -46,6 +52,7 @@ measurements:
       type: int
       endianness: little
       unsigned: false
+      scaling: 0.1  # deci-kPa → kPa
     TEMP:
       name: TEMP
       size: 2
@@ -58,36 +65,42 @@ measurements:
       type: int
       endianness: little
       unsigned: false
+      scaling: 0.1  # deci-m/s² → m/s²
     ACCEL_Y:
       name: ACCEL_Y
       size: 2
       type: int
       endianness: little
       unsigned: false
+      scaling: 0.1  # deci-m/s² → m/s²
     ACCEL_Z:
       name: ACCEL_Z
       size: 2
       type: int
       endianness: little
       unsigned: false
+      scaling: 0.1  # deci-m/s² → m/s²
     GYRO_X:
       name: GYRO_X
       size: 2
       type: int
       endianness: little
       unsigned: false
+      scaling: 0.001  # mrad/s → rad/s
     GYRO_Y:
       name: GYRO_Y
       size: 2
       type: int
       endianness: little
       unsigned: false
+      scaling: 0.001  # mrad/s → rad/s
     GYRO_Z:
       name: GYRO_Z
       size: 2
       type: int
       endianness: little
       unsigned: false
+      scaling: 0.001  # mrad/s → rad/s
 
     # GNSS
     LATITUDE:
