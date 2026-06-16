@@ -133,27 +133,30 @@ measurements:
       size: 1
       type: int
       endianness: little
-      unsigned: false
+      unsigned: true
 
     FIX_QUALITY:
       name: FIX_QUALITY
       size: 1
       type: int
       endianness: little
-      unsigned: false
+      unsigned: true
 
-    # Receiver stats
-    SNR:
-      name: RCV_SNR
-      size: 2
-      type: float
-      endianness: little
-      unsigned: false
-
+    # Receiver stats (LoRaReceiveStatistics: int16_t RSSI + int8_t SNR)
+    # NOTE: nothing in the receiver module currently emits on port 12006 —
+    # RSSI/SNR from received LoRa frames are discarded in CLoraFrameToUdpHandler.
     RSSI:
       name: RCV_RSSI
       size: 2
       type: int
+      endianness: little
+      unsigned: false
+
+    SNR:
+      name: RCV_SNR
+      size: 1
+      type: int
+      endianness: little
       unsigned: false
 
 telemetry_packets:
@@ -194,3 +197,4 @@ telemetry_packets:
     measurements:
       - RSSI
       - SNR
+
