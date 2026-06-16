@@ -216,9 +216,11 @@
         const lookup = getChannelPayload(data, mqttChannel) ?? data;
 
         const gnsscoordinates = getObjectCaseInsensitive(lookup, "gnsscoordinates");
-        const powermodule = getObjectCaseInsensitive(lookup, "powermodule");
+        const powermodule = getObjectCaseInsensitive(lookup, "powermoduledownlink")
+            ?? getObjectCaseInsensitive(lookup, "powermodule");
         const receiverstats = getObjectCaseInsensitive(lookup, "receiverstats");
-        const sensormodule = getObjectCaseInsensitive(lookup, "sensormodule");
+        const sensormodule = getObjectCaseInsensitive(lookup, "sensormoduledownlink")
+            ?? getObjectCaseInsensitive(lookup, "sensormodule");
 
         if (gnsscoordinates || powermodule || receiverstats || sensormodule) {
             lastTransmission = Date.now();
@@ -230,16 +232,20 @@
             }
 
             satCount = getNumberCaseInsensitive(gnsscoordinates, "sat_count");
-            const pressureKpa = getNumberCaseInsensitive(sensormodule, "PRESS_BMP388", "PRESS_MS5611")
-                ?? getNumberCaseInsensitive(gnsscoordinates, "altitude");
-            altitude = pressureKpa !== null ? pressureToAltitudeFt(pressureKpa) - altitudeOffsetFt : null;
+            const pressureKpa = getNumberCaseInsensitive(sensormodule, "PRESS", "PRESS_BMP388", "PRESS_MS5611");
+            const gnssAltitudeM = getNumberCaseInsensitive(gnsscoordinates, "altitude");
+            altitude = pressureKpa !== null
+                ? pressureToAltitudeFt(pressureKpa) - altitudeOffsetFt
+                : gnssAltitudeM !== null
+                    ? gnssAltitudeM * 3.28084 - altitudeOffsetFt
+                    : null;
             battCurrent = getNumberCaseInsensitive(powermodule, "CURR_BATT");
             battVoltage = getNumberCaseInsensitive(powermodule, "VOLT_BATT");
             receiverSnr = getNumberCaseInsensitive(receiverstats, "SNR", "RCV_SNR", "snr");
-            temperature = getNumberCaseInsensitive(sensormodule, "temperature", "TEMP_BMP388", "TEMP_MS5611", "TEMP_TMP117");
-            const rawAccelX = getNumberCaseInsensitive(sensormodule, "LSM_ACCEL_X", "accel_x", "ACCEL_X", "ADX_ACCEL_X");
-            const rawAccelY = getNumberCaseInsensitive(sensormodule, "LSM_ACCEL_Y", "accel_y", "ACCEL_Y", "ADX_ACCEL_Y");
-            const rawAccelZ = getNumberCaseInsensitive(sensormodule, "LSM_ACCEL_Z", "accel_z", "ACCEL_Z", "ADX_ACCEL_Z");
+            temperature = getNumberCaseInsensitive(sensormodule, "TEMP", "temperature", "TEMP_BMP388", "TEMP_MS5611", "TEMP_TMP117");
+            const rawAccelX = getNumberCaseInsensitive(sensormodule, "ACCEL_X", "LSM_ACCEL_X", "accel_x", "ADX_ACCEL_X");
+            const rawAccelY = getNumberCaseInsensitive(sensormodule, "ACCEL_Y", "LSM_ACCEL_Y", "accel_y", "ADX_ACCEL_Y");
+            const rawAccelZ = getNumberCaseInsensitive(sensormodule, "ACCEL_Z", "LSM_ACCEL_Z", "accel_z", "ADX_ACCEL_Z");
             accelX = rawAccelX !== null ? rawAccelX / 9.81 : null;
             accelY = rawAccelY !== null ? rawAccelY / 9.81 : null;
             accelZ = rawAccelZ !== null ? rawAccelZ / 9.81 : null;

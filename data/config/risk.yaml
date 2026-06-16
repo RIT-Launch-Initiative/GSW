@@ -143,8 +143,6 @@ measurements:
       unsigned: true
 
     # Receiver stats (LoRaReceiveStatistics: int16_t RSSI + int8_t SNR)
-    # NOTE: nothing in the receiver module currently emits on port 12006 —
-    # RSSI/SNR from received LoRa frames are discarded in CLoraFrameToUdpHandler.
     RSSI:
       name: RCV_RSSI
       size: 2
