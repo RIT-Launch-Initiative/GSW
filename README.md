@@ -57,12 +57,17 @@ If you need to change dashboards or datasources, set `GF_AUTH_ANONYMOUS_ORG_ROLE
 #### Accessing InfluxDB
 
 You can access the InfluxDB CLI using `docker compose exec -it influxdb influx`. 
-For example, to export all receiver telemetry as a CSV, run:
+For example, to list buckets, run:
 ```shell
-$ docker compose exec influxdb influx \
-    -database "gsw" \
-    -format csv \
-    -execute "SELECT * FROM receiver"
+docker compose exec influxdb influx bucket list
+```
+
+To query the `gsw` bucket directly, run:
+```shell
+docker compose exec influxdb influx query \
+    --org gsw \
+    --token gsw-local-dev-token \
+    'from(bucket: "gsw") |> range(start: -15m)'
 ```
 
 ### Attaching to the container

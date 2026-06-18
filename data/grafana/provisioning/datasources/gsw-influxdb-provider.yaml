@@ -5,8 +5,12 @@ datasources:
     uid: gsw-influxdb
     type: influxdb
     access: proxy
-    
-    user: $GSW_GRAFANA_INFLUXDB_USER
+
     url: $GSW_GRAFANA_INFLUXDB_URL
+    jsonData:
+      dbName: $GSW_GRAFANA_INFLUXDB_DB_NAME
+      httpHeaderName1: Authorization
+      httpMode: POST
+      version: InfluxQL
     secureJsonData:
-      password: $GSW_GRAFANA_INFLUXDB_PASSWORD
+      httpHeaderValue1: Token $GSW_GRAFANA_INFLUXDB_TOKEN
