@@ -1,7 +1,7 @@
 #!/bin/sh
 set -eu
 
-host="${INFLUX_HOST:-http://influxdb:8086}"
+host="${INFLUX_HOST:-http://localhost:8086}"
 org="${DOCKER_INFLUXDB_INIT_ORG:?DOCKER_INFLUXDB_INIT_ORG is required}"
 bucket="${DOCKER_INFLUXDB_INIT_BUCKET:?DOCKER_INFLUXDB_INIT_BUCKET is required}"
 token="${DOCKER_INFLUXDB_INIT_ADMIN_TOKEN:?DOCKER_INFLUXDB_INIT_ADMIN_TOKEN is required}"

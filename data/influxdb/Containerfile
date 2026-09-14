@@ -1,0 +1,4 @@
+FROM influxdb:2.9-alpine
+
+COPY ./init-v1-compat.sh /docker-entrypoint-initdb.d/init-v1-compat.sh
+RUN chmod +x /docker-entrypoint-initdb.d/init-v1-compat.sh
