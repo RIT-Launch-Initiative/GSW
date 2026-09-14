@@ -28,7 +28,7 @@
     "vite": "^7.2.4"
   },
   "dependencies": {
-    "maplibre-gl": "^5.19.0",
+    "maplibre-gl": "^6.4.1",
     "mqtt": "^5.14.1"
   }
 }
