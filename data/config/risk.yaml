@@ -1,0 +1,207 @@
+name: flight
+
+measurements:
+    # Power module downlink (fixed-point, mV/mA/mW → scale to V/A/W)
+    VOLT_BATT:
+      name: VOLT_BATT
+      size: 2
+      type: int
+      endianness: little
+      unsigned: false
+      scaling: 0.001
+    CURR_BATT:
+      name: CURR_BATT
+      size: 2
+      type: int
+      endianness: little
+      unsigned: false
+      scaling: 0.001
+    PWER_BATT:
+      name: PWER_BATT
+      size: 2
+      type: int
+      endianness: little
+      unsigned: false
+      scaling: 0.001
+    VOLT_3V3:
+      name: VOLT_3V3
+      size: 2
+      type: int
+      endianness: little
+      unsigned: false
+      scaling: 0.001
+    CURR_3V3:
+      name: CURR_3V3
+      size: 2
+      type: int
+      endianness: little
+      unsigned: false
+      scaling: 0.001
+    PWER_3V3:
+      name: PWER_3V3
+      size: 2
+      type: int
+      endianness: little
+      unsigned: false
+      scaling: 0.001
+
+    # Sensor module downlink (fixed-point)
+    PRESS:
+      name: PRESS
+      size: 2
+      type: int
+      endianness: little
+      unsigned: false
+      scaling: 0.1  # deci-kPa → kPa
+    TEMP:
+      name: TEMP
+      size: 2
+      type: int
+      endianness: little
+      unsigned: false
+    ACCEL_X:
+      name: ACCEL_X
+      size: 2
+      type: int
+      endianness: little
+      unsigned: false
+      scaling: 0.1  # deci-m/s² → m/s²
+    ACCEL_Y:
+      name: ACCEL_Y
+      size: 2
+      type: int
+      endianness: little
+      unsigned: false
+      scaling: 0.1  # deci-m/s² → m/s²
+    ACCEL_Z:
+      name: ACCEL_Z
+      size: 2
+      type: int
+      endianness: little
+      unsigned: false
+      scaling: 0.1  # deci-m/s² → m/s²
+    GYRO_X:
+      name: GYRO_X
+      size: 2
+      type: int
+      endianness: little
+      unsigned: false
+      scaling: 0.001  # mrad/s → rad/s
+    GYRO_Y:
+      name: GYRO_Y
+      size: 2
+      type: int
+      endianness: little
+      unsigned: false
+      scaling: 0.001  # mrad/s → rad/s
+    GYRO_Z:
+      name: GYRO_Z
+      size: 2
+      type: int
+      endianness: little
+      unsigned: false
+      scaling: 0.001  # mrad/s → rad/s
+
+    # GNSS
+    LATITUDE:
+      name: LATITUDE
+      size: 4
+      type: float
+      endianness: little
+
+    LONGITUDE:
+      name: LONGITUDE
+      size: 4
+      type: float
+      endianness: little
+
+    ALTITUDE:
+      name: ALTITUDE
+      size: 4
+      type: float
+      endianness: little
+
+    SAT_COUNT:
+      name: SAT_COUNT
+      size: 2
+      type: int
+      endianness: little
+      unsigned: true
+
+    FIX_STATUS:
+      name: FIX_STATUS
+      size: 1
+      type: int
+      endianness: little
+      unsigned: true
+
+    FIX_QUALITY:
+      name: FIX_QUALITY
+      size: 1
+      type: int
+      endianness: little
+      unsigned: true
+
+    # 0=PAD 1=FLIGHT 2=LANDED 3=GROUND
+    FLIGHT_STATE:
+      name: FLIGHT_STATE
+      size: 1
+      type: int
+      endianness: little
+      unsigned: true
+
+    # Receiver stats (LoRaReceiveStatistics: int16_t RSSI + int8_t SNR)
+    RSSI:
+      name: RCV_RSSI
+      size: 2
+      type: int
+      endianness: little
+      unsigned: false
+
+    SNR:
+      name: RCV_SNR
+      size: 1
+      type: int
+      endianness: little
+      unsigned: false
+
+telemetry_packets:
+  - name: PowerModuleDownlink
+    port: 11020
+    measurements:
+      - VOLT_BATT
+      - CURR_BATT
+      - PWER_BATT
+      - VOLT_3V3
+      - CURR_3V3
+      - PWER_3V3
+
+  - name: SensorModuleDownlink
+    port: 13020
+    measurements:
+      - PRESS
+      - TEMP
+      - ACCEL_X
+      - ACCEL_Y
+      - ACCEL_Z
+      - GYRO_X
+      - GYRO_Y
+      - GYRO_Z
+
+  - name: GNSSCoordinates
+    port: 12005
+    measurements:
+      - LATITUDE
+      - LONGITUDE
+      - ALTITUDE
+      - SAT_COUNT
+      - FIX_STATUS
+      - FIX_QUALITY
+      - FLIGHT_STATE
+
+  - name: ReceiverStats
+    port: 12006
+    measurements:
+      - RSSI
+      - SNR
+

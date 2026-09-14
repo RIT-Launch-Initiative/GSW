@@ -1,0 +1,361 @@
+name: flight_debug
+
+measurements:
+    # ── Direct backplane power module (float, port 11015) ──────────────────────
+    # Packet field order must match backplane.yaml PowerModule exactly.
+    DIR_VOLT_BATT:
+      name: DIR_VOLT_BATT
+      size: 4
+      type: float
+      endianness: little
+    DIR_CURR_BATT:
+      name: DIR_CURR_BATT
+      size: 4
+      type: float
+      endianness: little
+    DIR_PWER_BATT:
+      name: DIR_PWER_BATT
+      size: 4
+      type: float
+      endianness: little
+    DIR_VOLT_3V3:
+      name: DIR_VOLT_3V3
+      size: 4
+      type: float
+      endianness: little
+    DIR_CURR_3V3:
+      name: DIR_CURR_3V3
+      size: 4
+      type: float
+      endianness: little
+    DIR_PWER_3V3:
+      name: DIR_PWER_3V3
+      size: 4
+      type: float
+      endianness: little
+    DIR_VOLT_5V0:
+      name: DIR_VOLT_5V0
+      size: 4
+      type: float
+      endianness: little
+    DIR_CURR_5V0:
+      name: DIR_CURR_5V0
+      size: 4
+      type: float
+      endianness: little
+    DIR_PWER_5V0:
+      name: DIR_PWER_5V0
+      size: 4
+      type: float
+      endianness: little
+
+    # ── Direct backplane sensor module (float, port 13100) ─────────────────────
+    # Packet field order must match backplane.yaml SensorModule exactly.
+    DIR_PRESS_MS5611:
+      name: DIR_PRESS_MS5611
+      size: 4
+      type: float
+      endianness: little
+    DIR_TEMP_MS5611:
+      name: DIR_TEMP_MS5611
+      size: 4
+      type: float
+      endianness: little
+    DIR_PRESS_BMP388:
+      name: DIR_PRESS_BMP388
+      size: 4
+      type: float
+      endianness: little
+    DIR_TEMP_BMP388:
+      name: DIR_TEMP_BMP388
+      size: 4
+      type: float
+      endianness: little
+    DIR_ADX_ACCEL_X:
+      name: DIR_ADX_ACCEL_X
+      size: 4
+      type: float
+      endianness: little
+    DIR_ADX_ACCEL_Y:
+      name: DIR_ADX_ACCEL_Y
+      size: 4
+      type: float
+      endianness: little
+    DIR_ADX_ACCEL_Z:
+      name: DIR_ADX_ACCEL_Z
+      size: 4
+      type: float
+      endianness: little
+    DIR_LSM_ACCEL_X:
+      name: DIR_LSM_ACCEL_X
+      size: 4
+      type: float
+      endianness: little
+    DIR_LSM_ACCEL_Y:
+      name: DIR_LSM_ACCEL_Y
+      size: 4
+      type: float
+      endianness: little
+    DIR_LSM_ACCEL_Z:
+      name: DIR_LSM_ACCEL_Z
+      size: 4
+      type: float
+      endianness: little
+    DIR_GYRO_X:
+      name: DIR_GYRO_X
+      size: 4
+      type: float
+      endianness: little
+    DIR_GYRO_Y:
+      name: DIR_GYRO_Y
+      size: 4
+      type: float
+      endianness: little
+    DIR_GYRO_Z:
+      name: DIR_GYRO_Z
+      size: 4
+      type: float
+      endianness: little
+    DIR_MAGN_X:
+      name: DIR_MAGN_X
+      size: 4
+      type: float
+      endianness: little
+    DIR_MAGN_Y:
+      name: DIR_MAGN_Y
+      size: 4
+      type: float
+      endianness: little
+    DIR_MAGN_Z:
+      name: DIR_MAGN_Z
+      size: 4
+      type: float
+      endianness: little
+    DIR_TEMP_TMP117:
+      name: DIR_TEMP_TMP117
+      size: 4
+      type: float
+      endianness: little
+
+    # ── LoRa downlink power module (fixed-point, port 11020) ───────────────────
+    DL_VOLT_BATT:
+      name: DL_VOLT_BATT
+      size: 2
+      type: int
+      endianness: little
+      unsigned: false
+      scaling: 0.001  # mV → V
+    DL_CURR_BATT:
+      name: DL_CURR_BATT
+      size: 2
+      type: int
+      endianness: little
+      unsigned: false
+      scaling: 0.001  # mA → A
+    DL_PWER_BATT:
+      name: DL_PWER_BATT
+      size: 2
+      type: int
+      endianness: little
+      unsigned: false
+      scaling: 0.001  # mW → W
+    DL_VOLT_3V3:
+      name: DL_VOLT_3V3
+      size: 2
+      type: int
+      endianness: little
+      unsigned: false
+      scaling: 0.001  # mV → V
+    DL_CURR_3V3:
+      name: DL_CURR_3V3
+      size: 2
+      type: int
+      endianness: little
+      unsigned: false
+      scaling: 0.001  # mA → A
+    DL_PWER_3V3:
+      name: DL_PWER_3V3
+      size: 2
+      type: int
+      endianness: little
+      unsigned: false
+      scaling: 0.001  # mW → W
+
+    # ── LoRa downlink sensor module (fixed-point, port 13020) ──────────────────
+    DL_PRESS:
+      name: DL_PRESS
+      size: 2
+      type: int
+      endianness: little
+      unsigned: false
+      scaling: 0.1  # deci-kPa → kPa
+    DL_TEMP:
+      name: DL_TEMP
+      size: 2
+      type: int
+      endianness: little
+      unsigned: false
+    DL_ACCEL_X:
+      name: DL_ACCEL_X
+      size: 2
+      type: int
+      endianness: little
+      unsigned: false
+      scaling: 0.1  # deci-m/s² → m/s²
+    DL_ACCEL_Y:
+      name: DL_ACCEL_Y
+      size: 2
+      type: int
+      endianness: little
+      unsigned: false
+      scaling: 0.1  # deci-m/s² → m/s²
+    DL_ACCEL_Z:
+      name: DL_ACCEL_Z
+      size: 2
+      type: int
+      endianness: little
+      unsigned: false
+      scaling: 0.1  # deci-m/s² → m/s²
+    DL_GYRO_X:
+      name: DL_GYRO_X
+      size: 2
+      type: int
+      endianness: little
+      unsigned: false
+      scaling: 0.001  # mrad/s → rad/s
+    DL_GYRO_Y:
+      name: DL_GYRO_Y
+      size: 2
+      type: int
+      endianness: little
+      unsigned: false
+      scaling: 0.001  # mrad/s → rad/s
+    DL_GYRO_Z:
+      name: DL_GYRO_Z
+      size: 2
+      type: int
+      endianness: little
+      unsigned: false
+      scaling: 0.001  # mrad/s → rad/s
+
+    # ── GNSS (shared between both paths, port 12005) ───────────────────────────
+    LATITUDE:
+      name: LATITUDE
+      size: 4
+      type: float
+      endianness: little
+    LONGITUDE:
+      name: LONGITUDE
+      size: 4
+      type: float
+      endianness: little
+    ALTITUDE:
+      name: ALTITUDE
+      size: 4
+      type: float
+      endianness: little
+    SAT_COUNT:
+      name: SAT_COUNT
+      size: 2
+      type: int
+      endianness: little
+      unsigned: true
+    FIX_STATUS:
+      name: FIX_STATUS
+      size: 1
+      type: int
+      endianness: little
+      unsigned: true
+    FIX_QUALITY:
+      name: FIX_QUALITY
+      size: 1
+      type: int
+      endianness: little
+      unsigned: true
+
+    # ── Receiver stats (port 12006) ────────────────────────────────────────────
+    RSSI:
+      name: RCV_RSSI
+      size: 2
+      type: int
+      endianness: little
+      unsigned: false
+    SNR:
+      name: RCV_SNR
+      size: 1
+      type: int
+      endianness: little
+      unsigned: false
+
+telemetry_packets:
+  - name: PowerModuleDirect
+    port: 11015
+    measurements:
+      - DIR_VOLT_BATT
+      - DIR_CURR_BATT
+      - DIR_PWER_BATT
+      - DIR_VOLT_3V3
+      - DIR_CURR_3V3
+      - DIR_PWER_3V3
+      - DIR_VOLT_5V0
+      - DIR_CURR_5V0
+      - DIR_PWER_5V0
+
+  - name: SensorModuleDirect
+    port: 13100
+    measurements:
+      - DIR_PRESS_MS5611
+      - DIR_TEMP_MS5611
+      - DIR_PRESS_BMP388
+      - DIR_TEMP_BMP388
+      - DIR_ADX_ACCEL_X
+      - DIR_ADX_ACCEL_Y
+      - DIR_ADX_ACCEL_Z
+      - DIR_LSM_ACCEL_X
+      - DIR_LSM_ACCEL_Y
+      - DIR_LSM_ACCEL_Z
+      - DIR_GYRO_X
+      - DIR_GYRO_Y
+      - DIR_GYRO_Z
+      - DIR_MAGN_X
+      - DIR_MAGN_Y
+      - DIR_MAGN_Z
+      - DIR_TEMP_TMP117
+
+  - name: PowerModuleDownlink
+    port: 11020
+    measurements:
+      - DL_VOLT_BATT
+      - DL_CURR_BATT
+      - DL_PWER_BATT
+      - DL_VOLT_3V3
+      - DL_CURR_3V3
+      - DL_PWER_3V3
+
+  - name: SensorModuleDownlink
+    port: 13020
+    measurements:
+      - DL_PRESS
+      - DL_TEMP
+      - DL_ACCEL_X
+      - DL_ACCEL_Y
+      - DL_ACCEL_Z
+      - DL_GYRO_X
+      - DL_GYRO_Y
+      - DL_GYRO_Z
+
+  - name: GNSSCoordinates
+    port: 12005
+    measurements:
+      - LATITUDE
+      - LONGITUDE
+      - ALTITUDE
+      - SAT_COUNT
+      - FIX_STATUS
+      - FIX_QUALITY
+
+  - name: ReceiverStats
+    port: 12006
+    measurements:
+      - RSSI
+      - SNR
