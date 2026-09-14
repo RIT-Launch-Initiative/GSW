@@ -67,7 +67,7 @@ To query the `gsw` bucket directly, run:
 docker compose exec influxdb influx query \
     --org gsw \
     --token gsw-local-dev-token \
-    'from(bucket: "gsw") |> range(start: -15m)'
+    'from(bucket: "gsw") |> range(start: 0)'
 ```
 
 ### Attaching to the container
