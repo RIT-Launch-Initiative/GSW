@@ -6,26 +6,40 @@ services:
     ports:
       - "127.0.0.1:3000:3000/tcp"
     depends_on:
-      influxdb:
-        condition: service_started
+      - influxdb
     environment:
       - GSW_GRAFANA_INFLUXDB_URL=http://influxdb:8086
-      - GSW_GRAFANA_INFLUXDB_USER=root
-      - GSW_GRAFANA_INFLUXDB_PASSWORD=root
+      - GSW_GRAFANA_INFLUXDB_DB_NAME=${GSW_INFLUXDB_BUCKET:-gsw}
+      - GSW_GRAFANA_INFLUXDB_TOKEN=${GSW_INFLUXDB_ADMIN_TOKEN:-gsw-local-dev-token}
       - GF_AUTH_ANONYMOUS_ENABLED=true
       - GF_AUTH_ANONYMOUS_ORG_ROLE=Viewer
       - GF_AUTH_BASIC_ENABLED=false
     volumes:
       - grafana-data:/var/lib/grafana
   influxdb:
-    image: influxdb:1.11-alpine
+    build:
+      context: data/influxdb
+      dockerfile: Containerfile
     volumes:
-      - influxdb-data:/var/lib/influxdb
+      - influxdb-data:/var/lib/influxdb2
+      - influxdb-config:/etc/influxdb2
     environment:
-      - INFLUXDB_UDP_ENABLED=true
-      - INFLUXDB_UDP_DATABASE=gsw
+      - DOCKER_INFLUXDB_INIT_MODE=setup
+      - DOCKER_INFLUXDB_INIT_USERNAME=${GSW_INFLUXDB_USERNAME:-gsw}
+      - DOCKER_INFLUXDB_INIT_PASSWORD=${GSW_INFLUXDB_PASSWORD:-gsw-password}
+      - DOCKER_INFLUXDB_INIT_ORG=${GSW_INFLUXDB_ORG:-gsw}
+      - DOCKER_INFLUXDB_INIT_BUCKET=${GSW_INFLUXDB_BUCKET:-gsw}
+      - DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=${GSW_INFLUXDB_ADMIN_TOKEN:-gsw-local-dev-token}
+      - GSW_INFLUXDB_V1_DATABASE=${GSW_INFLUXDB_BUCKET:-gsw}
+      - GSW_INFLUXDB_V1_RETENTION_POLICY=autogen
     ports:
-      - "127.0.0.1:8089:8089/udp"
+      - "127.0.0.1:8086:8086/tcp"
+    healthcheck:
+      test: ["CMD", "influx", "ping", "--host", "http://localhost:8086"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 10s
   
   mosquitto:
     build:
@@ -38,3 +52,4 @@ services:
 volumes:
   grafana-data:
   influxdb-data:
+  influxdb-config:

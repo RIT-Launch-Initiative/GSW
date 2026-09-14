@@ -8,11 +8,14 @@ services:
       dockerfile: cmd/Containerfile
     depends_on:
       influxdb:
-        condition: service_started
+        condition: service_healthy
       grafana:
         condition: service_started
     environment:
-      - GSW_DATABASE_HOST_NAME=influxdb
+      - GSW_DATABASE_V2_URL=http://influxdb:8086
+      - GSW_DATABASE_V2_TOKEN=${GSW_INFLUXDB_ADMIN_TOKEN:-gsw-local-dev-token}
+      - GSW_DATABASE_V2_ORG=${GSW_INFLUXDB_ORG:-gsw}
+      - GSW_DATABASE_V2_BUCKET=${GSW_INFLUXDB_BUCKET:-gsw}
       - GSW_TELEMETRY_CONFIG=data/config/backplane.yaml
     ports:
       - 11020:11020/udp
