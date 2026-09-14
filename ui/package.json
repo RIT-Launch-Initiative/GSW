@@ -21,7 +21,7 @@
     "globals": "^17.2.0",
     "svelte": "^5.43.8",
     "svelte-check": "^4.3.4",
-    "svelte-maplibre-gl": "^1.0.3",
+    "svelte-maplibre-gl": "^2.2.1",
     "tailwindcss": "^4.1.18",
     "typescript": "~5.9.3",
     "typescript-eslint": "^8.54.0",
